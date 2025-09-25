@@ -1,11 +1,5 @@
 # SPDX-License-Identifier: MPL-2.0
 
-PRJ = ../../..
-SETTINGS = $(PRJ)/settings
-
-include $(SETTINGS)/settings.mk
-include $(SETTINGS)/std.mk
-
 FILES = \
     Addons.xcu \
     META-INF/manifest.xml \

@@ -55,5 +55,5 @@ g_ImplementationHelper = unohelper.ImplementationHelper()
 
 g_ImplementationHelper.addImplementation(
     MainJob,  # UNO object class
-    "org.extension.sample.do",  # implementation name (customize for yourself)
+    "com.collabora.milsymbol.do",  # implementation name (customize for yourself)
     ("com.sun.star.task.Job",), )  # implemented services (only 1)
