@@ -2,4 +2,4 @@
 
 Extension to generate military symbols in LibreOffice.
 
-Uses the [https://github.com/spatialillusions/milsymbol/](milsymbol library)
+Uses the [milsymbol](https://github.com/spatialillusions/milsymbol/) library.
