@@ -22,15 +22,16 @@ class MainJob(unohelper.Base, XJobExecutor):
                 "com.sun.star.frame.Desktop", self.ctx)
 
     def trigger(self, args):
-        desktop = self.ctx.ServiceManager.createInstanceWithContext(
-            "com.sun.star.frame.Desktop", self.ctx)
-        model = desktop.getCurrentComponent()
-        if not hasattr(model, "Text"):
-            model = self.desktop.loadComponentFromURL("private:factory/swriter", "_blank", 0, ())
-        text = model.Text
-        cursor = text.createTextCursor()
-        text.insertString(cursor, "Hello Extension argument -> " + args + "\n", 0)
-
+        # ServiceManager
+        smgr = self.ctx.getServiceManager()
+        # DialogProvider
+        dialog_provider = smgr.createInstanceWithContext("com.sun.star.awt.DialogProvider2", self.ctx)
+        dialog_url = "vnd.sun.star.extension://com.collabora.milsymbol/dialog/TacticalSymbolDlg.xdl"
+        try:
+            dialog = dialog_provider.createDialog(dialog_url)
+            dialog.execute()
+        except Exception as e:
+            pass
 
 # Starting from Python IDE
 def main():
