@@ -16,6 +16,11 @@ echo "Building LibreOffice extension: $OUTPUT_NAME"
 rm -rf "$TEMP_DIR"
 rm -f "$OUTPUT_NAME"
 
+echo "Processing milsymbol JavaScript files..."
+cd milsymbol
+./combine.sh
+cd ..
+
 # Create temporary directory
 mkdir -p "$TEMP_DIR"
 
@@ -25,6 +30,8 @@ echo "Copying files to temporary directory..."
 rsync -av \
     --exclude="README.md" \
     --exclude="build.sh" \
+    --exclude="milsymbol/combine.sh" \
+    --exclude="milsymbol/milsymbol-3.0.3.js" \
     --exclude=".git/" \
     --exclude=".gitignore" \
     --exclude="$TEMP_DIR/" \
