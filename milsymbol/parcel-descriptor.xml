@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<parcel language="JavaScript">
+ <script language="JavaScript">
+  <locale lang="en">
+   <displayname value="milsymbol"/>
+   <description>milsymbol</description>
+  </locale>
+  <functionname value="milsymbol.js"/>
+  <logicalname value="milsymbol"/>
+ </script>
+</parcel>
