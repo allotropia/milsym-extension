@@ -40,9 +40,17 @@ class MainJob(unohelper.Base, XJobExecutor):
 
     def onSymbolDialog(self):
         dialog_provider = self.ctx.getServiceManager().createInstanceWithContext("com.sun.star.awt.DialogProvider2", self.ctx)
-        dialog_url = "vnd.sun.star.extension://com.collabora.milsymbol/dialog/TacticalSymbolDlg.xdl"
+        dialog_url = "vnd.sun.star.extension://com.collabora.milsymbol/dialog/MilitarySymbolDlg.xdl"
         try:
             dialog = dialog_provider.createDialog(dialog_url)
+
+            # Sets the initial state of the dialog
+            # Only controls assigned to this step will be visible
+            dialog.Model.Step = 1
+            # Initial button states
+            dialog.getControl("btBasic").getModel().State = 1
+            dialog.getControl("btAdvance").getModel().State = 0
+
             dialog.execute()
         except Exception as e:
             pass
