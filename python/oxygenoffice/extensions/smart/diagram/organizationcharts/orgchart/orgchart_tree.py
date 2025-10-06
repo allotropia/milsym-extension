@@ -7,17 +7,10 @@ from typing import Any, Optional, TYPE_CHECKING
 from ..organization_chart_tree import OrganizationChartTree
 from .orgchart_tree_item import OrgChartTreeItem
 
-if TYPE_CHECKING:
-    try:
-        import uno
-        from com.sun.star.drawing import XShape
-        from com.sun.star.awt import Point
-    except ImportError:
-        XShape = 'Any'
-        Point = 'Any'
-else:
-    XShape = 'Any'
-    Point = 'Any'
+
+import uno
+from com.sun.star.drawing import XShape
+from com.sun.star.awt import Point
 
 
 class OrgChartTree(OrganizationChartTree):

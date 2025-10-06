@@ -11,17 +11,9 @@ from ..diagram import Diagram
 from ..data_of_diagram import DataOfDiagram
 from ..scheme_definitions import SchemeDefinitions
 
-if TYPE_CHECKING:
-    try:
-        import uno
-        from com.sun.star.drawing import XShape
-        from com.sun.star.frame import XFrame
-    except ImportError:
-        XShape = Any
-        XFrame = Any
-else:
-    XShape = Any
-    XFrame = Any
+import uno
+from com.sun.star.drawing import XShape
+from com.sun.star.frame import XFrame
 
 
 class OrganizationChart(Diagram):

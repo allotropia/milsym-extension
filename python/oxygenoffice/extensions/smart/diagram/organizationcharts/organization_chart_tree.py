@@ -6,22 +6,10 @@ Python port of OrganizationChartTree.java
 from typing import Any, List, Optional, TYPE_CHECKING
 from abc import ABC, abstractmethod
 
-if TYPE_CHECKING:
-    try:
-        import uno
-        from com.sun.star.drawing import XShape, XShapes
-        from com.sun.star.awt import Point, Size
-    except ImportError:
-        XShape = Any
-        XShapes = Any
-        Point = Any
-        Size = Any
-else:
-    XShape = Any
-    XShapes = Any
-    Point = Any
-    Size = Any
 
+import uno
+from com.sun.star.drawing import XShape, XShapes
+from com.sun.star.awt import Point, Size
 
 class OrganizationChartTree(ABC):
     """Base class for organization chart trees"""

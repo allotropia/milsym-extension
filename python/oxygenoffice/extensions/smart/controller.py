@@ -3,20 +3,9 @@ Stub implementations for Controller and Gui classes
 These would need to be fully implemented based on the complete Java codebase
 """
 
-from typing import Any, Optional, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    try:
-        import uno
-        from com.sun.star.drawing import XShape
-        from com.sun.star.frame import XFrame
-    except ImportError:
-        XShape = Any
-        XFrame = Any
-else:
-    XShape = Any
-    XFrame = Any
-
+import uno
+from com.sun.star.drawing import XShape
+from com.sun.star.frame import XFrame
 
 class Controller:
     """

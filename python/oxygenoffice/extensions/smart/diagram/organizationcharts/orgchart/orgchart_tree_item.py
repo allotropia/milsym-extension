@@ -6,20 +6,9 @@ Python port of OrgChartTreeItem.java
 from typing import List, Optional, TYPE_CHECKING
 from .organization_chart_tree_item import OrganizationChartTreeItem
 
-if TYPE_CHECKING:
-    try:
-        import uno
-        from com.sun.star.drawing import XShape
-        from com.sun.star.awt import Point, Size
-    except ImportError:
-        XShape = 'Any'
-        Point = 'Any'
-        Size = 'Any'
-else:
-    XShape = 'Any'
-    Point = 'Any'
-    Size = 'Any'
-
+import uno
+from com.sun.star.drawing import XShape
+from com.sun.star.awt import Point, Size
 
 class OrgChartTreeItem(OrganizationChartTreeItem):
     """Organization chart tree item implementation"""
