@@ -12,6 +12,9 @@ if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
 
 from dialog_handler import DialogHandler
+from smart.controller import Controller, Gui
+from smart.diagram.organizationcharts.orgchart.orgchart import OrgChart
+from smart.diagram.data_of_diagram import DataOfDiagram
 
 from com.sun.star.awt import Size, Point
 from com.sun.star.beans import NamedValue, PropertyValue
@@ -44,6 +47,8 @@ class MainJob(unohelper.Base, XJobExecutor):
             self.onSymbolDialog()
         if args == "testSymbol":
             self.insertSymbol(model, "sfgpewrh--mt")
+        if args == "orgChart":
+            self.onOrgChart()
 
     def onSymbolDialog(self):
         dialog_provider = self.ctx.getServiceManager().createInstanceWithContext("com.sun.star.awt.DialogProvider2", self.ctx)
@@ -59,6 +64,39 @@ class MainJob(unohelper.Base, XJobExecutor):
             dialog.execute()
         except Exception as e:
             pass
+
+    def onOrgChart(self):
+        """Create a simple organization chart"""
+        print("Creating simple organization chart...")
+        
+        # Create controller and GUI instances (stub implementations)
+        controller = Controller()
+        gui = Gui()
+        
+        # Create organization chart
+        org_chart = OrgChart(controller, gui, None)
+        
+        # Create hierarchical data
+        data = DataOfDiagram()
+        data.add(0, "CEO")                    # Level 0 (root)
+        data.add(1, "Chief Technology Officer")  # Level 1
+        data.add(1, "Chief Financial Officer")   # Level 1
+        data.add(1, "Chief Marketing Officer")   # Level 1
+        data.add(2, "Development Manager")       # Level 2 (under CTO)
+        data.add(2, "QA Manager")               # Level 2 (under CTO)
+        data.add(3, "Senior Developer")         # Level 3 (under Dev Manager)
+        data.add(3, "Junior Developer")         # Level 3 (under Dev Manager)
+        
+        print(f"Created data with {data.size()} items")
+        data.print_data()
+        
+        # Create the diagram (this calls stub methods)
+        print("\nCreating diagram...")
+        org_chart.create_diagram(data)
+        
+        print("Organization chart creation completed!")
+        print("Note: This used stub implementations. For real LibreOffice integration,")
+        print("see UNO_INTEGRATION_GUIDE.py for implementation details.")
 
     def insertSymbol(self, model, code):
         factory = self.ctx.getServiceManager().createInstanceWithContext(

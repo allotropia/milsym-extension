@@ -31,6 +31,17 @@
               <value>_self</value>
             </prop>
           </node>
+          <node oor:name="M3" oor:op="replace">
+            <prop oor:name="Title">
+              <value xml:lang="en-US">Insert Test Org Chart</value>
+            </prop>
+            <prop oor:name="URL">
+              <value>service:com.collabora.milsymbol.do?orgChart</value>
+            </prop>
+            <prop oor:name="Target" oor:type="xs:string">
+              <value>_self</value>
+            </prop>
+          </node>
         </node>
       </node>
     </node>
