@@ -5,6 +5,14 @@ import unohelper
 import officehelper
 import tempfile
 import os
+import uno
+
+base_dir = os.path.dirname(__file__)
+if base_dir not in sys.path:
+    sys.path.insert(0, base_dir)
+
+from dialog_handler import DialogHandler
+from symbol_helper import SymbolHelper
 
 from com.sun.star.awt import Size, Point
 from com.sun.star.beans import NamedValue, PropertyValue
@@ -42,14 +50,11 @@ class MainJob(unohelper.Base, XJobExecutor):
         dialog_provider = self.ctx.getServiceManager().createInstanceWithContext("com.sun.star.awt.DialogProvider2", self.ctx)
         dialog_url = "vnd.sun.star.extension://com.collabora.milsymbol/dialog/MilitarySymbolDlg.xdl"
         try:
-            dialog = dialog_provider.createDialog(dialog_url)
+            handler = DialogHandler(self.ctx)
+            dialog = dialog_provider.createDialogWithHandler(dialog_url, handler)
+            handler.dialog = dialog
 
-            # Sets the initial state of the dialog
-            # Only controls assigned to this step will be visible
             dialog.Model.Step = 1
-            # Initial button states
-            dialog.getControl("btBasic").getModel().State = 1
-            dialog.getControl("btAdvance").getModel().State = 0
 
             dialog.execute()
         except Exception as e:

@@ -1,0 +1,11 @@
+        if methodName == "affiliation_btPending":
+            code = "SPS---------";
+            file_url = SymbolHelper(self.ctx).insertSymbol(code)
+            imgPreview = self.dialog.getModel().getByName("icPreview")
+            imgPreview.ImageURL = file_url
+            
+            
+            handler = DialogHandler(self.ctx)
+                def __init__(self, ctx, dialog=None):
+        self.ctx = ctx
+        self.dialog = dialog
