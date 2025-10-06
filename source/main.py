@@ -40,8 +40,6 @@ class MainJob(unohelper.Base, XJobExecutor):
         desktop = self.ctx.ServiceManager.createInstanceWithContext(
             "com.sun.star.frame.Desktop", self.ctx)
         model = desktop.getCurrentComponent()
-        if not hasattr(model, "Text"):
-            model = self.desktop.loadComponentFromURL("private:factory/swriter", "_blank", 0, ())
 
         if args == "symbolDialog":
             self.onSymbolDialog()
