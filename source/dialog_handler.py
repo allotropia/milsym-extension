@@ -27,7 +27,6 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
         if methodName == "dialog_btCancel":
             self.dialog.dispose()
             return True
-
         if self.handleButtonState(methodName):
             return True
         if self.handleTabbedButtonSwitch(methodName):

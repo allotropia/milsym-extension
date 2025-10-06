@@ -12,7 +12,6 @@ if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
 
 from dialog_handler import DialogHandler
-from symbol_helper import SymbolHelper
 
 from com.sun.star.awt import Size, Point
 from com.sun.star.beans import NamedValue, PropertyValue
@@ -50,7 +49,7 @@ class MainJob(unohelper.Base, XJobExecutor):
         dialog_provider = self.ctx.getServiceManager().createInstanceWithContext("com.sun.star.awt.DialogProvider2", self.ctx)
         dialog_url = "vnd.sun.star.extension://com.collabora.milsymbol/dialog/MilitarySymbolDlg.xdl"
         try:
-            handler = DialogHandler(self.ctx)
+            handler = DialogHandler(self)
             dialog = dialog_provider.createDialogWithHandler(dialog_url, handler)
             handler.dialog = dialog
 
