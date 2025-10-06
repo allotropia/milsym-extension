@@ -4,7 +4,8 @@ Python port of OrgChartTreeItem.java
 """
 
 from typing import List, Optional, TYPE_CHECKING
-from .organization_chart_tree_item import OrganizationChartTreeItem
+
+from ..organization_chart_tree_item import OrganizationChartTreeItem
 
 import uno
 from com.sun.star.drawing import XShape
