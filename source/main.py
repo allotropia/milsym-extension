@@ -58,7 +58,7 @@ class MainJob(unohelper.Base, XJobExecutor):
             dialog.Model.Step = 1
 
             dialog.execute()
-        except Exception as e:
+        except Exception:
             pass
 
     def onOrgChart(self):
