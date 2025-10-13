@@ -1,8 +1,16 @@
 # SPDX-License-Identifier: MPL-2.0
 
+import os
+import sys
 import uno
 import unohelper
 from com.sun.star.awt import XDialogEventHandler
+
+base_dir = os.path.dirname(__file__)
+if base_dir not in sys.path:
+    sys.path.insert(0, base_dir)
+
+import listbox_data
 
 class DialogHandler(unohelper.Base, XDialogEventHandler):
     # "group name": ["button1", "button2",...]
@@ -23,15 +31,30 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
     def __init__(self, dialog):
         self.dialog = dialog
 
+    def initialize_dialog_controls(self, dialog):
+        self.update_listboxes(dialog, 4)
+        self.dialog.getControl("mode_btReality").getModel().State = 1
+        self.dialog.getControl("affiliation_btFriend").getModel().State = 1
+        self.dialog.getControl("status_btPresent").getModel().State = 1
+        self.dialog.getControl("reinforced_btNotApplicable").getModel().State = 1
+        self.dialog.getControl("stack_bt1").getModel().State = 1
+        self.dialog.getControl("color_btLight").getModel().State = 1
+        self.dialog.getControl("engagement_btTarget").getModel().State = 1
+        self.dialog.getControl("signature_btNotApplicable").getModel().State = 1
+
     def callHandlerMethod(self, dialog, eventObject, methodName):
-        if methodName == "dialog_btCancel":
+        if methodName == "action_ltbSymbolSet":
+            selected_index = eventObject.Source.getSelectedItemPos()
+            self.update_listboxes(dialog, selected_index)
+            return True
+        elif methodName == "dialog_btCancel":
             self.dialog.dispose()
+        elif self.buttonStateHandler(methodName):
             return True
-        if self.handleButtonState(methodName):
+        elif self.tabbedButtonSwitchHandler(methodName):
             return True
-        if self.handleTabbedButtonSwitch(methodName):
-            return True   
-        return False
+        else:
+            return False
 
     def getSupportedMethodNames(self):
         return self.buttons
@@ -39,7 +62,7 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
     def disposing(self, event):
         pass
 
-    def handleTabbedButtonSwitch(self, methodName):
+    def tabbedButtonSwitchHandler(self, methodName):
         # Handling tabbed page buttons
         if methodName.startswith("tabbed"):
             if methodName == "tabbed_btBasic":
@@ -48,8 +71,8 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
             elif methodName == "tabbed_btAdvance":
                 self.dialog.Model.Step = 2
                 return True
-            
-    def handleButtonState(self, methodName):
+
+    def buttonStateHandler(self, methodName):
         # Check if the clicked button belongs to the current group and
         # set STATE=1 for the clicked button, and STATE=0 for all others in the same group
         # This ensures that only one button can be selected at a time within a group, 
@@ -59,3 +82,38 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
                 for btn_name in buttons:
                     self.dialog.getControl(btn_name).getModel().State = 1 if (btn_name == methodName) else 0
                 return True
+
+    def update_listboxes(self, dialog, index):
+        data_dict = listbox_data.LISTBOX_LIST[index]
+
+        main_icons = data_dict["MainIcon"]
+        first_icon = data_dict["FirstIconModifier"]
+        second_icon = data_dict["SecondIconModifier"]
+        echelon_mobility = data_dict["EchelonMobility"]
+        head_task_dummy = data_dict["HeadquartersTaskforceDummy"]
+
+        # Main Icon ListBox
+        ltbMainIcon = dialog.getControl("ltbMainIcon")
+        ltbMainIcon.removeItems(0, ltbMainIcon.getItemCount())
+        ltbMainIcon.addItems(tuple(main_icons), 0)
+        ltbMainIcon.selectItemPos(0, True)
+        # First Icon Modifier ListBox
+        ltbFirstIcon = dialog.getControl("ltbFirstIcon")
+        ltbFirstIcon.removeItems(0, ltbFirstIcon.getItemCount())
+        ltbFirstIcon.addItems(tuple(first_icon), 0)
+        ltbFirstIcon.selectItemPos(0, True)
+        # Second Icon Modifier ListBox
+        ltbSecondIcon = dialog.getControl("ltbSecondIcon")
+        ltbSecondIcon.removeItems(0, ltbSecondIcon.getItemCount())
+        ltbSecondIcon.addItems(tuple(second_icon), 0)
+        ltbSecondIcon.selectItemPos(0, True)
+        # Echelon/Mobility List Box
+        ltbEchelonMobility = dialog.getControl("ltbEchelonMobility")
+        ltbEchelonMobility.removeItems(0, ltbEchelonMobility.getItemCount())
+        ltbEchelonMobility.addItems(tuple(echelon_mobility), 0)
+        ltbEchelonMobility.selectItemPos(0, True)
+        # Headquarters/Taskforce/Dummy List Box
+        ltbHeadTaskDummy = dialog.getControl("ltbHeadTaskDummy")
+        ltbHeadTaskDummy.removeItems(0, ltbHeadTaskDummy.getItemCount())
+        ltbHeadTaskDummy.addItems(tuple(head_task_dummy), 0)
+        ltbHeadTaskDummy.selectItemPos(0, True)

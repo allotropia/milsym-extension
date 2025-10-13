@@ -66,11 +66,11 @@
   <dlg:text dlg:style-id="1" dlg:id="lbSymbolSet" dlg:tab-index="26" dlg:left="10" dlg:top="166" dlg:width="120" dlg:height="10" dlg:page="1" dlg:value="Symbol set" dlg:valign="center"/>
   <dlg:menulist dlg:id="ltbSymbolSet" dlg:tab-index="12" dlg:left="137" dlg:top="165" dlg:width="118" dlg:height="12" dlg:page="1" dlg:spin="true" dlg:linecount="8">
    <dlg:menupopup>
-    <dlg:menuitem dlg:value="Air" dlg:selected="true"/>
+    <dlg:menuitem dlg:value="Air"/>
     <dlg:menuitem dlg:value="Air missile"/>
     <dlg:menuitem dlg:value="Space"/>
     <dlg:menuitem dlg:value="Space Missile"/>
-    <dlg:menuitem dlg:value="Land unit"/>
+    <dlg:menuitem dlg:value="Land unit" dlg:selected="true"/>
     <dlg:menuitem dlg:value="Land civilian unit/Organization"/>
     <dlg:menuitem dlg:value="Land equipment"/>
     <dlg:menuitem dlg:value="Land installations"/>
@@ -87,6 +87,7 @@
     <dlg:menuitem dlg:value="Signals Intelligence - Subsurface"/>
     <dlg:menuitem dlg:value="Cyberspace"/>
    </dlg:menupopup>
+   <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:action_ltbSymbolSet" script:language="UNO"/>
   </dlg:menulist>
   <dlg:text dlg:style-id="1" dlg:id="lbMainIcon" dlg:tab-index="27" dlg:left="10" dlg:top="182" dlg:width="120" dlg:height="12" dlg:page="1" dlg:value="Main Icon" dlg:valign="center"/>
   <dlg:menulist dlg:style-id="1" dlg:id="ltbMainIcon" dlg:tab-index="13" dlg:left="137" dlg:top="182" dlg:width="118" dlg:height="12" dlg:page="1" dlg:spin="true" dlg:linecount="8"/>
