@@ -3,8 +3,8 @@
 import sys
 import unohelper
 import officehelper
-import tempfile
 import os
+import uno
 
 base_dir = os.path.dirname(__file__)
 if base_dir not in sys.path:
@@ -116,19 +116,16 @@ class MainJob(unohelper.Base, XJobExecutor):
             return
 
     def insertSvgGraphic(self, model, svg_data):
-        graphic_provider = self.ctx.ServiceManager.createInstanceWithContext(
-            "com.sun.star.graphic.GraphicProvider", self.ctx)
-
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.svg', delete=False) as temp_file:
-            temp_file.write(svg_data)
-            temp_svg_path = temp_file.name
         try:
-            from unohelper import systemPathToFileUrl
-            svg_url = systemPathToFileUrl(temp_svg_path)
-
-            media_properties = (PropertyValue("URL", 0, svg_url, 0),)
+            pipe = self.ctx.ServiceManager.createInstanceWithContext(
+                "com.sun.star.io.Pipe", self.ctx)
+            pipe.writeBytes(uno.ByteSequence(svg_data.encode('utf-8')))
+            pipe.flush()
+            pipe.closeOutput()
+            graphic_provider = self.ctx.ServiceManager.createInstanceWithContext(
+                "com.sun.star.graphic.GraphicProvider", self.ctx)
+            media_properties = (PropertyValue("InputStream", 0, pipe, 0),)
             graphic = graphic_provider.queryGraphic(media_properties)
-
             shape = model.createInstance("com.sun.star.drawing.GraphicObjectShape")
             shape.setPropertyValue("Graphic", graphic)
 
@@ -177,12 +174,8 @@ class MainJob(unohelper.Base, XJobExecutor):
                 current_page.add(shape)
             else:
                 print("Unsupported document type for graphic insertion")
-        finally:
-            # Clean up temporary file
-            try:
-                os.unlink(temp_svg_path)
-            except:
-                pass
+        except Exception as e:
+            print(f"Error inserting SVG graphic: {e}")
 
 # Starting from Python IDE
 def main():
