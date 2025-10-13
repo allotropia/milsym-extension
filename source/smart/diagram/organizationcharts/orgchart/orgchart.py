@@ -8,7 +8,6 @@ Python port of OrgChart.java
 """
 
 from ..organization_chart import OrganizationChart
-from ...data_of_diagram import DataOfDiagram
 from .orgchart_tree import OrgChartTree
 from .orgchart_tree_item import OrgChartTreeItem
 

@@ -12,8 +12,6 @@ if base_dir not in sys.path:
 
 from dialog_handler import DialogHandler
 from smart.controller import Controller
-from smart.gui import Gui
-from smart.diagram.organizationcharts.orgchart.orgchart import OrgChart
 from smart.diagram.data_of_diagram import DataOfDiagram
 
 from com.sun.star.awt import Size, Point
@@ -69,11 +67,7 @@ class MainJob(unohelper.Base, XJobExecutor):
 
         # Create controller and GUI instances (stub implementations)
         controller = Controller(None, self.ctx, self.desktop.getCurrentFrame())
-        gui = Gui()
-        
-        # Create organization chart
-        #org_chart = OrgChart(controller, gui, None)
-        
+
         # Create hierarchical data
         data = DataOfDiagram()
         data.add(0, "CEO")                    # Level 0 (root)
@@ -84,14 +78,14 @@ class MainJob(unohelper.Base, XJobExecutor):
         data.add(2, "QA Manager")               # Level 2 (under CTO)
         data.add(3, "Senior Developer")         # Level 3 (under Dev Manager)
         data.add(3, "Junior Developer")         # Level 3 (under Dev Manager)
-        
+
         print(f"Created data with {data.size()} items")
         data.print_data()
-        
+
         # Create the diagram (this calls stub methods)
         print("\nCreating diagram...")
         controller.create_diagram(data)
-        
+
     def insertSymbol(self, model, code):
         factory = self.ctx.getServiceManager().createInstanceWithContext(
             "com.sun.star.script.provider.MasterScriptProviderFactory", self.ctx)
@@ -176,7 +170,7 @@ class MainJob(unohelper.Base, XJobExecutor):
                 draw_page = draw_page_supplier.getDrawPage()
                 draw_page.add(shape_factory)
             # Impress/Draw
-            elif (model.supportsService("com.sun.star.presentation.PresentationDocument") or 
+            elif (model.supportsService("com.sun.star.presentation.PresentationDocument") or
                     model.supportsService("com.sun.star.drawing.DrawingDocument")):
                 controller = model.getCurrentController()
                 current_page = controller.getCurrentPage()

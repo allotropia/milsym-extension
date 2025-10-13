@@ -11,8 +11,6 @@ from abc import abstractmethod
 
 # Import base classes
 from ..diagram import Diagram
-from ..data_of_diagram import DataOfDiagram
-from ..scheme_definitions import SchemeDefinitions
 
 
 class OrganizationChart(Diagram):
