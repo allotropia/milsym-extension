@@ -7,12 +7,10 @@ OrgChart Tree Item class
 Python port of OrgChartTreeItem.java
 """
 
-from typing import List, Optional, TYPE_CHECKING
+from typing import List
 
 from ..organization_chart_tree_item import OrganizationChartTreeItem
 
-import uno
-from com.sun.star.drawing import XShape
 from com.sun.star.awt import Point, Size
 
 class OrgChartTreeItem(OrganizationChartTreeItem):

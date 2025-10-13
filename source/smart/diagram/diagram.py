@@ -7,13 +7,9 @@ Base Diagram class - stub implementation
 Python port of Diagram.java
 """
 
-from typing import Any, List, Optional, TYPE_CHECKING
 from abc import ABC, abstractmethod
 
 
-import uno
-from com.sun.star.drawing import XShape, XShapes
-from com.sun.star.drawing import XDrawPage
 from com.sun.star.awt import Point, Size
 
 class Diagram(ABC):
@@ -432,4 +428,3 @@ class Diagram(ABC):
     @abstractmethod
     def get_diagram_type_name(self) -> str:
         """Get diagram type name - to be implemented by subclasses"""
-        pass

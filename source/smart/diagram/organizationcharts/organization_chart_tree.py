@@ -7,13 +7,9 @@ Organization Chart Tree base class
 Python port of OrganizationChartTree.java
 """
 
-from typing import Any, List, Optional, TYPE_CHECKING
 from abc import ABC, abstractmethod
 
 
-import uno
-from com.sun.star.drawing import XShape, XShapes
-from com.sun.star.awt import Point, Size
 
 class OrganizationChartTree(ABC):
     """Base class for organization chart trees"""
@@ -45,27 +41,22 @@ class OrganizationChartTree(ABC):
     @abstractmethod
     def init_tree_items(self):
         """Initialize tree items - to be implemented by subclasses"""
-        pass
 
     @abstractmethod
     def get_first_child_shape(self, x_dad_shape):
         """Get first child shape - to be implemented by subclasses"""
-        pass
 
     @abstractmethod
     def get_last_child_shape(self, x_dad_shape):
         """Get last child shape - to be implemented by subclasses"""
-        pass
 
     @abstractmethod
     def get_first_sibling_shape(self, x_base_shape, dad):
         """Get first sibling shape - to be implemented by subclasses"""
-        pass
 
     @abstractmethod
     def refresh(self):
         """Refresh tree - to be implemented by subclasses"""
-        pass
 
     def get_org_chart(self):
         """Get organization chart reference"""
@@ -193,4 +184,3 @@ class OrganizationChartTree(ABC):
 
     def refresh_connector_props(self):
         """Refresh connector properties - can be overridden by subclasses"""
-        pass

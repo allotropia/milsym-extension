@@ -7,16 +7,11 @@ OrgChart class - Main organization chart implementation
 Python port of OrgChart.java
 """
 
-from typing import Any, Optional, TYPE_CHECKING
 from ..organization_chart import OrganizationChart
 from ...data_of_diagram import DataOfDiagram
 from .orgchart_tree import OrgChartTree
 from .orgchart_tree_item import OrgChartTreeItem
 
-import uno
-from com.sun.star.drawing import XShape
-from com.sun.star.frame import XFrame
-from com.sun.star.container import XNamed
 
 
 class OrgChart(OrganizationChart):

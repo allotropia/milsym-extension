@@ -2,7 +2,6 @@
 
 import os
 import sys
-import uno
 import unohelper
 from com.sun.star.awt import XDialogEventHandler
 
@@ -75,7 +74,7 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
     def buttonStateHandler(self, methodName):
         # Check if the clicked button belongs to the current group and
         # set STATE=1 for the clicked button, and STATE=0 for all others in the same group
-        # This ensures that only one button can be selected at a time within a group, 
+        # This ensures that only one button can be selected at a time within a group,
         # and it does not affect the selection of buttons in other groups.
         for group_name, buttons in self.buttonGroups.items():
             if methodName.startswith(group_name):

@@ -7,17 +7,13 @@ Organization Chart base class
 Python port of OrganizationChart.java
 """
 
-from typing import Any, Optional, TYPE_CHECKING
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 
 # Import base classes
 from ..diagram import Diagram
 from ..data_of_diagram import DataOfDiagram
 from ..scheme_definitions import SchemeDefinitions
 
-import uno
-from com.sun.star.drawing import XShape
-from com.sun.star.frame import XFrame
 
 
 class OrganizationChart(Diagram):
@@ -129,7 +125,6 @@ class OrganizationChart(Diagram):
     def set_default_props(self):
         """Set default properties"""
         # Stub implementation
-        pass
 
     def get_shape_width(self) -> int:
         """Get shape width ratio"""
@@ -159,7 +154,6 @@ class OrganizationChart(Diagram):
     def set_hor_level_of_control_shape(self, control_shape, level: int):
         """Set horizontal level of control shape"""
         # Stub implementation
-        pass
 
     def get_hor_level_of_control_shape(self, control_shape) -> int:
         """Get horizontal level of control shape"""
@@ -169,17 +163,14 @@ class OrganizationChart(Diagram):
     def remove_hor_level_props_of_control_shape(self, control_shape):
         """Remove horizontal level properties of control shape"""
         # Stub implementation
-        pass
 
     def set_control_shape_props(self, control_shape):
         """Set control shape properties"""
         # Stub implementation
-        pass
 
     def set_color_mode_and_style_of_control_shape(self, control_shape):
         """Set color mode and style of control shape"""
         # Stub implementation
-        pass
 
     def get_top_shape_id(self) -> int:
         """Get top shape ID"""
@@ -189,7 +180,6 @@ class OrganizationChart(Diagram):
     def clear_empty_diagram_and_recreate(self):
         """Clear empty diagram and recreate"""
         # Stub implementation
-        pass
 
     def select_shapes(self):
         """Select all shapes in the organization chart"""
@@ -198,17 +188,14 @@ class OrganizationChart(Diagram):
     @abstractmethod
     def init_diagram_tree(self, diagram_tree):
         """Initialize diagram tree - to be implemented by subclasses"""
-        pass
 
     @abstractmethod
     def get_diagram_tree(self):
         """Get diagram tree - to be implemented by subclasses"""
-        pass
 
     @abstractmethod
     def add_shape(self):
         """Add shape - to be implemented by subclasses"""
-        pass
 
     def create_diagram(self, data=None):
         """Create diagram - base implementation"""

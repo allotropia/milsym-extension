@@ -5,7 +5,6 @@ import unohelper
 import officehelper
 import tempfile
 import os
-import uno
 
 base_dir = os.path.dirname(__file__)
 if base_dir not in sys.path:

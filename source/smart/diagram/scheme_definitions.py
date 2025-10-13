@@ -7,7 +7,6 @@ Color scheme definitions
 Python port of SchemeDefinitions.java
 """
 
-from typing import List, Tuple
 
 
 class SchemeDefinitions:

@@ -7,20 +7,8 @@ Controller class for LibreOffice extension
 Python port of Controller.java
 """
 
-import uno
 import unohelper
-from com.sun.star.awt import Point, Size
-from com.sun.star.beans import Property, PropertyValue, UnknownPropertyException, XPropertySet
-from com.sun.star.container import NoSuchElementException, XEnumeration, XEnumerationAccess, XNamed
-from com.sun.star.document import XExporter, XFilter
-from com.sun.star.drawing import XDrawPage, XDrawPages, XDrawPagesSupplier, XDrawView, XShape, XShapes
-from com.sun.star.frame import XController, XFrame, XStorable
-from com.sun.star.lang import EventObject, IllegalArgumentException, IndexOutOfBoundsException
-from com.sun.star.lang import Locale, WrappedTargetException, XComponent, XLocalizable
-from com.sun.star.lang import XMultiComponentFactory, XServiceInfo
-from com.sun.star.text import XText, XTextContent, XTextRange
-from com.sun.star.uno import XComponentContext
-from com.sun.star.view import XSelectionChangeListener, XSelectionSupplier
+from com.sun.star.view import XSelectionChangeListener
 
 from smart.diagram.organizationcharts.orgchart.orgchart import OrgChart
 
@@ -401,7 +389,6 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                 if (is_org_chart and selected_shape_name.endswith("RectangleShape0")):
                     if self.get_diagram() is not None:
                         self.get_diagram().select_shapes()
-                        pass
 
                 # GUI control logic (commented out until GUI is implemented)
                 # if self.get_gui() is not None:
@@ -426,7 +413,6 @@ class Controller(unohelper.Base, XSelectionChangeListener):
         # TODO: Implement when GUI is available
         # if self.get_gui() is not None:
         #     self.get_gui().set_visible_control_dialog(False)
-        pass
 
     def is_only_simple_item_selected(self):
         """Check if only simple item is selected"""
@@ -436,7 +422,6 @@ class Controller(unohelper.Base, XSelectionChangeListener):
     def set_text_field_of_control_dialog(self):
         """Set text field of control dialog"""
         # TODO: Implement when GUI is available
-        pass
 
     # TODO: Add remaining methods from the Java implementation
     # - create_diagram methods for different diagram types

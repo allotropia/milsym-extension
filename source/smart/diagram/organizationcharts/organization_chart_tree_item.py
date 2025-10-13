@@ -7,12 +7,8 @@ Organization Chart Tree Item base class
 Python port of OrganizationChartTreeItem.java
 """
 
-from typing import Any, Optional, TYPE_CHECKING
 from abc import ABC
 
-import uno
-from com.sun.star.drawing import XShape
-from com.sun.star.awt import Point, Size
 
 class OrganizationChartTreeItem(ABC):
     """Base class for organization chart tree items"""
@@ -73,7 +69,6 @@ class OrganizationChartTreeItem(ABC):
 
     def convert_tree_items(self, tree_item):
         """Convert tree items - to be overridden in subclasses"""
-        pass
 
     def set_diagram_tree(self, diagram_tree):
         """Set diagram tree reference"""
@@ -81,19 +76,15 @@ class OrganizationChartTreeItem(ABC):
 
     def init_tree_items(self):
         """Initialize tree items - to be overridden in subclasses"""
-        pass
 
     def set_positions_of_items(self):
         """Set positions of items - to be overridden in subclasses"""
-        pass
 
     def set_pos_of_rect(self):
         """Set position of rectangle - to be overridden in subclasses"""
-        pass
 
     def set_measure_props(self):
         """Set measure properties - to be overridden in subclasses"""
-        pass
 
     def is_dad(self) -> bool:
         """Check if this item has a parent"""
@@ -174,7 +165,6 @@ class OrganizationChartTreeItem(ABC):
 
     def set_pos(self, pos: float):
         """Set position - to be overridden in subclasses"""
-        pass
 
     def get_pos(self) -> float:
         """Get position"""
