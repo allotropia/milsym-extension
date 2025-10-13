@@ -11,8 +11,6 @@ from ..organization_chart_tree import OrganizationChartTree
 from .orgchart_tree_item import OrgChartTreeItem
 
 
-
-
 class OrgChartTree(OrganizationChartTree):
     """Organization chart tree implementation"""
 

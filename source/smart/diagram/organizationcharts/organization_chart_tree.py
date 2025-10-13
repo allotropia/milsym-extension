@@ -10,7 +10,6 @@ Python port of OrganizationChartTree.java
 from abc import ABC, abstractmethod
 
 
-
 class OrganizationChartTree(ABC):
     """Base class for organization chart trees"""
 

@@ -13,7 +13,6 @@ from .orgchart_tree import OrgChartTree
 from .orgchart_tree_item import OrgChartTreeItem
 
 
-
 class OrgChart(OrganizationChart):
     """Organization chart implementation"""
 

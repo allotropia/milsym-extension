@@ -8,7 +8,6 @@ Python port of SchemeDefinitions.java
 """
 
 
-
 class SchemeDefinitions:
     """Color scheme definitions for diagrams"""
 

@@ -9,7 +9,6 @@ Python port of Diagram.java
 
 from abc import ABC, abstractmethod
 
-
 from com.sun.star.awt import Point, Size
 
 class Diagram(ABC):
