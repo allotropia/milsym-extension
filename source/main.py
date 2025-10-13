@@ -129,19 +129,19 @@ class MainJob(unohelper.Base, XJobExecutor):
             media_properties = (PropertyValue("URL", 0, svg_url, 0),)
             graphic = graphic_provider.queryGraphic(media_properties)
 
-            shape_factory = model.createInstance("com.sun.star.drawing.GraphicObjectShape")
-            shape_factory.setPropertyValue("Graphic", graphic)
+            shape = model.createInstance("com.sun.star.drawing.GraphicObjectShape")
+            shape.setPropertyValue("Graphic", graphic)
 
             # TODO: Make this dependent on actual SVG dimensions
             # (parse width and height properties of the svg element)
             shape_size = Size()
             shape_size.Height = 930
             shape_size.Width = 4000
-            shape_factory.setSize(shape_size)
+            shape.setSize(shape_size)
 
             # TODO: Set default anchoring for text documents
             #try:
-            #    shape_factory.setPropertyValue("AnchorType", TextContentAnchorType.AT_PARAGRAPH)
+            #    shape.setPropertyValue("AnchorType", TextContentAnchorType.AT_PARAGRAPH)
             #except:
             #    pass  # Not all document types support anchoring
 
@@ -151,30 +151,30 @@ class MainJob(unohelper.Base, XJobExecutor):
                 view_cursor_supplier = controller
                 cursor = view_cursor_supplier.getViewCursor()
                 text = cursor.getText()
-                text.insertTextContent(cursor, shape_factory, True)
+                text.insertTextContent(cursor, shape, True)
             # Calc
             elif model.supportsService("com.sun.star.sheet.SpreadsheetDocument"):
                 current_selection = model.getCurrentSelection()
                 try:
                     cell_position = current_selection.getPropertyValue("Position")
-                    shape_factory.setPosition(cell_position)
+                    shape.setPosition(cell_position)
                 except:
                     # Default position if we can't get cell position
                     default_pos = Point()
                     default_pos.X = 1000
                     default_pos.Y = 1000
-                    shape_factory.setPosition(default_pos)
+                    shape.setPosition(default_pos)
                 controller = model.getCurrentController()
                 active_sheet = controller.getActiveSheet()
                 draw_page_supplier = active_sheet
                 draw_page = draw_page_supplier.getDrawPage()
-                draw_page.add(shape_factory)
+                draw_page.add(shape)
             # Impress/Draw
             elif (model.supportsService("com.sun.star.presentation.PresentationDocument") or
                     model.supportsService("com.sun.star.drawing.DrawingDocument")):
                 controller = model.getCurrentController()
                 current_page = controller.getCurrentPage()
-                current_page.add(shape_factory)
+                current_page.add(shape)
             else:
                 print("Unsupported document type for graphic insertion")
         finally:
