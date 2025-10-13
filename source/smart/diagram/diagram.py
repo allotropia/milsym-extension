@@ -412,17 +412,17 @@ class Diagram(ABC):
     def set_group_size(self):
         """Set group size based on page properties"""
         # Calculate available drawing area
-        available_width = (self._page_props.Width -
-                          self._page_props.BorderLeft -
-                          self._page_props.BorderRight)
-        available_height = (self._page_props.Height -
-                           self._page_props.BorderTop -
-                           self._page_props.BorderBottom)
-
-        # Use minimum of width and height for group size calculation
-        min_dimension = min(available_width, available_height)
-        self._draw_area_width = available_width
-        self._draw_area_height = available_height
+        if self._x_draw_page is None:
+            self._x_draw_page = self.get_controller().get_current_page()
+        if self._page_props is None:
+            self.adjust_page_props()
+        if self._page_props is not None:
+            self._draw_area_width = (self._page_props.Width -
+                                     self._page_props.BorderLeft -
+                                     self._page_props.BorderRight)
+            self._draw_area_height = (self._page_props.Height -
+                                      self._page_props.BorderTop -
+                                      self._page_props.BorderBottom)
 
     @abstractmethod
     def get_diagram_type_name(self) -> str:
