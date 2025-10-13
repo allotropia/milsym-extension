@@ -2,3 +2,4 @@
 *.py[codz]
 __pycache__/
 *$py.class
+.vscode
