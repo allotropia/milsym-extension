@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: MPL-2.0
+# This file incorporates work covered by the following license notice:
+#   SPDX-License-Identifier: LGPL-3.0-only
+
 """
 Controller class for LibreOffice extension
 Python port of Controller.java

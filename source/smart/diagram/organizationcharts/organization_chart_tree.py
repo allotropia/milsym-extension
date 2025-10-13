@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: MPL-2.0
+# This file incorporates work covered by the following license notice:
+#   SPDX-License-Identifier: LGPL-3.0-only
+
 """
 Organization Chart Tree base class
 Python port of OrganizationChartTree.java
