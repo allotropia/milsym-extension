@@ -48,7 +48,7 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
             self.update_listboxes(dialog, selected_index)
             return True
         elif methodName == "dialog_btCancel":
-            self.dialog.dispose()
+            dialog.endExecute()
         elif self.buttonStateHandler(methodName):
             return True
         elif self.tabbedButtonSwitchHandler(methodName):
