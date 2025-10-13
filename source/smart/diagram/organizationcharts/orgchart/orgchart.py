@@ -9,26 +9,17 @@ from ...data_of_diagram import DataOfDiagram
 from .orgchart_tree import OrgChartTree
 from .orgchart_tree_item import OrgChartTreeItem
 
-if TYPE_CHECKING:
-    try:
-        import uno
-        from com.sun.star.drawing import XShape
-        from com.sun.star.frame import XFrame
-        from com.sun.star.container import XNamed
-    except ImportError:
-        XShape = 'Any'
-        XFrame = 'Any'
-        XNamed = 'Any'
-else:
-    XShape = 'Any'
-    XFrame = 'Any'
-    XNamed = 'Any'
+import uno
+from com.sun.star.drawing import XShape
+from com.sun.star.frame import XFrame
+from com.sun.star.container import XNamed
 
 
 class OrgChart(OrganizationChart):
     """Organization chart implementation"""
     
     def __init__(self, controller, gui, x_frame):
+        print("OrgChart::__init__ called")
         super().__init__(controller, gui, x_frame)
         self._diagram_tree = None
         
@@ -42,6 +33,7 @@ class OrgChart(OrganizationChart):
     
     def init_diagram_tree(self, diagram_tree):
         """Initialize diagram tree"""
+        #breakpoint()
         super().init_diagram()
         self._diagram_tree = OrgChartTree(self, diagram_tree)
     
@@ -54,6 +46,7 @@ class OrgChart(OrganizationChart):
         return "OrganizationDiagram"
     
     def create_diagram(self, datas):
+        print("Creating organization chart diagram orgchart.py ...")
         """Create diagram from data"""
         if isinstance(datas, int):
             # Create simple diagram with n shapes
@@ -62,6 +55,7 @@ class OrgChart(OrganizationChart):
         
         # Create diagram from DataOfDiagram
         last_hor_level = OrgChartTree.LAST_HOR_LEVEL
+        print("last_hor_level:", last_hor_level)
         
         if not datas.is_empty():
             super().create_diagram(datas)
@@ -101,7 +95,7 @@ class OrgChart(OrganizationChart):
                 
                 self.set_move_protect_of_shape(x_start_shape)
                 self.set_color_prop(self._LO_ORANGES[2])
-                self.set_shape_properties(x_start_shape, "RectangleShape", True)
+                self.set_shape_properties(x_start_shape, "RectangleShape")
                 
                 if x_start_shape is not None:
                     self.get_controller().set_selected_shape(x_start_shape)
@@ -134,7 +128,7 @@ class OrgChart(OrganizationChart):
                         i_color_level = 4
                     
                     self.set_color_prop(self._LO_COLORS_2[i_color][i_color_level])
-                    self.set_shape_properties(x_shape, "RectangleShape", True)
+                    self.set_shape_properties(x_shape, "RectangleShape")
                     self._diagram_tree.add_to_rectangles(x_shape)
                     
                     # Determine parent item based on level
@@ -241,7 +235,7 @@ class OrgChart(OrganizationChart):
             self.set_text_of_shape(x_start_shape, " ")
             self.set_move_protect_of_shape(x_start_shape)
             self.set_color_prop(self._ORG_CHART_COLORS[0])
-            self.set_shape_properties(x_start_shape, "RectangleShape", True)
+            self.set_shape_properties(x_start_shape, "RectangleShape")
             
             # Create child shapes
             x_coord = self._page_props.border_left + self._half_diff
@@ -258,7 +252,7 @@ class OrgChart(OrganizationChart):
                 self.set_text_of_shape(x_rect_shape, " ")
                 self.set_move_protect_of_shape(x_rect_shape)
                 self.set_color_prop(self._ORG_CHART_COLORS[(i - 1) % 8])
-                self.set_shape_properties(x_rect_shape, "RectangleShape", True)
+                self.set_shape_properties(x_rect_shape, "RectangleShape")
                 
                 # Create connector
                 x_connector_shape = self.create_shape("ConnectorShape", i)
@@ -361,7 +355,7 @@ class OrgChart(OrganizationChart):
                             # Set shape properties
                             self.set_text_of_shape(x_rectangle_shape, " ")
                             self.set_move_protect_of_shape(x_rectangle_shape)
-                            self.set_shape_properties(x_rectangle_shape, "RectangleShape", True)
+                            self.set_shape_properties(x_rectangle_shape, "RectangleShape")
                             
                             # Create connector if not root level
                             if top_shape_id > 1:

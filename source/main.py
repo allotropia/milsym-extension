@@ -12,7 +12,8 @@ if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
 
 from dialog_handler import DialogHandler
-from smart.controller import Controller, Gui
+from smart.controller import Controller
+from smart.gui import Gui
 from smart.diagram.organizationcharts.orgchart.orgchart import OrgChart
 from smart.diagram.data_of_diagram import DataOfDiagram
 
@@ -39,12 +40,12 @@ class MainJob(unohelper.Base, XJobExecutor):
     def trigger(self, args):
         desktop = self.ctx.ServiceManager.createInstanceWithContext(
             "com.sun.star.frame.Desktop", self.ctx)
-        model = desktop.getCurrentComponent()
+        self.model = desktop.getCurrentComponent()
 
         if args == "symbolDialog":
             self.onSymbolDialog()
         if args == "testSymbol":
-            self.insertSymbol(model, "sfgpewrh--mt")
+            self.insertSymbol(self.model, "sfgpewrh--mt")
         if args == "orgChart":
             self.onOrgChart()
 
@@ -66,13 +67,13 @@ class MainJob(unohelper.Base, XJobExecutor):
     def onOrgChart(self):
         """Create a simple organization chart"""
         print("Creating simple organization chart...")
-        
+
         # Create controller and GUI instances (stub implementations)
-        controller = Controller()
+        controller = Controller(None, self.ctx, self.desktop.getCurrentFrame())
         gui = Gui()
         
         # Create organization chart
-        org_chart = OrgChart(controller, gui, None)
+        #org_chart = OrgChart(controller, gui, None)
         
         # Create hierarchical data
         data = DataOfDiagram()
@@ -90,12 +91,8 @@ class MainJob(unohelper.Base, XJobExecutor):
         
         # Create the diagram (this calls stub methods)
         print("\nCreating diagram...")
-        org_chart.create_diagram(data)
+        controller.create_diagram(data)
         
-        print("Organization chart creation completed!")
-        print("Note: This used stub implementations. For real LibreOffice integration,")
-        print("see UNO_INTEGRATION_GUIDE.py for implementation details.")
-
     def insertSymbol(self, model, code):
         factory = self.ctx.getServiceManager().createInstanceWithContext(
             "com.sun.star.script.provider.MasterScriptProviderFactory", self.ctx)

@@ -242,8 +242,6 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
     
     def set_pos_of_rect(self):
         """Set position of rectangle"""
-        last_hor_level = getattr(self._diagram_tree, 'LAST_HOR_LEVEL', 2)
-        
         x_coord = OrgChartTreeItem._group_pos_x + int((OrgChartTreeItem._shape_width + OrgChartTreeItem._hor_space) * self.get_pos())
         y_coord = OrgChartTreeItem._group_pos_y + (OrgChartTreeItem._shape_height + OrgChartTreeItem._ver_space) * self.get_level()
         
@@ -253,46 +251,10 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
             else:
                 y_coord = OrgChartTreeItem._group_pos_y + (OrgChartTreeItem._shape_height + OrgChartTreeItem._ver_space) * (self.get_level() - 1)
         
+        last_hor_level = getattr(self._diagram_tree, 'LAST_HOR_LEVEL', 2)
         if self._level > last_hor_level:
-            # Adjust for vertical layout
-            # Create Point-like object (stub)
-            class Point:
-                def __init__(self):
-                    self.X = 0
-                    self.Y = 0
-            
-            class Size:
-                def __init__(self):
-                    self.Width = 0
-                    self.Height = 0
-            
-            point = Point()
-            point.X = int(x_coord + OrgChartTreeItem._shape_width * 0.1)
-            point.Y = y_coord
-            self.set_position(point)
-            
-            size = Size()
-            size.Width = int(OrgChartTreeItem._shape_width * 0.9)
-            size.Height = OrgChartTreeItem._shape_height
-            self.set_size(size)
+            self.set_position(Point(X=int(x_coord + OrgChartTreeItem._shape_width * 0.1), Y=y_coord))
+            self.set_size(Size(Width=int(OrgChartTreeItem._shape_width * 0.9), Height=OrgChartTreeItem._shape_height))
         else:
-            # Create Point-like object (stub)
-            class Point:
-                def __init__(self):
-                    self.X = 0
-                    self.Y = 0
-            
-            class Size:
-                def __init__(self):
-                    self.Width = 0
-                    self.Height = 0
-                    
-            point = Point()
-            point.X = x_coord
-            point.Y = y_coord
-            self.set_position(point)
-            
-            size = Size()
-            size.Width = OrgChartTreeItem._shape_width
-            size.Height = OrgChartTreeItem._shape_height
-            self.set_size(size)
+            self.set_position(Point(X=x_coord, Y=y_coord))
+            self.set_size(Size(Width=OrgChartTreeItem._shape_width, Height=OrgChartTreeItem._shape_height))
