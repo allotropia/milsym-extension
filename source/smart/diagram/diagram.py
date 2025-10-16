@@ -66,10 +66,8 @@ class Diagram(ABC):
         return self._x_shapes
 
     def set_draw_area(self):
-        """Set drawing area dimensions"""
-        # Simplified implementation
-        self._draw_area_width = 10000  # Default width
-        self._draw_area_height = 7000  # Default height
+        """Set drawing area dimensions - to be overridden in subclasses"""
+        pass
 
     def create_shape(self, shape_type: str, shape_id: int, x: int = 0, y: int = 0, width: int = 0, height: int = 0):
         print(f"Creating {shape_type} with ID {shape_id} at ({x}, {y}) size ({width}, {height})")

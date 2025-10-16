@@ -12,6 +12,8 @@ from abc import abstractmethod
 # Import base classes
 from ..diagram import Diagram
 
+from com.sun.star.awt import Size, Point
+
 #from com.sun.star.drawing import LineStyle
 # from com.sun.star.drawing.ConnectorType import STANDARD as CONN_STANDARD_VALUE
 # from com.sun.star.drawing.ConnectorType import LINE as CONN_LINE_VALUE
@@ -195,9 +197,48 @@ class OrganizationChart(Diagram):
 
         return i_top_shape_id
 
+    def set_draw_area(self):
+        """Set draw area for organization chart with shadow allowance"""
+
+        try:
+            # Allow horizontal place for shadow properties
+            self.page_props.BorderTop += (Diagram.SHADOW_DIST1 + 100)
+            self._draw_area_width -= (2 * Diagram.SHADOW_DIST1 + 100)
+            self._draw_area_height -= (Diagram.SHADOW_DIST1 + 100)
+
+            origin_gs_width = self._draw_area_width
+
+            if (self._draw_area_width / self._group_width) <= (self._draw_area_height / self._group_height):
+                self._draw_area_height = self._draw_area_width * self._group_height // self._group_width
+            else:
+                self._draw_area_width = self._draw_area_height * self._group_width // self._group_height
+
+            # Set new size of group shape for organigram
+            self._x_group_shape.setSize(Size(self._draw_area_width, self._draw_area_height))
+
+            self._half_diff = 0
+            if origin_gs_width > self._draw_area_width:
+                self._half_diff = (origin_gs_width - self._draw_area_width) // 2
+
+            self._half_diff += Diagram.SHADOW_DIST1
+            self._x_group_shape.setPosition(
+                Point(self.page_props.BorderLeft + self._half_diff, self.page_props.BorderTop)
+            )
+        except Exception as ex:
+            print(f"Error setting draw area: {ex}")
+
     def clear_empty_diagram_and_recreate(self):
         """Clear empty diagram and recreate"""
-        # Stub implementation
+        try:
+            if self._x_shapes is not None:
+                x_shape = None
+                for i in range(self._x_shapes.getCount()):
+                    x_shape = self._x_shapes.getByIndex(i)
+                    if x_shape is not None:
+                        self._x_shapes.remove(x_shape)
+            self.create_diagram(1)
+        except Exception as ex:
+            print(f"Error clearing and recreating diagram: {ex}")
 
     def select_shapes(self):
         """Select all shapes in the organization chart"""
