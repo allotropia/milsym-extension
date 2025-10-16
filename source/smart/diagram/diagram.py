@@ -90,6 +90,10 @@ class Diagram(ABC):
 
         return x_shape
 
+    def remove_shape(self):
+        """Remove shape - to be overridden in subclasses"""
+        pass
+
     def set_text_of_shape(self, shape, text: str):
         """Set text content of a shape"""
         print(f"Setting text '{text}' on shape")

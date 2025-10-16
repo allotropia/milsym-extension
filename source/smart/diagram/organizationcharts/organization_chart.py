@@ -358,6 +358,78 @@ class OrganizationChart(Diagram):
     def add_shape(self):
         """Add shape - to be implemented by subclasses"""
 
+    def remove_shape(self, x_selected_shape=None):
+        """Remove shape from organization chart"""
+        if x_selected_shape is None:
+            # No specific shape provided, remove all selected shapes
+            x_selected_shapes = self.get_controller().get_selected_shapes()
+            x_shape = None
+            try:
+                if x_selected_shapes is not None:
+                    for i in range(x_selected_shapes.getCount()):
+                        x_shape = x_selected_shapes.getByIndex(i)
+                        if x_shape is not None:
+                            self.remove_shape(x_shape)
+            except Exception as ex:
+                print(f"Error removing shapes: {ex}")
+        else:
+            # Remove specific shape
+            if x_selected_shape is not None:
+                selected_shape_name = x_selected_shape.getName()
+                if "RectangleShape" in selected_shape_name and "RectangleShape0" not in selected_shape_name:
+
+                    if selected_shape_name.endswith("RectangleShape1"):
+                        title = self.get_gui().get_dialog_property_value("Strings", "RoutShapeRemoveError.Title")
+                        message = self.get_gui().get_dialog_property_value("Strings", "RoutShapeRemoveError.Message")
+                        self.get_gui().show_message_box(title, message)
+                    else:
+                        # Clear everything under the item in the tree
+                        selected_item = self.get_diagram_tree().get_tree_item(x_selected_shape)
+
+                        no_item = False
+                        dad_item = selected_item.get_dad()
+
+                        if selected_item == dad_item.get_first_child():
+                            if selected_item.get_first_sibling() is not None:
+                                dad_item.set_first_child(selected_item.get_first_sibling())
+                            else:
+                                dad_item.set_first_child(None)
+                                no_item = True
+                        else:
+                            previous_sibling = self.get_diagram_tree().get_previous_sibling(selected_item)
+                            if previous_sibling is not None:
+                                if selected_item.get_first_sibling() is not None:
+                                    previous_sibling.set_first_sibling(selected_item.get_first_sibling())
+                                else:
+                                    previous_sibling.set_first_sibling(None)
+
+                        x_dad_shape = selected_item.get_dad().get_rectangle_shape()
+
+                        if selected_item.get_first_child() is not None:
+                            selected_item.get_first_child().remove_items()
+
+                        x_conn_shape = self.get_diagram_tree().get_dad_connector_shape(x_selected_shape)
+                        if x_conn_shape is not None:
+                            self.get_diagram_tree().remove_from_connectors(x_conn_shape)
+                            self._x_shapes.remove(x_conn_shape)
+
+                        self.get_diagram_tree().remove_from_rectangles(x_selected_shape)
+                        self._x_shapes.remove(x_selected_shape)
+                        self.set_null_selected_item(selected_item)
+
+                        if (self.is_hidden_root_element_prop() and
+                            self.get_diagram_tree().get_root_item().get_rectangle_shape() == x_dad_shape):
+                            if no_item:
+                                self.get_diagram_tree().get_root_item().hide_element()
+                                self.set_hidden_root_element_prop(False)
+                                self.get_controller().set_selected_shape(x_dad_shape)
+                            else:
+                                self.get_controller().set_selected_shape(
+                                    self.get_diagram_tree().get_root_item().get_first_child().get_rectangle_shape()
+                                )
+                        else:
+                            self.get_controller().set_selected_shape(x_dad_shape)
+
     def create_diagram(self, data=None):
         """Create diagram - base implementation"""
         print("Creating organization chart diagram...")
