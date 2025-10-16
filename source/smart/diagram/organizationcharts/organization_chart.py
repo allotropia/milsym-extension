@@ -12,6 +12,12 @@ from abc import abstractmethod
 # Import base classes
 from ..diagram import Diagram
 
+#from com.sun.star.drawing import LineStyle
+# from com.sun.star.drawing.ConnectorType import STANDARD as CONN_STANDARD_VALUE
+# from com.sun.star.drawing.ConnectorType import LINE as CONN_LINE_VALUE
+# from com.sun.star.drawing.ConnectorType import LINES as CONN_LINES_VALUE
+# from com.sun.star.drawing.ConnectorType import CURVE as CONN_CURVE_VALUE
+
 
 class OrganizationChart(Diagram):
     """Base class for organization charts"""
@@ -171,8 +177,23 @@ class OrganizationChart(Diagram):
 
     def get_top_shape_id(self) -> int:
         """Get top shape ID"""
-        # Stub implementation
-        return 10
+        i_top_shape_id = -1
+        x_curr_shape = None
+        curr_shape_name = ""
+        shape_id = 0
+
+        try:
+            for i in range(self._x_shapes.getCount()):
+                x_curr_shape = self._x_shapes.getByIndex(i)
+                curr_shape_name = self.get_shape_name(x_curr_shape)
+                if "RectangleShape" in curr_shape_name:
+                    shape_id = self.get_controller().get_shape_id(curr_shape_name)
+                    if shape_id > i_top_shape_id:
+                        i_top_shape_id = shape_id
+        except Exception as ex:
+            print(f"Error getting top shape ID: {ex}")
+
+        return i_top_shape_id
 
     def clear_empty_diagram_and_recreate(self):
         """Clear empty diagram and recreate"""
@@ -181,6 +202,108 @@ class OrganizationChart(Diagram):
     def select_shapes(self):
         """Select all shapes in the organization chart"""
         self.get_controller().set_selected_shape(self._x_shapes)
+
+    def init_properties(self):
+        """Initialize properties from control and root shapes"""
+        x_control_shape = self.get_diagram_tree().get_control_shape()
+        x_root_shape = self.get_diagram_tree().get_root_item().get_rectangle_shape()
+        if x_control_shape is not None and x_root_shape is not None:
+            self.init_properties_from_shapes(x_control_shape, x_root_shape)
+            self.init_root_element_hidden_property()
+
+    def init_properties_from_shapes(self, x_control_shape, x_root_shape):
+        """Initialize properties from control and root shapes"""
+        self.set_default_props()
+        # self.init_color_mode_and_style()
+
+        #try:
+            # Get root shape properties
+            # if self.is_simple_color_mode():
+            #     fill_color = x_root_shape.getPropertyValue("FillColor")
+            #     self.set_color_prop(fill_color)
+
+            # if self.is_gradient_color_mode():
+            #     a_gradient = x_root_shape.getPropertyValue("FillGradient")
+            #     self.set_start_color_prop(a_gradient.StartColor)
+            #     self.set_end_color_prop(a_gradient.EndColor)
+            #     if a_gradient.Angle == 900:
+            #         self.set_gradient_direction_prop(Diagram.HORIZONTAL)
+
+            # if self.is_color_theme_gradient_mode():
+            #     self.set_color_theme_gradient_colors()
+            #     # self.set_shapes_line_width_prop(Diagram.LINE_WIDTH200)
+            #     self.set_rounded_prop(Diagram.NULL_ROUNDED)
+
+            # Handle style property
+            # if self.get_style_prop() == OrganizationChart.DEFAULT:
+            #     pass
+
+            # if self.get_style_prop() == OrganizationChart.WITHOUT_OUTLINE:
+            #     self.set_outline_prop(False)
+
+            # if self.get_style_prop() == OrganizationChart.NOT_ROUNDED:
+            #     self.set_rounded_prop(Diagram.NULL_ROUNDED)
+
+            # if self.get_style_prop() == OrganizationChart.WITH_SHADOW:
+            #     self.set_shadow_prop(True)
+
+            # if self.get_style_prop() == OrganizationChart.USER_DEFINE:
+            #     line_style = x_root_shape.getPropertyValue("LineStyle")
+            #     if line_style == LineStyle.NONE:
+            #         self.set_outline_prop(False)
+
+            #     line_width = x_root_shape.getPropertyValue("LineWidth")
+            #     self.set_shapes_line_width_prop(line_width)
+
+            #     corner_radius = x_root_shape.getPropertyValue("CornerRadius")
+            #     if corner_radius < 200:
+            #         self.set_rounded_prop(Diagram.NULL_ROUNDED)
+            #     elif corner_radius < 600:
+            #         self.set_rounded_prop(Diagram.MEDIUM_ROUNDED)
+            #     else:
+            #         self.set_rounded_prop(Diagram.EXTRA_ROUNDED)
+
+            #     shadow = x_root_shape.getPropertyValue("Shadow")
+            #     if shadow:
+            #         self.set_shadow_prop(True)
+
+            # self.set_font_property_values()
+
+            # Get text color from root shape
+            # x_text = x_root_shape
+            # x_text_cursor = x_text.createTextCursor()
+            # text_color = x_text_cursor.getPropertyValue("CharColor")
+            # self.set_text_color_prop(text_color)
+
+            # """ if self.is_shown_connectors_prop():
+            #     x_conn_shape = self.get_roots_connector()
+
+            #     connectors_line_width = x_conn_shape.getPropertyValue("LineWidth")
+            #     self.set_connectors_line_width_prop(connectors_line_width)
+
+            #     connector_color = x_conn_shape.getPropertyValue("LineColor")
+            #     self.set_connector_color_prop(connector_color)
+
+            #     edge_kind = x_conn_shape.getPropertyValue("EdgeKind")
+            #     if edge_kind.value == CONN_STANDARD_VALUE:
+            #         self.set_connector_type_prop(Diagram.CONN_STANDARD)
+            #     elif edge_kind.value == CONN_LINE_VALUE:
+            #         self.set_connector_type_prop(Diagram.CONN_LINE)
+            #     elif edge_kind.value == CONN_LINES_VALUE:
+            #         self.set_connector_type_prop(Diagram.CONN_STRAIGHT)
+            #     elif edge_kind.value == CONN_CURVE_VALUE:
+            #         self.set_connector_type_prop(Diagram.CONN_CURVED)
+
+            #     line_start_name = x_conn_shape.getPropertyValue("LineStartName")
+            #     if line_start_name == "Arrow":
+            #         self.set_connector_start_arrow_prop(True)
+
+            #     line_end_name = x_conn_shape.getPropertyValue("LineEndName")
+            #     if line_end_name == "Arrow":
+            #         self.set_connector_end_arrow_prop(True) """
+
+        #except Exception as ex:
+        #    print(f"Error initializing properties: {ex}")
 
     @abstractmethod
     def init_diagram_tree(self, diagram_tree):

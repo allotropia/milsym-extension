@@ -183,3 +183,7 @@ class OrganizationChartTree(ABC):
 
     def refresh_connector_props(self):
         """Refresh connector properties - can be overridden by subclasses"""
+
+    def set_selected_item(self, tree_item):
+        """Set the selected tree item"""
+        self._selected_item = tree_item

@@ -8,9 +8,13 @@ Python port of Controller.java
 """
 
 import unohelper
+
+from .gui import Gui
+
 from com.sun.star.view import XSelectionChangeListener
 
 from smart.diagram.organizationcharts.orgchart.orgchart import OrgChart
+from smart.diagram.organizationcharts.orgchart.orgchart import OrgChartTree
 
 class Controller(unohelper.Base, XSelectionChangeListener):
     """Controller class for LibreOffice extension"""
@@ -53,7 +57,7 @@ class Controller(unohelper.Base, XSelectionChangeListener):
         self._last_diagram_type = -1
         self._last_diagram_id = -1
 
-        self.set_gui()
+        self._gui = Gui(self, self._x_context, self._x_frame)
         self.add_selection_listener()
 
     def is_smart_diagram_shape(self, shape_name):
@@ -179,17 +183,6 @@ class Controller(unohelper.Base, XSelectionChangeListener):
         if self._x_selection_supplier is not None:
             self._x_selection_supplier.removeSelectionChangeListener(self)
 
-    def get_gui(self):
-        """Get GUI instance"""
-        return self._gui
-
-    def set_gui(self):
-        """Initialize GUI if needed"""
-        if self._gui is None:
-            if self._x_context is not None and self._x_frame is not None:
-                # self._gui = Gui(self, self._x_context, self._x_frame)  # TODO: Import Gui class
-                pass
-
     def execute_gallery_dialog(self):
         """Execute gallery dialog"""
         if self._gui is not None:
@@ -276,10 +269,7 @@ class Controller(unohelper.Base, XSelectionChangeListener):
             if self.get_group_type() == self.ORGANIGROUP:
                 self.get_diagram().init_diagram()
 
-            #self.get_gui().set_visible_control_dialog(True)
-            #if self.get_gui().is_shown_tips():
-            #    self.get_gui().show_tips_message_box()
-
+            self._gui.set_visible_control_dialog(True)
         self.add_selection_listener()
 
     def is_shape_service(self, obj):
@@ -310,9 +300,9 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                 text_content = x_text.getString() if hasattr(x_text, 'getString') else ""
 
                 if not text_content or text_content.strip() == "":
-                    title = self.get_gui().get_dialog_property_value("Strings2", "Strings2.CouldnotCreateDiagram.Title.Label")
-                    message = self.get_gui().get_dialog_property_value("Strings2", "Strings2.CouldnotCreateDiagram.Message.Label")
-                    self.get_gui().show_message_box(title, message)
+                    title = self._gui.get_dialog_property_value("Strings2", "Strings2.CouldnotCreateDiagram.Title.Label")
+                    message = self._gui.get_dialog_property_value("Strings2", "Strings2.CouldnotCreateDiagram.Message.Label")
+                    self._gui.show_message_box(title, message)
                 else:
                     # TODO: Implement DataOfDiagram creation from text
                     # This would parse the text content and create diagram data
@@ -325,7 +315,7 @@ class Controller(unohelper.Base, XSelectionChangeListener):
 
     def instantiate_diagram(self):
         """Instantiate diagram based on type"""
-        self._diagram = OrgChart(self, self.get_gui(), self._x_frame)
+        self._diagram = OrgChart(self, self._gui, self._x_frame)
 
     def get_selected_shapes(self):
         """Get selected shapes collection"""
@@ -369,17 +359,15 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                     if selected_shape_name.startswith("OrganizationDiagram"):
                         self.set_group_type(self.ORGANIGROUP)
                         self.set_diagram_type(self.ORGANIGRAM)
-                        # OrgChartTree.LASTHORLEVEL = -1  # TODO: Implement when OrgChartTree is available
+                        OrgChartTree.LASTHORLEVEL = -1
 
                     self.instantiate_diagram()
                     self._last_diagram_name = new_diagram_name
 
-                    if self.get_diagram() is not None:
-                        self.get_diagram().init_diagram()
-                        # self.get_diagram().init_properties()  # TODO: Implement when available
+                    self.get_diagram().init_diagram()
+                    self.get_diagram().init_properties()
 
-                    # if self.get_gui() is not None:
-                    #     self.get_gui().set_visible_control_dialog(True)  # TODO: Implement when GUI is available
+                    self._gui.set_visible_control_dialog(True)
 
                 # Handle organization chart shape selection
                 org_chart_shapes = ["OrganizationDiagram", "SimpleOrganizationDiagram",
@@ -390,18 +378,18 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                     if self.get_diagram() is not None:
                         self.get_diagram().select_shapes()
 
-                # GUI control logic (commented out until GUI is implemented)
-                # if self.get_gui() is not None:
-                #     if not self.get_gui().is_visible_control_dialog():
-                #         self.get_gui().set_visible_control_dialog(True)
-                #
-                #     if self.is_only_simple_item_selected():
-                #         self.get_gui().enable_text_field_of_control_dialog(True)
-                #     else:
-                #         self.get_gui().enable_text_field_of_control_dialog(False)
-                #
-                #     if self.get_gui().is_visible_control_dialog():
-                #         self.get_gui().set_focus_control_dialog()
+                # GUI control logic
+                if self._gui is not None:
+                    if not self._gui.is_visible_control_dialog():
+                        self._gui.set_visible_control_dialog(True)
+
+                    # if self.is_only_simple_item_selected():
+                    #     self._gui.enable_text_field_of_control_dialog(True)
+                    # else:
+                    #     self._gui.enable_text_field_of_control_dialog(False)
+
+                    if self._gui.is_visible_control_dialog():
+                        self._gui.set_focus_control_dialog()
 
             else:
                 self.disappear_control_dialog()
@@ -410,14 +398,20 @@ class Controller(unohelper.Base, XSelectionChangeListener):
 
     def disappear_control_dialog(self):
         """Hide control dialog"""
-        # TODO: Implement when GUI is available
-        # if self.get_gui() is not None:
-        #     self.get_gui().set_visible_control_dialog(False)
+        if self._gui is not None:
+            self._gui.set_visible_control_dialog(False)
 
     def is_only_simple_item_selected(self):
         """Check if only simple item is selected"""
-        # TODO: Implement logic to check if only simple item is selected
-        return True
+        if self.get_selected_shapes().getCount() == 1:
+            selected_shape = self.get_selected_shape()
+            selected_shape_name = selected_shape.getName()
+
+            if (selected_shape_name.startswith("OrganizationDiagram") and
+                    "RectangleShape" in selected_shape_name and
+                    not selected_shape_name.endswith("RectangleShape0")):
+                return True
+        return False
 
     def set_text_field_of_control_dialog(self):
         """Set text field of control dialog"""

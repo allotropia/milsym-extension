@@ -301,6 +301,10 @@ class Diagram(ABC):
         except Exception:
             return ""
 
+    def get_diagram_id(self) -> int:
+        """Get diagram ID"""
+        return self._diagram_id
+
     def init_diagram(self):
         """Initialize diagram"""
         try:
@@ -308,11 +312,8 @@ class Diagram(ABC):
             x_curr_shape = None
             curr_shape_name = ""
             self._x_draw_page = self.get_controller().get_current_page()
-            print("2 self._x_draw_page:", self._x_draw_page)
             self._diagram_id = self.get_controller().get_current_diagram_id()
-            print("2 self._diagram_id:", self._diagram_id)
             s_diagram_id = str(self._diagram_id)
-            print("2 count: ", self._x_draw_page.getCount())
 
             for i in range(self._x_draw_page.getCount()):
                 x_curr_shape = self._x_draw_page.getByIndex(i)
@@ -328,6 +329,10 @@ class Diagram(ABC):
 
         except Exception as ex:
             print(f"Error in init_diagram: {ex}")
+
+    def init_properties(self):
+        """Initialize diagram properties - to be overridden in subclasses"""
+        pass
 
     def create_diagram(self, data):
         """Create diagram from data"""

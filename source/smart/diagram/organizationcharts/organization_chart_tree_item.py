@@ -199,6 +199,15 @@ class OrganizationChartTreeItem(ABC):
 
         return previous_sibling
 
+    def search_item(self, x_shape):
+        """Search for item with matching shape"""
+        if self._first_child is not None:
+            self._first_child.search_item(x_shape)
+        if x_shape == self._x_rectangle_shape:
+            self.get_diagram_tree().set_selected_item(self)
+        if self._first_sibling is not None:
+            self._first_sibling.search_item(x_shape)
+
     def display(self):
         """Display the item - calls set_pos_of_rect and recurses to children"""
         self.set_pos_of_rect()
