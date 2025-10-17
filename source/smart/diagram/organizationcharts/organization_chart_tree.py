@@ -157,6 +157,9 @@ class OrganizationChartTree(ABC):
 
     def get_tree_item(self, shape):
         """Get tree item for a given shape"""
+        print("get_tree_item ", shape)
+        print("self._x_root_shape ", self._x_root_shape)
+        print("self._root_item ", self._root_item)
         if self._x_root_shape is not None:
             if shape == self._x_root_shape:
                 return self._root_item

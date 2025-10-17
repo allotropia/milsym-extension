@@ -74,26 +74,19 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
 
     def init_tree_items(self):
         """Initialize tree items recursively"""
-        # Avoid circular import by accessing LAST_HOR_LEVEL through diagram tree
         last_hor_level = getattr(self._diagram_tree, 'LAST_HOR_LEVEL', 2)
 
-        # Get first child shape
         x_first_child_shape = self.get_diagram_tree().get_first_child_shape(self._x_rectangle_shape)
         if x_first_child_shape is not None:
             first_child_level = self._level + 1
             first_child_pos = 0.0
-
             if first_child_level <= last_hor_level:
                 first_child_pos = OrgChartTreeItem._max_positions[first_child_level] + 1.0
             else:
                 first_child_pos = self._pos + 0.5
-
-            self._first_child = OrgChartTreeItem(
-                self.get_diagram_tree(), x_first_child_shape, self, first_child_level, first_child_pos
-            )
+            self._first_child = OrgChartTreeItem(self.get_diagram_tree(), x_first_child_shape, self, first_child_level, first_child_pos)
             self._first_child.init_tree_items()
 
-        # Handle branch positioning for items at LAST_HOR_LEVEL
         if self._level == last_hor_level:
             deep = self.get_number_of_items_in_branch(self)
             if deep > 2:
@@ -104,7 +97,6 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
                         self.set_pos(max_pos_in_level + 0.5)
             self.set_max_pos_of_branch()
 
-        # Get first sibling shape
         x_first_sibling_shape = self.get_diagram_tree().get_first_sibling_shape(self._x_rectangle_shape, self._dad)
         if x_first_sibling_shape is not None:
             first_sibling_level = self._level
@@ -114,22 +106,15 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
                 first_sibling_pos = self._pos
                 first_sibling_level = self._level + self.get_number_of_items_in_branch(self)
 
-            self._first_sibling = OrgChartTreeItem(
-                self.get_diagram_tree(), x_first_sibling_shape, self._dad, first_sibling_level, first_sibling_pos
-            )
+            self._first_sibling = OrgChartTreeItem(self.get_diagram_tree(), x_first_sibling_shape, self._dad, first_sibling_level, first_sibling_pos)
             self._first_sibling.init_tree_items()
 
-        # Position adjustment for horizontal levels
-        if (self._level <= last_hor_level and
-            self._dad is not None and
-            self._dad.get_first_child() == self):
-
+        if self._level <= last_hor_level and self._dad is not None and self._dad.get_first_child() == self:
             new_pos = 0.0
             if self.is_first_sibling():
                 new_pos = (OrgChartTreeItem._max_positions[self._level] + self._pos) / 2
             else:
                 new_pos = self._pos
-
             if new_pos > self._dad.get_pos():
                 self._dad.set_pos(new_pos)
             if new_pos < self._dad.get_pos():

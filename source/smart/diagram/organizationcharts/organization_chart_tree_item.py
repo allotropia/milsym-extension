@@ -9,6 +9,8 @@ Python port of OrganizationChartTreeItem.java
 
 from abc import ABC
 
+from com.sun.star.drawing.FillStyle import NONE as FILL_STYLE_NONE, GRADIENT, SOLID
+from com.sun.star.drawing.LineStyle import NONE as LINE_STYLE_NONE, SOLID as LINE_STYLE_SOLID
 
 class OrganizationChartTreeItem(ABC):
     """Base class for organization chart tree items"""
@@ -46,23 +48,52 @@ class OrganizationChartTreeItem(ABC):
     def hide_element(self):
         """Hide the element by setting fill and line style to none"""
         try:
-            if self._x_rectangle_shape and self._diagram_tree.get_org_chart().is_hidden_root_element_prop():
-                # In real implementation, would use UNO API to set properties:
-                # xBaseProps.setPropertyValue("FillStyle", FillStyle.NONE)
-                # xBaseProps.setPropertyValue("LineStyle", LineStyle.NONE)
-                print("Hiding element")
+            x_conn_props = None
+
+            if self.get_diagram_tree().get_org_chart().is_hidden_root_element_prop():
+                self._x_rectangle_shape.setPropertyValue("FillStyle", FILL_STYLE_NONE)
+                self._x_rectangle_shape.setPropertyValue("LineStyle", LINE_STYLE_NONE)
+
+                if (self.get_diagram_tree().get_org_chart().get_controller().get_diagram_type() !=
+                    self.get_diagram_tree().get_org_chart().get_controller().TABLEHIERARCHYDIAGRAM):
+                    for x_conn_shape in self.get_diagram_tree().connector_list:
+                        if self._x_rectangle_shape == self.get_diagram_tree().get_start_shape_of_connector(x_conn_shape):
+                            if x_conn_shape is not None:
+                                x_conn_shape.setPropertyValue("LineStyle", LINE_STYLE_NONE)
+
+                if (self.get_diagram_tree().get_org_chart().get_controller().get_selected_shape() ==
+                    self._x_rectangle_shape):
+                    self.get_diagram_tree().get_org_chart().get_controller().set_selected_shape(
+                        self.get_first_child().get_rectangle_shape()
+                    )
+            else:
+                if self.get_diagram_tree().get_org_chart().is_any_gradient_color_mode():
+                    self._x_rectangle_shape.setPropertyValue("FillStyle", GRADIENT)
+                else:
+                    self._x_rectangle_shape.setPropertyValue("FillStyle", SOLID)
+
+                if self.get_diagram_tree().get_org_chart().is_outline_prop():
+                    self._x_rectangle_shape.setPropertyValue("LineStyle", LINE_STYLE_SOLID)
+                else:
+                    self._x_rectangle_shape.setPropertyValue("LineStyle", LINE_STYLE_NONE)
+
+                if (self.get_diagram_tree().get_org_chart().get_controller().get_diagram_type() !=
+                    self.get_diagram_tree().get_org_chart().get_controller().TABLEHIERARCHYDIAGRAM):
+                    for x_conn_shape in self.get_diagram_tree().connector_list:
+                        if self._x_rectangle_shape == self.get_diagram_tree().get_start_shape_of_connector(x_conn_shape):
+                            if x_conn_shape is not None:
+                                x_conn_shape.setPropertyValue("LineStyle", LINE_STYLE_SOLID)
+
         except Exception as ex:
             print(f"Error hiding element: {ex}")
 
     def is_hidden_element(self) -> bool:
         """Check if element is hidden"""
         try:
-            if self._x_rectangle_shape:
-                # In real implementation, would check FillStyle property
-                # xProps = UnoRuntime.queryInterface(XPropertySet.class, shape)
-                # style = xProps.getPropertyValue("FillStyle")
-                # return style.getValue() == FillStyle.NONE_value
-                return False
+            if self._x_rectangle_shape is not None:
+                fill_style = self._x_rectangle_shape.getPropertyValue("FillStyle")
+                if fill_style == FILL_STYLE_NONE:
+                    return True
         except Exception as ex:
             print(f"Error checking if element is hidden: {ex}")
         return False
@@ -227,6 +258,34 @@ class OrganizationChartTreeItem(ABC):
 
         if self._first_sibling is not None:
             self._first_sibling.increase_pos_in_branch(diff)
+
+    def set_properties(self):
+        """Set properties recursively for tree items"""
+        if self._first_child is not None:
+            self._first_child.set_properties()
+        self.get_diagram_tree().get_org_chart().set_shape_properties(self._x_rectangle_shape, "RectangleShape")
+        if self._first_sibling is not None:
+            self._first_sibling.set_properties()
+
+    def remove_items(self):
+        """Remove items recursively from tree"""
+        if self.is_first_child():
+            self._first_child.remove_items()
+
+        x_conn_shape = self.get_diagram_tree().get_dad_connector_shape(self._x_rectangle_shape)
+        if x_conn_shape is not None:
+            self.get_diagram_tree().remove_from_connectors(x_conn_shape)
+            self.get_diagram_tree().get_org_chart().remove_shape_from_group(x_conn_shape)
+
+        self.get_diagram_tree().remove_from_rectangles(self._x_rectangle_shape)
+        self.get_diagram_tree().get_org_chart().remove_shape_from_group(self._x_rectangle_shape)
+
+        if self.is_first_sibling():
+            self._first_sibling.remove_items()
+
+    def increase_descendants_pos_num(self, diff: int):
+        """Increase descendants position number"""
+        self._first_child.increase_pos_in_branch(diff)
 
     def print_tree(self):
         """Print tree structure for debugging"""

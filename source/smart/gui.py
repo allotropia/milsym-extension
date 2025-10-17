@@ -20,6 +20,10 @@ class Gui:
         """Get controller reference"""
         return self._controller
 
+    def execute_properties_dialog(self):
+        """Execute properties dialog of the current diagram"""
+        # TODO: Open the "edit symbol" dialog
+
     def set_visible_control_dialog(self, visible: bool):
         """Set visibility of control dialog"""
         new_diagram_id = self.get_controller().get_diagram().get_diagram_id()
@@ -143,7 +147,7 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
                 self.get_controller().set_text_field_of_control_dialog()
             return True
         elif methodName == "OnEdit":
-            self.get_controller().get_diagram().showPropertyDialog()
+            self.get_controller().get_diagram().show_edit_dialog()
             return True
         else:
             return False

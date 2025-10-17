@@ -69,6 +69,27 @@ class Diagram(ABC):
         """Set drawing area dimensions - to be overridden in subclasses"""
         pass
 
+    def get_group_shape(self):
+        """Get group shape"""
+        if self._x_group_shape is not None:
+            return self._x_group_shape
+        return None
+
+    def get_group_shape_pos(self):
+        """Get group shape position"""
+        if self._x_group_shape is not None:
+            return self._x_group_shape.getPosition()
+        return None
+
+    def set_group_shape_size_and_pos(self, width: int, height: int, x_pos: int, y_pos: int):
+        """Set group shape size and position"""
+        if self._x_group_shape is not None:
+            try:
+                self._x_group_shape.setSize(Size(width, height))
+                self._x_group_shape.setPosition(Point(x_pos, y_pos))
+            except Exception as ex:
+                print(f"Error setting group shape size and position: {ex}")
+
     def create_shape(self, shape_type: str, shape_id: int, x: int = 0, y: int = 0, width: int = 0, height: int = 0):
         print(f"Creating {shape_type} with ID {shape_id} at ({x}, {y}) size ({width}, {height})")
         x_shape = None
@@ -92,6 +113,10 @@ class Diagram(ABC):
 
     def remove_shape(self):
         """Remove shape - to be overridden in subclasses"""
+        pass
+
+    def show_edit_dialog(self):
+        """Show edit dialog - to be overridden in subclasses"""
         pass
 
     def set_text_of_shape(self, shape, text: str):

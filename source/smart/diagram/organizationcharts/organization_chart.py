@@ -435,6 +435,16 @@ class OrganizationChart(Diagram):
         print("Creating organization chart diagram...")
         super().create_diagram(data)
 
+    def show_property_dialog(self):
+        """Show property dialog and apply changes"""
+        self.get_gui().enable_control_dialog_window(False)
+        exec_result = self.get_gui().execute_properties_dialog()
+        if exec_result == 1:
+            # TODO: Update shape
+            pass
+
+        self.get_gui().enable_and_set_focus_control_dialog()
+
     # Color arrays (simplified versions of the Java arrays)
 
     # Base orange colors
