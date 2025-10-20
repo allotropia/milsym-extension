@@ -158,16 +158,68 @@ class OrganizationChart(Diagram):
 
     def set_hor_level_of_control_shape(self, control_shape, level: int):
         """Set horizontal level of control shape"""
-        # Stub implementation
+        if control_shape is not None:
+            text = control_shape.getString()
+            if text == "" or ":" not in text:
+                control_shape.setString(f"LastHorLevel:{level}")
+            else:
+                is_already_defined = False
+                a_str = text.split(":")
+                for i in range(len(a_str) - 1):
+                    if a_str[i] == "LastHorLevel":
+                        a_str[i + 1] = str(level)
+                        is_already_defined = True
+
+                if is_already_defined:
+                    text = ""
+                    for i in range(len(a_str)):
+                        text += a_str[i]
+                        if i < len(a_str) - 1:
+                            text += ":"
+                else:
+                    text += f":LastHorLevel:{level}"
+
+                control_shape.setString(text)
+
+            x_text_props = control_shape.createTextCursor()
+            try:
+                # CharHidden property is useless with 3.3 LO api
+                x_text_props.setPropertyValue("CharHeight", 0.0)
+                x_text_props.setPropertyValue("CharHidden", True)
+            except Exception as ex:
+                print(f"Error setting text properties: {ex}")
 
     def get_hor_level_of_control_shape(self, control_shape) -> int:
         """Get horizontal level of control shape"""
-        # Stub implementation
-        return 2
+        if control_shape is not None:
+            text = control_shape.getString()
+            s_number = ""
+            if ":" not in text:
+                s_number = text
+            else:
+                a_str = text.split(":")
+                for i in range(len(a_str) - 1):
+                    if a_str[i] == "LastHorLevel":
+                        s_number = a_str[i + 1]
+
+            if s_number == "":
+                return -1
+            else:
+                return int(s_number)
+        return -1
 
     def remove_hor_level_props_of_control_shape(self, control_shape):
         """Remove horizontal level properties of control shape"""
-        # Stub implementation
+        if control_shape is not None:
+            text = control_shape.getString()
+            if "LastHorLevel:" in text:
+                new_text = ""
+                a_str = text.split(":")
+                for i in range(0, len(a_str) - 1, 2):
+                    if a_str[i] != "LastHorLevel":
+                        new_text += a_str[i] + ":" + a_str[i + 1] + ":"
+                new_text = new_text[:-1]  # Remove trailing colon
+                control_shape.setString(new_text)
 
     def set_control_shape_props(self, control_shape):
         """Set control shape properties"""
