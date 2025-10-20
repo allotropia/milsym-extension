@@ -171,7 +171,19 @@ class OrganizationChart(Diagram):
 
     def set_control_shape_props(self, control_shape):
         """Set control shape properties"""
-        # Stub implementation
+        try:
+            from com.sun.star.drawing import FillStyle, LineStyle
+            from com.sun.star.drawing import TextFitToSizeType
+
+            control_shape.setPropertyValue("FillStyle", FillStyle.NONE)
+            control_shape.setPropertyValue("LineStyle", LineStyle.NONE)
+            control_shape.setPropertyValue("MoveProtect", True)
+            if self.is_text_fit_prop():
+                control_shape.setPropertyValue("TextFitToSize", TextFitToSizeType.PROPORTIONAL)
+            else:
+                control_shape.setPropertyValue("TextFitToSize", TextFitToSizeType.NONE)
+        except Exception as ex:
+            print(f"Error setting control shape properties: {ex}")
 
     def set_color_mode_and_style_of_control_shape(self, control_shape):
         """Set color mode and style of control shape"""
