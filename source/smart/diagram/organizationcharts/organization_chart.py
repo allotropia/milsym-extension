@@ -379,8 +379,8 @@ class OrganizationChart(Diagram):
                 if "RectangleShape" in selected_shape_name and "RectangleShape0" not in selected_shape_name:
 
                     if selected_shape_name.endswith("RectangleShape1"):
-                        title = self.get_gui().get_dialog_property_value("Strings", "RoutShapeRemoveError.Title")
-                        message = self.get_gui().get_dialog_property_value("Strings", "RoutShapeRemoveError.Message")
+                        title = self.get_gui().get_dialog_property_value("Strings", "ShapeRemoveError.Title")
+                        message = self.get_gui().get_dialog_property_value("Strings", "ShapeRemoveError.Message")
                         self.get_gui().show_message_box(title, message)
                     else:
                         # Clear everything under the item in the tree

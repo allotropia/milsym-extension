@@ -300,8 +300,8 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                 text_content = x_text.getString() if hasattr(x_text, 'getString') else ""
 
                 if not text_content or text_content.strip() == "":
-                    title = self._gui.get_dialog_property_value("Strings2", "Strings2.CouldnotCreateDiagram.Title.Label")
-                    message = self._gui.get_dialog_property_value("Strings2", "Strings2.CouldnotCreateDiagram.Message.Label")
+                    title = self._gui.get_dialog_property_value("GenericStrings", "CouldnotCreateDiagram.Title")
+                    message = self._gui.get_dialog_property_value("GenericStrings", "CouldnotCreateDiagram.Message")
                     self._gui.show_message_box(title, message)
                 else:
                     # TODO: Implement DataOfDiagram creation from text

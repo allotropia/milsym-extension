@@ -3,6 +3,8 @@
 import unohelper
 
 from com.sun.star.awt import XDialogEventHandler, XTopWindowListener
+from com.sun.star.awt import WindowDescriptor, WindowAttribute
+from com.sun.star.awt.WindowClass import MODALTOP
 
 class Gui:
     def __init__(self, controller, x_context, x_frame):
@@ -105,6 +107,81 @@ class Gui:
     def get_control_dialog_window(self):
         """Get control dialog window"""
         return self._x_control_dialog_window
+
+    def show_message_box(self, s_title: str, s_message: str):
+        """Show message box dialog"""
+        try:
+            o_toolkit = self._x_context.getServiceManager().createInstanceWithContext("com.sun.star.awt.Toolkit", self._x_context)
+            x_toolkit = o_toolkit
+
+            if self._x_frame is not None and x_toolkit is not None:
+                a_descriptor = WindowDescriptor()
+                a_descriptor.Type = MODALTOP
+                a_descriptor.WindowServiceName = "infobox"
+                a_descriptor.ParentIndex = -1
+                a_descriptor.Parent = self._x_frame.getContainerWindow()
+                a_descriptor.WindowAttributes = WindowAttribute.BORDER | WindowAttribute.MOVEABLE | WindowAttribute.CLOSEABLE
+
+                x_message_box = x_toolkit.createWindow(a_descriptor)
+                if x_message_box is not None:
+                    x_message_box.CaptionText = s_title
+                    x_message_box.MessageText = s_message
+                    self.enable_control_dialog_window(False)
+                    x_message_box.execute()
+                    x_component = x_message_box
+                    if x_component is not None:
+                        x_component.dispose()
+                    self.enable_control_dialog_window(True)
+                    self.set_focus_control_dialog()
+        except Exception as ex:
+            print(f"Error showing message box: {ex}")
+
+    def get_dialog_property_value(self, dialog_name: str, property_name: str) -> str:
+        """Get dialog property value from resource file"""
+        result = None
+        x_resources = None
+        m_res_root_url = self.get_package_location() + "/dialog/"
+
+        try:
+            args = (m_res_root_url, True, self.get_locale(), dialog_name, '', None)
+            x_resources = self._x_context.ServiceManager.createInstanceWithArgumentsAndContext('com.sun.star.resource.StringResourceWithLocation', args, self._x_context)
+        except Exception as ex:
+            print(f"Error creating string resource: {ex}")
+
+        # Map properties
+        if x_resources is not None:
+            ids = x_resources.getResourceIDs()
+            for resource_id in ids:
+                if property_name in resource_id:
+                    result = x_resources.resolveString(resource_id)
+
+        return result
+
+    def get_package_location(self) -> str:
+        """Get package location from package information provider"""
+        location = None
+        try:
+            x_name_access = self._x_context
+            x_pip = x_name_access.getByName("/singletons/com.sun.star.deployment.PackageInformationProvider")
+            location = x_pip.getPackageLocation("com.collabora.milsymbol")
+        except Exception as ex:
+            print(f"Error getting package location: {ex}")
+        return location
+
+    def get_locale(self):
+        """Get locale from configuration provider"""
+        locale = None
+        try:
+            x_mcf = self._x_context.getServiceManager()
+            o_configuration_provider = x_mcf.createInstanceWithContext(
+                "com.sun.star.configuration.ConfigurationProvider",
+                self._x_context
+            )
+            x_localizable = o_configuration_provider
+            locale = x_localizable.getLocale()
+        except Exception as ex:
+            print(f"Error getting locale: {ex}")
+        return locale
 
 class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener):
     buttons = ["addShape", "removeShape", "editShape"]
