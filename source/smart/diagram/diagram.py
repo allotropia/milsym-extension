@@ -204,6 +204,11 @@ class Diagram(ABC):
         except Exception as ex:
             print(f"Error setting shape properties: {ex}")
 
+    def remove_shape_from_group(self, x_shape):
+        """Remove shape from the group"""
+        if self._x_shapes is not None:
+            self._x_shapes.remove(x_shape)
+
     # Stub methods for property checking - to be implemented
     def is_text_fit_prop(self):
         return False

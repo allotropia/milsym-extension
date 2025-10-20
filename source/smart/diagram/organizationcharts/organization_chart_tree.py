@@ -89,9 +89,17 @@ class OrganizationChartTree(ABC):
         """Add shape to rectangles list"""
         self._rectangle_list.append(shape)
 
+    def remove_from_rectangles(self, shape):
+        """Remove shape from rectangles list"""
+        self._rectangle_list.remove(shape)
+
     def add_to_connectors(self, shape):
         """Add shape to connectors list"""
         self._connector_list.append(shape)
+
+    def remove_from_connectors(self, shape):
+        """Remove shape from connectors list"""
+        self._connector_list.remove(shape)
 
     def clear_lists(self):
         """Clear rectangle and connector lists"""
@@ -185,9 +193,21 @@ class OrganizationChartTree(ABC):
             print(f"Error getting end shape: {ex}")
         return end_shape
 
+    def get_dad_connector_shape(self, x_rect_shape):
+        """Get connector shape that connects to this rectangle shape"""
+        for x_conn_shape in self._connector_list:
+            if x_rect_shape == self.get_end_shape_of_connector(x_conn_shape):
+                print("Found dad connector shape:", x_conn_shape)
+                return x_conn_shape
+        return None
+
     def refresh_connector_props(self):
         """Refresh connector properties - can be overridden by subclasses"""
 
     def set_selected_item(self, tree_item):
         """Set the selected tree item"""
         self._selected_item = tree_item
+
+    def get_previous_sibling(self, tree_item):
+        """Get previous sibling of given tree item"""
+        return self._root_item.get_previous_sibling(tree_item)

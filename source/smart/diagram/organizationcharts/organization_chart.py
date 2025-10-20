@@ -499,6 +499,12 @@ class OrganizationChart(Diagram):
         print("Creating organization chart diagram...")
         super().create_diagram(data)
 
+    def set_null_selected_item(self, item):
+        """Set all references of the item to None"""
+        item.set_dad(None)
+        item.set_first_child(None)
+        item.set_first_sibling(None)
+
     def show_property_dialog(self):
         """Show property dialog and apply changes"""
         self.get_gui().enable_control_dialog_window(False)
