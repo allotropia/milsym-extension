@@ -100,7 +100,8 @@ class OrgChart(OrganizationChart):
                 self.init_diagram()
 
                 # Initialize diagram tree
-                self._diagram_tree = OrgChartTree(self, x_base_shape, x_start_shape)
+                if self._diagram_tree is None:
+                    self._diagram_tree = OrgChartTree(self, x_base_shape, x_start_shape)
                 dad_item = self._diagram_tree.get_root_item()
                 new_tree_item = None
                 last_tree_item = dad_item
