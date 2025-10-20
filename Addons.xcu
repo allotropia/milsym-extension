@@ -3,7 +3,8 @@
     <node oor:name="OfficeMenuBar">
       <node oor:name="com.collabora.milsymbol.menubar" oor:op="replace">
         <prop oor:name="Title" oor:type="xs:string">
-          <value xml:lang="en-US">Sample Extension</value>
+          <value xml:lang="en-US">Military Symbols</value>
+          <value xml:lang="de-DE">Taktische Zeichen</value>
         </prop>
         <prop oor:name="Context" oor:type="xs:string">
           <value>com.sun.star.text.TextDocument,com.sun.star.sheet.Spreadsheet,com.sun.star.drawing.DrawingDocument,com.sun.star.presentation.PresentationDocument</value>
