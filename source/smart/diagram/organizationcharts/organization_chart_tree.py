@@ -163,7 +163,8 @@ class OrganizationChartTree(ABC):
         if self._x_root_shape is not None:
             if shape == self._x_root_shape:
                 return self._root_item
-            self._root_item.search_item(shape)
+        # search_item() sets self._selected_item as a side effect
+        self._root_item.search_item(shape)
         return self._selected_item
 
     def get_start_shape_of_connector(self, connector_shape):
