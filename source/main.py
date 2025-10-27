@@ -53,9 +53,7 @@ class MainJob(unohelper.Base, XJobExecutor):
             handler = DialogHandler(self)
             dialog = dialog_provider.createDialogWithHandler(dialog_url, handler)
             handler.dialog = dialog
-            handler.initialize_dialog_controls(dialog)
-
-            dialog.Model.Step = 1
+            handler.init_dialog_controls()
 
             dialog.execute()
         except Exception:
