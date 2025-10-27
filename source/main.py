@@ -50,14 +50,16 @@ class MainJob(unohelper.Base, XJobExecutor):
         dialog_provider = self.ctx.getServiceManager().createInstanceWithContext("com.sun.star.awt.DialogProvider2", self.ctx)
         dialog_url = "vnd.sun.star.extension://com.collabora.milsymbol/dialog/MilitarySymbolDlg.xdl"
         try:
-            handler = DialogHandler(self)
+            handler = DialogHandler(self.ctx)
             dialog = dialog_provider.createDialogWithHandler(dialog_url, handler)
             handler.dialog = dialog
             handler.init_dialog_controls()
 
             dialog.execute()
-        except Exception:
-            pass
+            
+            handler.remove_temp_preview_svg()
+        except Exception as e:
+            print(f"Error inserting SVG graphic: {e}")
 
     def onOrgChart(self):
         """Create a simple organization chart"""
@@ -185,7 +187,7 @@ def main():
             print("ERROR: Could not bootstrap default Office.")
             sys.exit(1)
     job = MainJob(ctx)
-    job.trigger("hello")
+    job.trigger("symbolDialog")
 
 
 # Starting from command line

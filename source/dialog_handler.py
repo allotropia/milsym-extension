@@ -3,6 +3,8 @@
 import os
 import sys
 import unohelper
+import tempfile
+from unohelper import systemPathToFileUrl
 from com.sun.star.awt import XDialogEventHandler
 from com.sun.star.beans import NamedValue
 
@@ -20,6 +22,15 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
         self.sidc_options = {}
         self.listbox_values = {}
         self.disable_callHandler = False
+
+        self.desktop = self.ctx.ServiceManager.createInstanceWithContext("com.sun.star.frame.Desktop", self.ctx)
+        self.model = self.desktop.getCurrentComponent()
+        if not hasattr(self.model, "Text"):
+            self.model = self.desktop.loadComponentFromURL("private:factory/swriter", "_blank", 0, ())
+
+        self.factory = self.ctx.getServiceManager().createInstanceWithContext("com.sun.star.script.provider.MasterScriptProviderFactory", self.ctx)
+        self.provider = self.factory.createScriptProvider(self.model)
+        self.script = self.provider.getScript("vnd.sun.star.script:milsymbol.milsymbol.js?language=JavaScript&location=user:uno_packages/milsymbol-extension.oxt")
 
     def init_dialog_controls(self):
         self.init_listbox(self.dialog)
@@ -44,6 +55,8 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
         self.color_mode_option = symbols_data.BUTTONS["COLOR"]["btLight"]
         self.signature_option = symbols_data.BUTTONS["SIGNATURE"]["btNotApplicableSignature"]
         self.engagement_option = symbols_data.BUTTONS["ENGAGEMENT"]["btTarget"]
+
+        self.updatePreview()
 
     def init_listbox(self, dialog):
         selected_index = 4 # Land unit
@@ -178,3 +191,42 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
                 self.engagement_option = value
 
         dialog.getControl(button_id).getModel().State = state
+
+    def updatePreview(self):
+        file_url = self.insertSymbolToPreview()
+        imgPreview = self.dialog.getModel().getByName("imgPreview")
+        imgPreview.ImageURL = ""
+        imgPreview.ImageURL = file_url
+
+    def insertSymbolToPreview(self):
+        args = (
+            "130310000011000000000000000000",
+            NamedValue("size", 55.0)
+        )
+
+        temp_svg_path = os.path.join(tempfile.gettempdir(), "preview.svg")
+
+        try:
+            result = self.script.invoke(args, (), ())
+            # Assuming the result contains SVG data
+            if result and len(result) > 0:
+                svg_data = str(result[0])
+                with open(temp_svg_path, 'w', encoding='utf-8') as preview_file:
+                    preview_file.write(svg_data)
+                svg_url = systemPathToFileUrl(temp_svg_path)
+                return svg_url
+        except Exception as e:
+            print(f"Error executing script: {e}")
+            return
+
+    def remove_temp_preview_svg(self):
+        temp_svg_path = os.path.join(tempfile.gettempdir(), "preview.svg")
+
+        try:
+            if os.path.exists(temp_svg_path):
+                os.remove(temp_svg_path)
+                print(f"Temporary SVG deleted: {temp_svg_path}")
+            else:
+                print("No temporary SVG file found to delete.")
+        except Exception as e:
+            print(f"Error deleting temporary SVG: {e}")
