@@ -43,6 +43,12 @@ for (var i = 1; i < ARGUMENTS.length; ++i) {
 	else if (String(name) == "fill") {
 		value = String(value) == "true"
 	}
+	else if (String(name) == "engagementType") {
+		value = String(value)
+	}
+	else if (String(name) == "engagementBar") {
+		value = String(value)
+	}
 
 	options[name] = value;
 }

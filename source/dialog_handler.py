@@ -271,6 +271,7 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
             NamedValue("stack", self.stack_option),
             NamedValue("reinforced", self.reinforced_reduced_option),
             NamedValue("signature", self.signature_option),
+            NamedValue("engagementType", self.engagement_option)
         ]
 
         if self.color_mode_option != "false":
