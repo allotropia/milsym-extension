@@ -34,6 +34,7 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
 
     def init_dialog_controls(self):
         self.init_listbox(self.dialog)
+        self.init_textboxes()
 
         self.dialog.Model.Step = 1
 
@@ -70,6 +71,31 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
             "ltbEchelonMobility": "echelonMobility_value"
         }
 
+    def init_textboxes(self):
+        # Mapping of dialog textbox control names to their corresponding option names
+        self.textbox_map = {
+            "tbSpecialHeadquart":   "specialHeadquarters",
+            "tbUnitNameUniqDesign": "uniqueDesignation",
+            "tbHigherFormation":    "higherFormation",
+            "tbAdditionalInfo":     "additionalInformation",
+            "tbAltitudeDepth":      "altitudeDepth",
+            "tbCombatEffect":       "combatEffectiveness",
+            "tbCommonIdentifier":   "commonIdentifier",
+            "tbDateTimeGroup":      "dtg",
+            "tbEngageBarText":      "engagementBar",
+            "tbEquipTeardownTime":  "equipmentTeardownTime",
+            "tbEvaluatRating":      "evaluationRating",
+            "tbGuardedUnit":        "guardedUnit",
+            "tbIFF_SIF_AIS":        "iffSif",
+            "tbLocation":           "location",
+            "tbPlatformType":       "platformType",
+            "tbQuantity":           "quantity",
+            "tbSpecialDesign":      "specialDesignator",
+            "tbSpeed":              "speed",
+            "tbStaffComments":      "staffComments",
+            "tbType":               "type"
+        }
+
     def get_current_symbol(self, selected_index):
         symbol_meta = symbols_data.SYMBOLS[selected_index]
         symbol_id = symbol_meta["id"]
@@ -94,8 +120,11 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
         if getattr(self, "disable_callHandler", False):
             return
 
-        if methodName.startswith("ltb"):
+        if methodName.startswith("ltb"): #listboxes
             self.listbox_handler(dialog, eventObject, methodName)
+            return True
+        elif methodName.startswith("tb"): # textboxes
+            self.textbox_handler(methodName, dialog)
             return True
         elif methodName.startswith("tabbed"):
             self.tabbed_button_switch_handler(dialog, methodName)
@@ -141,6 +170,17 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
         self.secondIcon_value =                 self.fill_listbox(dialog, "ltbSecondIcon",      current_symbol["SecondIconModifier"], 0)
         self.echelonMobility_value =            self.fill_listbox(dialog, "ltbEchelonMobility", current_symbol["EchelonMobility"], 0)
         self.headquartersTaskforceDummy_value = self.fill_listbox(dialog, "ltbHeadTaskDummy",   current_symbol["HeadquartersTaskforceDummy"], 0)
+
+    def textbox_handler(self, methodName, dialog):
+        options_name = self.textbox_map.get(methodName)
+        text_value = dialog.getControl(methodName).Text
+
+        if text_value:
+            self.sidc_options[options_name] = text_value
+        else:
+            self.sidc_options.pop(options_name, None) # remove
+
+        self.updatePreview()
 
     def tabbed_button_switch_handler(self, dialog, methodName):
         # Handling tabbed page buttons
@@ -237,6 +277,10 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
             args.append(NamedValue("colorMode", self.color_mode_option))
         else:
             args.append(NamedValue("fill", "false"))
+
+        for key, value in self.sidc_options.items():
+            if value:
+                args.append(NamedValue(key, value))
 
         temp_svg_path = os.path.join(tempfile.gettempdir(), "preview.svg")
 
