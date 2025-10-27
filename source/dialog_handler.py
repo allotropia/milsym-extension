@@ -176,7 +176,7 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
         text_value = dialog.getControl(methodName).Text
 
         if text_value:
-            self.sidc_options[options_name] = text_value
+            self.sidc_options[options_name] = " " + text_value
         else:
             self.sidc_options.pop(options_name, None) # remove
 
@@ -267,7 +267,7 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
 
         args = [
             sidc_code,
-            NamedValue("size", 55.0),
+            NamedValue("size", 60.0),
             NamedValue("stack", self.stack_option),
             NamedValue("reinforced", self.reinforced_reduced_option),
             NamedValue("signature", self.signature_option),

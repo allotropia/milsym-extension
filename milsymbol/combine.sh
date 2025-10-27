@@ -34,23 +34,14 @@ ms.setSymbolParts(parts);
 
 var options = {};
 for (var i = 1; i < ARGUMENTS.length; ++i) {
-	var name = ARGUMENTS[i].Name;
-	var value = ARGUMENTS[i].Value;
+    var name = ARGUMENTS[i].Name;
+    var value = String(ARGUMENTS[i].Value);
 
-	if (String(name) == "colorMode") {
-		value = String(value);
-	}
-	else if (String(name) == "fill") {
-		value = String(value) == "true"
-	}
-	else if (String(name) == "engagementType") {
-		value = String(value)
-	}
-	else if (String(name) == "engagementBar") {
-		value = String(value)
-	}
+    if (String(name) == "fill") {
+        value = String(value) === "true";
+    }
 
-	options[name] = value;
+    options[name] = value;
 }
 new ms.Symbol(String(ARGUMENTS[0]), options).asSVG();
 EOF
