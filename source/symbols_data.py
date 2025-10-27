@@ -42,7 +42,7 @@ BUTTONS = {
         "btStack6": 5
     },
     "COLOR": {
-        "btNoFill": "",
+        "btNoFill": "false",
         "btLight":  "Light",
         "btMedium": "Medium",
         "btDark":   "Dark",

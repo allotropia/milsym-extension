@@ -40,6 +40,9 @@ for (var i = 1; i < ARGUMENTS.length; ++i) {
 	if (String(name) == "colorMode") {
 		value = String(value);
 	}
+	else if (String(name) == "fill") {
+		value = String(value) == "true"
+	}
 
 	options[name] = value;
 }

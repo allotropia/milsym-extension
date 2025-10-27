@@ -225,14 +225,18 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
     def insertSymbolToPreview(self):
         sidc_code = self.create_sidc()
 
-        args = (
+        args = [
             sidc_code,
             NamedValue("size", 55.0),
             NamedValue("stack", self.stack_option),
             NamedValue("reinforced", self.reinforced_reduced_option),
             NamedValue("signature", self.signature_option),
-            NamedValue("colorMode", self.color_mode_option)
-        )
+        ]
+
+        if self.color_mode_option != "false":
+            args.append(NamedValue("colorMode", self.color_mode_option))
+        else:
+            args.append(NamedValue("fill", "false"))
 
         temp_svg_path = os.path.join(tempfile.gettempdir(), "preview.svg")
 
