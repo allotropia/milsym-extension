@@ -125,16 +125,18 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
         values = self.listbox_values[control_name]
         value = values[selected_index]
         setattr(self, attr_name, value)
+        self.updatePreview()
 
     def update_symbolSet_listbox(self, dialog, eventObject):
         selected_index = eventObject.Source.getSelectedItemPos()
         self.populate_symbol_listboxes(dialog, selected_index)
+        self.updatePreview()
 
     def populate_symbol_listboxes(self, dialog, selected_index):
         current_symbol = self.get_current_symbol(selected_index)
 
         self.symbolSet_value =                  self.fill_listbox(dialog, "ltbSymbolSet",       symbols_data.SYMBOLS, selected_index)
-        self.mainIcon_value =                   self.fill_listbox(dialog, "ltbMainIcon",        current_symbol["MainIcon"], 0)
+        self.mainIcon_value =                   self.fill_listbox(dialog, "ltbMainIcon",        current_symbol["MainIcon"], 1)
         self.firstIcon_value =                  self.fill_listbox(dialog, "ltbFirstIcon",       current_symbol["FirstIconModifier"], 0)
         self.secondIcon_value =                 self.fill_listbox(dialog, "ltbSecondIcon",      current_symbol["SecondIconModifier"], 0)
         self.echelonMobility_value =            self.fill_listbox(dialog, "ltbEchelonMobility", current_symbol["EchelonMobility"], 0)
@@ -190,6 +192,8 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
             elif group_name == "ENGAGEMENT":
                 self.engagement_option = value
 
+            self.updatePreview()
+
         dialog.getControl(button_id).getModel().State = state
 
     def updatePreview(self):
@@ -198,9 +202,31 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
         imgPreview.ImageURL = ""
         imgPreview.ImageURL = file_url
 
+    def create_sidc(self):
+        sidc = [
+            self.version_value,
+            self.context_value,
+            self.affiliation_value,
+            self.symbolSet_value,
+            self.status_value,
+            self.headquartersTaskforceDummy_value,
+            self.echelonMobility_value,
+            self.mainIcon_value,
+            self.firstIcon_value[-2:],
+            self.secondIcon_value[-2:],
+            self.firstIcon_value[0],
+            self.secondIcon_value[0],
+            "00000",
+            "000" # Country flag
+        ]
+        self.sidc = ''.join(sidc)
+        return self.sidc
+
     def insertSymbolToPreview(self):
+        sidc_code = self.create_sidc()
+
         args = (
-            "130310000011000000000000000000",
+            sidc_code,
             NamedValue("size", 55.0)
         )
 
