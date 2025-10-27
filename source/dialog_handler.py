@@ -93,7 +93,8 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
             "tbSpecialDesign":      "specialDesignator",
             "tbSpeed":              "speed",
             "tbStaffComments":      "staffComments",
-            "tbType":               "type"
+            "tbType":               "type",
+            "tbDirection":          "direction"
         }
 
     def get_current_symbol(self, selected_index):

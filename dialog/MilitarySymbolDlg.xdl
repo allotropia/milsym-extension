@@ -213,7 +213,9 @@
    <script:event script:event-name="on-textchange" script:macro-name="vnd.sun.star.UNO:tbDateTimeGroup" script:language="UNO"/>
   </dlg:textfield>
   <dlg:text dlg:style-id="1" dlg:id="lbDirection" dlg:tab-index="104" dlg:left="10" dlg:top="234" dlg:width="100" dlg:height="12" dlg:page="2" dlg:value="Direction" dlg:valign="center"/>
-  <dlg:menulist dlg:id="ltbDirection" dlg:tab-index="136" dlg:left="114" dlg:top="234" dlg:width="135" dlg:height="12" dlg:page="2" dlg:spin="true"/>
+  <dlg:textfield dlg:id="tbDirection" dlg:tab-index="136" dlg:left="114" dlg:top="234" dlg:width="135" dlg:height="12" dlg:page="2">
+   <script:event script:event-name="on-textchange" script:macro-name="vnd.sun.star.UNO:tbDirection" script:language="UNO"/>
+  </dlg:textfield>
   <dlg:text dlg:style-id="1" dlg:id="lbEngageBarType" dlg:tab-index="105" dlg:left="10" dlg:top="256" dlg:width="100" dlg:height="12" dlg:page="2" dlg:value="Engagement Bar Type" dlg:valign="center"/>
   <dlg:button dlg:id="btTarget" dlg:tab-index="122" dlg:left="114" dlg:top="256" dlg:width="35" dlg:height="28" dlg:page="2" dlg:tabstop="true" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/target.svg" dlg:image-position="top-center" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btTarget" script:language="UNO"/>
