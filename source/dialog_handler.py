@@ -227,7 +227,10 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
 
         args = (
             sidc_code,
-            NamedValue("size", 55.0)
+            NamedValue("size", 55.0),
+            NamedValue("stack", self.stack_option),
+            NamedValue("reinforced", self.reinforced_reduced_option),
+            NamedValue("signature", self.signature_option)
         )
 
         temp_svg_path = os.path.join(tempfile.gettempdir(), "preview.svg")

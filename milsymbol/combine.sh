@@ -17,8 +17,21 @@ cp $INPUT_FILE $OUTPUT_FILE
 # Replace 'const' and 'let' with 'var'
 sed -i -E -e 's/\<const|let\>/var/g' $OUTPUT_FILE
 
+sed -e 's/^export default {/const pathsReinforced = {/' \
+ paths-reinforced.js >> $OUTPUT_FILE
+sed -E -e 's|^import pathsReinforced from "./paths-reinforced";||' \
+ -e 's/^export default function sigintReinforced/function sigintReinforced/' -e 's/\<let\>/var/g' \
+ sigint-reinforced-specialheadquarter.js >> $OUTPUT_FILE
+sed -E -e 's/^export default function stack/function stack/' -e 's/\<let\>/var/g' \
+ stack-extension.mjs >> $OUTPUT_FILE
+
 # Append the final code to expose the main functionality
 cat >>$OUTPUT_FILE <<\EOF
+const parts = ms.getSymbolParts();
+parts.splice(6, 0, sigintReinforced); // Insert sigintReinforced in the begining
+parts.unshift(stack); // Insert stack at the begining
+ms.setSymbolParts(parts);
+
 var options = {};
 for (var i = 1; i < ARGUMENTS.length; ++i) {
  options[ARGUMENTS[i].Name] = ARGUMENTS[i].Value;
