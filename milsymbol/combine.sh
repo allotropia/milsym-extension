@@ -34,7 +34,14 @@ ms.setSymbolParts(parts);
 
 var options = {};
 for (var i = 1; i < ARGUMENTS.length; ++i) {
- options[ARGUMENTS[i].Name] = ARGUMENTS[i].Value;
+	var name = ARGUMENTS[i].Name;
+	var value = ARGUMENTS[i].Value;
+
+	if (String(name) == "colorMode") {
+		value = String(value);
+	}
+
+	options[name] = value;
 }
 new ms.Symbol(String(ARGUMENTS[0]), options).asSVG();
 EOF

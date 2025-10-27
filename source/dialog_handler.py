@@ -230,7 +230,8 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
             NamedValue("size", 55.0),
             NamedValue("stack", self.stack_option),
             NamedValue("reinforced", self.reinforced_reduced_option),
-            NamedValue("signature", self.signature_option)
+            NamedValue("signature", self.signature_option),
+            NamedValue("colorMode", self.color_mode_option)
         )
 
         temp_svg_path = os.path.join(tempfile.gettempdir(), "preview.svg")
