@@ -2,6 +2,7 @@
 
 import os
 import sys
+import uno
 import unohelper
 import tempfile
 from unohelper import systemPathToFileUrl
@@ -22,6 +23,7 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
         self.sidc_options = {}
         self.listbox_values = {}
         self.disable_callHandler = False
+        self.hex_color_value = ""
 
         self.desktop = self.ctx.ServiceManager.createInstanceWithContext("com.sun.star.frame.Desktop", self.ctx)
         self.model = self.desktop.getCurrentComponent()
@@ -172,6 +174,30 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
         self.echelonMobility_value =            self.fill_listbox(dialog, "ltbEchelonMobility", current_symbol["EchelonMobility"], 0)
         self.headquartersTaskforceDummy_value = self.fill_listbox(dialog, "ltbHeadTaskDummy",   current_symbol["HeadquartersTaskforceDummy"], 0)
 
+    def pick_custom_color(self, init_color=2938211):
+        smgr = self.ctx.getServiceManager()
+        color_picker = smgr.createInstanceWithContext(
+            "com.sun.star.ui.dialogs.ColorPicker", self.ctx
+        )
+        prop = uno.createUnoStruct("com.sun.star.beans.PropertyValue")
+        prop.Name = "Color"
+        prop.Value = int(init_color)
+        color_picker.initialize((prop,))
+        color_picker.setPropertyValues((prop,))
+
+        result = color_picker.execute()
+        if result == 1:
+            props = color_picker.getPropertyValues()
+            color_value = props[0].Value
+            return self.color_to_hex(color_value)
+        return None
+
+    def color_to_hex(self, color_val):
+        red   = (color_val >> 16) & 0xFF
+        green = (color_val >> 8) & 0xFF
+        blue  = color_val & 0xFF
+        return f"#{red:02X}{green:02X}{blue:02X}"
+
     def textbox_handler(self, methodName, dialog):
         options_name = self.textbox_map.get(methodName)
         text_value = dialog.getControl(methodName).Text
@@ -228,6 +254,10 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
                 self.stack_option = value
             elif group_name == "COLOR":
                 self.color_mode_option = value
+                if value == "Custom":
+                    hex_color = self.pick_custom_color()
+                    if hex_color:
+                        self.hex_color_value = hex_color
             elif group_name == "SIGNATURE":
                 self.signature_option = value
             elif group_name == "ENGAGEMENT":
@@ -275,7 +305,9 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
             NamedValue("engagementType", self.engagement_option)
         ]
 
-        if self.color_mode_option != "false":
+        if self.color_mode_option == "Custom":
+            args.append(NamedValue("fillColor", self.hex_color_value))
+        elif self.color_mode_option != "false":
             args.append(NamedValue("colorMode", self.color_mode_option))
         else:
             args.append(NamedValue("fill", "false"))
