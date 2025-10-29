@@ -8,6 +8,7 @@ import tempfile
 from unohelper import systemPathToFileUrl
 from com.sun.star.awt import XDialogEventHandler
 from com.sun.star.beans import NamedValue
+from pickle import FALSE
 
 base_dir = os.path.dirname(__file__)
 if base_dir not in sys.path:
@@ -23,7 +24,7 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
         self.sidc_options = {}
         self.listbox_values = {}
         self.disable_callHandler = False
-        self.hex_color_value = ""
+        self.hex_color_value = None
 
         self.desktop = self.ctx.ServiceManager.createInstanceWithContext("com.sun.star.frame.Desktop", self.ctx)
         self.model = self.desktop.getCurrentComponent()
@@ -123,14 +124,34 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
         if getattr(self, "disable_callHandler", False):
             return
 
-        if methodName.startswith("ltb"): #listboxes
+        if methodName.startswith("ltb"): # listboxes
             self.listbox_handler(dialog, eventObject, methodName)
             return True
         elif methodName.startswith("tb"): # textboxes
-            self.textbox_handler(methodName, dialog)
+            self.textbox_handler(dialog, methodName)
+            return True
+        elif methodName.startswith(("click_tb", "click_ltb")):
+            selected_value = dialog.getControl("tbSearch").Text
+            self.update_listbox_value(dialog, selected_value)
+        elif methodName.startswith("search"):
+            self.search_box_handler(dialog, methodName)
             return True
         elif methodName.startswith("tabbed"):
             self.tabbed_button_switch_handler(dialog, methodName)
+            return True
+        elif methodName == "action_ltbSearch":
+            selected_index = eventObject.Source.getSelectedItemPos()
+            selected_value = dialog.getControl("ltbSearch").getItem(selected_index)
+            self.update_listbox_value(dialog, selected_value)
+            dialog.getControl("tlbPreview").setFocus()
+            return True
+        elif methodName == "click_Search":
+            self.apply_search_selection(dialog, eventObject)
+            return True
+        elif methodName == "click_dialog":
+            selected_value = dialog.getControl("tbSearch").Text
+            self.update_listbox_value(dialog, selected_value)
+            dialog.getControl("tlbPreview").setFocus()
             return True
         elif self.button_handler(dialog, methodName):
             return True
@@ -198,7 +219,7 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
         blue  = color_val & 0xFF
         return f"#{red:02X}{green:02X}{blue:02X}"
 
-    def textbox_handler(self, methodName, dialog):
+    def textbox_handler(self, dialog, methodName):
         options_name = self.textbox_map.get(methodName)
         text_value = dialog.getControl(methodName).Text
 
@@ -209,13 +230,113 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
 
         self.updatePreview()
 
+    # Update listbox value after search
+    def update_listbox_value(self, dialog, selected_value):
+        valid_value = False
+        for symbolSet_index, groups in enumerate(symbols_data.SYMBOL_DETAILS.values()):
+            labels = groups.get("MainIcon", [])
+
+            mainIcon_index = next(
+               (i for i, item in enumerate(labels)
+                if isinstance(item, dict) and item.get("label") == selected_value),
+               None
+            )
+
+            if mainIcon_index is not None:
+                dialog.getControl("ltbSymbolSet").selectItemPos(symbolSet_index, True)
+                dialog.getControl("ltbMainIcon").selectItemPos(mainIcon_index, True)
+                valid_value = True
+                break
+
+        if not valid_value:
+            self.disable_callHandler = True
+            dialog.getControl("tbSearch").Text = " Type to search..."
+            self.disable_callHandler = False
+
+        dialog.getControl("ltbSearch").setVisible(False)
+
+    def search_box_handler(self, dialog, methodName):
+        if methodName == "search_click":
+            self.disable_callHandler = True
+            dialog.getControl("tbSearch").Text = ""
+            self.disable_callHandler = False
+        elif methodName == "search_change":
+            search_text = dialog.getControl("tbSearch").Text
+            if search_text:
+                matches = []
+                search = search_text.lower()
+
+                for data in symbols_data.SYMBOL_DETAILS.values():
+                    for icon in data.get("MainIcon", []):
+                        label = icon.get("label", "")
+                        label_to_search = label.split("–")[0].strip()
+                        word_match = any(w.lower().startswith(search) for w in label_to_search.split())
+                        prefix_match = label_to_search.lower().startswith(search)
+                        if word_match or prefix_match:
+                            matches.append(label)
+
+                search_listbox = dialog.getControl("ltbSearch")
+                search_listbox.removeItems(0, search_listbox.getItemCount())
+                for item in matches:
+                    search_listbox.addItem(item, search_listbox.getItemCount())
+
+                item_height = 10
+                max_visible_items = 5
+                visible_rows = min(len(matches), max_visible_items)
+                search_listbox.getModel().Height = visible_rows * item_height
+
+            if search_text and search_text.strip() != "Type to search...":
+                search_listbox.setVisible(True)
+            else:
+                search_listbox.setVisible(False)
+
+            search_listbox.selectItemPos(0, True)
+
+    def search_box_listbox_handler(self, dialog, eventObject):
+        selected_index = eventObject.Source.getSelectedItemPos()
+        selected_value = dialog.getControl("ltbSearch").getItem(selected_index)
+        symbolSet_name = None
+        for symbolSet, groups in symbols_data.SYMBOL_DETAILS.items():
+            labels = groups.get("MainIcon", [])
+
+            self.mainIcon_value = next(
+                (item.get("value") for item in labels
+                 if isinstance(item, dict) and item.get("label") == selected_value),
+                None
+            )
+
+            if self.mainIcon_value is not None:
+                symbolSet_name = symbolSet
+                break
+
+        self.symbolSet_value = next(
+            (item.get("value") for item in symbols_data.SYMBOLS
+             if item.get("id") == symbolSet_name),
+            None
+        )
+
+        self.disable_callHandler = True
+        self.updatePreview()
+        dialog.getControl("tbSearch").Text = selected_value
+        self.disable_callHandler = False
+
+    def apply_search_selection(self, dialog, eventObject):
+        search_listbox = dialog.getControl("ltbSearch")
+        pos = search_listbox.getSelectedItemPos()
+        if pos >= 0:
+            self.search_box_listbox_handler(dialog, eventObject)
+
     def tabbed_button_switch_handler(self, dialog, methodName):
         # Handling tabbed page buttons
         if methodName == "tabbed_btBasic":
             dialog.Model.Step = 1
         elif methodName == "tabbed_btAdvance":
             dialog.Model.Step = 2
-            dialog.getControl("ltbSearch").setVisible(False)
+
+        selected_value = dialog.getControl("tbSearch").Text
+        self.update_listbox_value(dialog, selected_value)
+        dialog.getControl("ltbSearch").setVisible(False)
+        dialog.getControl("tlbPreview").setFocus()
 
     def button_handler(self, dialog, active_button_id):
         group_name = None
