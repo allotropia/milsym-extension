@@ -19,21 +19,17 @@ from data import country_data
 
 class DialogHandler(unohelper.Base, XDialogEventHandler):
 
-    def __init__(self, ctx, dialog=None):
+    def __init__(self, ctx, model, dialog):
         self.ctx = ctx
+        self.model = model
         self.dialog = dialog
         self.sidc_options = {}
         self.listbox_values = {}
         self.disable_callHandler = False
         self.hex_color_value = None
 
-        self.desktop = self.ctx.ServiceManager.createInstanceWithContext("com.sun.star.frame.Desktop", self.ctx)
-        self.model = self.desktop.getCurrentComponent()
-        if not hasattr(self.model, "Text"):
-            self.model = self.desktop.loadComponentFromURL("private:factory/swriter", "_blank", 0, ())
-
         self.factory = self.ctx.getServiceManager().createInstanceWithContext("com.sun.star.script.provider.MasterScriptProviderFactory", self.ctx)
-        self.provider = self.factory.createScriptProvider(self.model)
+        self.provider = self.factory.createScriptProvider(model)
         self.script = self.provider.getScript("vnd.sun.star.script:milsymbol.milsymbol.js?language=JavaScript&location=user:uno_packages/milsymbol-extension.oxt")
 
     def init_dialog_controls(self):

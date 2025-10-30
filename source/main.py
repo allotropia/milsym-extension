@@ -40,17 +40,17 @@ class MainJob(unohelper.Base, XJobExecutor):
         self.model = desktop.getCurrentComponent()
 
         if args == "symbolDialog":
-            self.onSymbolDialog()
+            self.onSymbolDialog(self.model)
         if args == "testSymbol":
             self.insertSymbol(self.model, "sfgpewrh--mt")
         if args == "orgChart":
             self.onOrgChart()
 
-    def onSymbolDialog(self):
+    def onSymbolDialog(self, model):
         dialog_provider = self.ctx.getServiceManager().createInstanceWithContext("com.sun.star.awt.DialogProvider2", self.ctx)
         dialog_url = "vnd.sun.star.extension://com.collabora.milsymbol/dialog/MilitarySymbolDlg.xdl"
         try:
-            handler = DialogHandler(self.ctx)
+            handler = DialogHandler(self.ctx, model, None)
             dialog = dialog_provider.createDialogWithHandler(dialog_url, handler)
             handler.dialog = dialog
             handler.init_dialog_controls()
