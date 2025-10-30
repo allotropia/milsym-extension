@@ -190,8 +190,13 @@ class Controller(unohelper.Base, XSelectionChangeListener):
         return 0
 
     def get_current_page(self):
-        """Get current draw page"""
-        return self._x_controller.getCurrentPage()
+        model= self._x_frame.getController().getModel()
+        if model.supportsService("com.sun.star.text.TextDocument"):
+            return self._x_controller.getViewCursor() # Writer
+        elif model.supportsService("com.sun.star.sheet.SpreadsheetDocument"):
+            return self._x_controller.getActiveSheet() # Calc
+        else:
+            return self._x_controller.getCurrentPage() # Impress/Draw
 
     def get_location(self):
         """Get current locale"""

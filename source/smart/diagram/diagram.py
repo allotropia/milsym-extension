@@ -393,13 +393,21 @@ class Diagram(ABC):
             self._x_group_shape.setName(self.get_diagram_type_name() + str(self._diagram_id) + "-GroupShape")
 
             # Add to draw page
-            self._x_draw_page.add(self._x_group_shape)
+            self.add_group_shape_to_draw_page()
 
             # Get XShapes interface for the group
             self._x_shapes = self._x_group_shape
 
         except Exception as ex:
             print(f"Error in create_diagram: {ex}")
+
+    def add_group_shape_to_draw_page(self):
+        if self._x_model.supportsService("com.sun.star.text.TextDocument"): # Writer
+            self._x_draw_page.getText().insertTextContent( self._x_draw_page, self._x_group_shape, True)
+        elif self._x_model.supportsService("com.sun.star.sheet.SpreadsheetDocument"): # Calc
+            self._x_draw_page.getDrawPage().add(self._x_group_shape)
+        else: # Impress/Draw
+            self._x_draw_page.add(self._x_group_shape)
 
     def adjust_page_props(self):
         """Adjust page properties"""
