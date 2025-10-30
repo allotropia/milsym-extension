@@ -232,7 +232,7 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
                 self.get_controller().set_text_field_of_control_dialog()
             return True
         elif methodName == "OnEdit":
-            self.get_controller().get_diagram().show_edit_dialog()
+            self.dialog.execute_properties_dialog()
             return True
         else:
             return False
