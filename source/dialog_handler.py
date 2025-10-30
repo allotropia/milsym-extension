@@ -14,8 +14,8 @@ base_dir = os.path.dirname(__file__)
 if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
 
-import data.symbols_data
-import data.country_data
+from data import symbols_data
+from data import country_data
 
 class DialogHandler(unohelper.Base, XDialogEventHandler):
 
@@ -51,15 +51,15 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
         self.dialog.getControl("btTarget").getModel().State = 1
         self.dialog.getControl("btNotApplicableSignature").getModel().State = 1
 
-        self.version_value = data.symbols_data.VERSION
-        self.context_value = data.symbols_data.BUTTONS["CONTEXT"]["btReality"]
-        self.affiliation_value = data.symbols_data.BUTTONS["AFFILIATION"]["btFriend"]
-        self.status_value = data.symbols_data.BUTTONS["STATUS"]["btPresent"]
-        self.reinforced_reduced_option = data.symbols_data.BUTTONS["REINFORCED_REDUCED"]["btNotApplicableReinReduc"]
-        self.stack_option = data.symbols_data.BUTTONS["STACK"]["btStack1"]
-        self.color_mode_option = data.symbols_data.BUTTONS["COLOR"]["btLight"]
-        self.signature_option = data.symbols_data.BUTTONS["SIGNATURE"]["btNotApplicableSignature"]
-        self.engagement_option = data.symbols_data.BUTTONS["ENGAGEMENT"]["btTarget"]
+        self.version_value = symbols_data.VERSION
+        self.context_value = symbols_data.BUTTONS["CONTEXT"]["btReality"]
+        self.affiliation_value = symbols_data.BUTTONS["AFFILIATION"]["btFriend"]
+        self.status_value = symbols_data.BUTTONS["STATUS"]["btPresent"]
+        self.reinforced_reduced_option = symbols_data.BUTTONS["REINFORCED_REDUCED"]["btNotApplicableReinReduc"]
+        self.stack_option = symbols_data.BUTTONS["STACK"]["btStack1"]
+        self.color_mode_option = symbols_data.BUTTONS["COLOR"]["btLight"]
+        self.signature_option = symbols_data.BUTTONS["SIGNATURE"]["btNotApplicableSignature"]
+        self.engagement_option = symbols_data.BUTTONS["ENGAGEMENT"]["btTarget"]
 
         self.updatePreview()
 
@@ -103,9 +103,9 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
         }
 
     def get_current_symbol(self, selected_index):
-        symbol_meta = data.symbols_data.SYMBOLS[selected_index]
+        symbol_meta = symbols_data.SYMBOLS[selected_index]
         symbol_id = symbol_meta["id"]
-        current_symbol = data.symbols_data.SYMBOL_DETAILS[symbol_id]
+        current_symbol = symbols_data.SYMBOL_DETAILS[symbol_id]
         return current_symbol
 
     def fill_listbox(self, dialog, control_name, items, selected_index):
@@ -190,13 +190,13 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
     def populate_symbol_listboxes(self, dialog, selected_index):
         current_symbol = self.get_current_symbol(selected_index)
 
-        self.symbolSet_value =                  self.fill_listbox(dialog, "ltbSymbolSet",       data.symbols_data.SYMBOLS, selected_index)
+        self.symbolSet_value =                  self.fill_listbox(dialog, "ltbSymbolSet",       symbols_data.SYMBOLS, selected_index)
         self.mainIcon_value =                   self.fill_listbox(dialog, "ltbMainIcon",        current_symbol["MainIcon"], 1)
         self.firstIcon_value =                  self.fill_listbox(dialog, "ltbFirstIcon",       current_symbol["FirstIconModifier"], 0)
         self.secondIcon_value =                 self.fill_listbox(dialog, "ltbSecondIcon",      current_symbol["SecondIconModifier"], 0)
         self.echelonMobility_value =            self.fill_listbox(dialog, "ltbEchelonMobility", current_symbol["EchelonMobility"], 0)
         self.headquartersTaskforceDummy_value = self.fill_listbox(dialog, "ltbHeadTaskDummy",   current_symbol["HeadquartersTaskforceDummy"], 0)
-        self.country_code_value =               self.fill_listbox(dialog, "ltbCountry",         data.country_data.COUNTRY_CODES, 0)
+        self.country_code_value =               self.fill_listbox(dialog, "ltbCountry",         country_data.COUNTRY_CODES, 0)
 
     def pick_custom_color(self, init_color=2938211):
         smgr = self.ctx.getServiceManager()
@@ -236,7 +236,7 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
     # Update listbox value after search
     def update_listbox_value(self, dialog, selected_value):
         valid_value = False
-        for symbolSet_index, groups in enumerate(data.symbols_data.SYMBOL_DETAILS.values()):
+        for symbolSet_index, groups in enumerate(symbols_data.SYMBOL_DETAILS.values()):
             labels = groups.get("MainIcon", [])
 
             mainIcon_index = next(
@@ -269,7 +269,7 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
                 matches = []
                 search = search_text.lower()
 
-                for data in data.symbols_data.SYMBOL_DETAILS.values():
+                for data in symbols_data.SYMBOL_DETAILS.values():
                     for icon in data.get("MainIcon", []):
                         label = icon.get("label", "")
                         label_to_search = label.split("–")[0].strip()
@@ -299,7 +299,7 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
         selected_index = eventObject.Source.getSelectedItemPos()
         selected_value = dialog.getControl("ltbSearch").getItem(selected_index)
         symbolSet_name = None
-        for symbolSet, groups in data.symbols_data.SYMBOL_DETAILS.items():
+        for symbolSet, groups in symbols_data.SYMBOL_DETAILS.items():
             labels = groups.get("MainIcon", [])
 
             self.mainIcon_value = next(
@@ -345,7 +345,7 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
         group_name = None
         group_buttons = None
 
-        for name, buttons in data.symbols_data.BUTTONS.items():
+        for name, buttons in symbols_data.BUTTONS.items():
             if active_button_id in buttons:
                 group_name = name
                 group_buttons = buttons
@@ -363,7 +363,7 @@ class DialogHandler(unohelper.Base, XDialogEventHandler):
         if button_id == active_button_id:
             state = 1
 
-            group_buttons= data.symbols_data.BUTTONS.get(group_name)
+            group_buttons= symbols_data.BUTTONS.get(group_name)
             value = group_buttons.get(button_id)
 
             if group_name == "CONTEXT":
