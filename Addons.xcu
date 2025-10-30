@@ -7,7 +7,7 @@
           <value xml:lang="de-DE">Taktische Zeichen</value>
         </prop>
         <prop oor:name="Context" oor:type="xs:string">
-          <value>com.sun.star.text.TextDocument,com.sun.star.sheet.Spreadsheet,com.sun.star.drawing.DrawingDocument,com.sun.star.presentation.PresentationDocument</value>
+          <value>com.sun.star.text.TextDocument,com.sun.star.sheet.SpreadsheetDocument,com.sun.star.drawing.DrawingDocument,com.sun.star.presentation.PresentationDocument</value>
         </prop>
         <node oor:name="Submenu">
           <node oor:name="M1" oor:op="replace">
