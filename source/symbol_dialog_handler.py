@@ -17,7 +17,7 @@ if base_dir not in sys.path:
 from data import symbols_data
 from data import country_data
 
-class DialogHandler(unohelper.Base, XDialogEventHandler):
+class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
     def __init__(self, ctx, model, dialog):
         self.ctx = ctx

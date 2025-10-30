@@ -10,7 +10,7 @@ base_dir = os.path.dirname(__file__)
 if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
 
-from dialog_handler import DialogHandler
+from symbol_dialog import open_symbol_dialog
 from smart.controller import Controller
 from smart.diagram.data_of_diagram import DataOfDiagram
 
@@ -47,19 +47,7 @@ class MainJob(unohelper.Base, XJobExecutor):
             self.onOrgChart()
 
     def onSymbolDialog(self, model):
-        dialog_provider = self.ctx.getServiceManager().createInstanceWithContext("com.sun.star.awt.DialogProvider2", self.ctx)
-        dialog_url = "vnd.sun.star.extension://com.collabora.milsymbol/dialog/MilitarySymbolDlg.xdl"
-        try:
-            handler = DialogHandler(self.ctx, model, None)
-            dialog = dialog_provider.createDialogWithHandler(dialog_url, handler)
-            handler.dialog = dialog
-            handler.init_dialog_controls()
-
-            dialog.execute()
-            
-            handler.remove_temp_preview_svg()
-        except Exception as e:
-            print(f"Error inserting SVG graphic: {e}")
+        open_symbol_dialog(self.ctx, model)
 
     def onOrgChart(self):
         """Create a simple organization chart"""

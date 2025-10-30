@@ -1,7 +1,14 @@
 # SPDX-License-Identifier: MPL-2.0
 
+import os
+import sys
 import unohelper
 
+base_dir = os.path.dirname(__file__)
+if base_dir not in sys.path:
+    sys.path.insert(0, base_dir)
+
+from symbol_dialog import open_symbol_dialog
 from com.sun.star.awt import XDialogEventHandler, XTopWindowListener
 from com.sun.star.awt import WindowDescriptor, WindowAttribute
 from com.sun.star.awt.WindowClass import MODALTOP
@@ -23,8 +30,9 @@ class Gui:
         return self._controller
 
     def execute_properties_dialog(self):
-        """Execute properties dialog of the current diagram"""
-        # TODO: Open the "edit symbol" dialog
+        ctx = self._x_context
+        model = self._x_frame.getController().getModel()
+        open_symbol_dialog(ctx, model)
 
     def set_visible_control_dialog(self, visible: bool):
         """Set visibility of control dialog"""
