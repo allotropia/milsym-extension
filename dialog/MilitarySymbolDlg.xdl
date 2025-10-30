@@ -305,7 +305,9 @@
    <script:event script:event-name="on-textchange" script:macro-name="vnd.sun.star.UNO:tbType" script:language="UNO"/>
   </dlg:textfield>
   <dlg:text dlg:style-id="1" dlg:id="lbCountry" dlg:tab-index="143" dlg:left="284" dlg:top="371" dlg:width="90" dlg:height="12" dlg:page="2" dlg:value="Country" dlg:valign="center"/>
-  <dlg:menulist dlg:id="ltbCountry" dlg:tab-index="147" dlg:left="380" dlg:top="371" dlg:width="135" dlg:height="12" dlg:page="2" dlg:spin="true"/>
+  <dlg:menulist dlg:id="ltbCountry" dlg:tab-index="147" dlg:left="380" dlg:top="371" dlg:width="135" dlg:height="12" dlg:page="2" dlg:spin="true">
+   <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:ltbCountry" script:language="UNO"/>
+  </dlg:menulist>
   <dlg:button dlg:id="btCancel" dlg:tab-index="19" dlg:left="429" dlg:top="395" dlg:width="45" dlg:height="15" dlg:value="Cancel" dlg:valign="center">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:dialog_btCancel" script:language="UNO"/>
   </dlg:button>

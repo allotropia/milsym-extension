@@ -18,6 +18,7 @@ export default function sigintReinforced(ms) {
   const fontSize = this.style.infoSize;
   const spaceTextIcon = 20;
   const stack = this.options.stack ? this.options.stack * 15 : 0;
+  const signature = this.options.signature ? 25 : 0;
 
   //If we don't have a geometry we shouldn't add anything.
   if (this.metadata.baseGeometry.g && frameColor) {
@@ -92,6 +93,41 @@ export default function sigintReinforced(ms) {
         y2: 100 + 2.5 * fontSize,
       });
     }
+
+	if (this.options.country_flag) {
+		    const flagX = bbox_org.x2 + spaceTextIcon + stack + signature
+		    const flagY = 145;
+
+			const content =  COUNTRY_FLAGS[this.options.country] || "";
+
+			const paths = [
+			  { type: "svg", svg: content },
+			];
+
+			flag = [
+			  {
+			    type: "translate",
+			    x: flagX,
+			    y: flagY,
+			    draw: [
+			      {
+			        type: "scale",
+			        factor: 3,
+			        draw: paths,
+			      }
+			    ]
+			  }
+			];
+
+			drawArray2.push(flag);
+
+		    this_bbox.merge({
+		        x2: flagX + 60,
+		        y1: 50,
+		        y2: 200,
+		    });
+	}
+
     if (
       this.options.specialheadquarter != undefined &&
       this.options.specialheadquarter != ""

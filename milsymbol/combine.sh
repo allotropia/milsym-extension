@@ -24,6 +24,7 @@ sed -E -e 's|^import pathsReinforced from "./paths-reinforced";||' \
  sigint-reinforced-specialheadquarter.js >> $OUTPUT_FILE
 sed -E -e 's/^export default function stack/function stack/' -e 's/\<let\>/var/g' \
  stack-extension.mjs >> $OUTPUT_FILE
+cat country-flags.js >> $OUTPUT_FILE
 
 # Append the final code to expose the main functionality
 cat >>$OUTPUT_FILE <<\EOF
