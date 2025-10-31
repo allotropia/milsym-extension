@@ -15,9 +15,9 @@ from .orgchart_tree_item import OrgChartTreeItem
 class OrgChart(OrganizationChart):
     """Organization chart implementation"""
 
-    def __init__(self, controller, gui, x_frame):
+    def __init__(self, controller, gui, x_frame, x_context):
         print("OrgChart::__init__ called")
-        super().__init__(controller, gui, x_frame)
+        super().__init__(controller, gui, x_frame, x_context)
         self._diagram_tree = None
 
         # Set specific dimensions for org chart
@@ -92,7 +92,7 @@ class OrgChart(OrganizationChart):
 
                 self.set_move_protect_of_shape(x_start_shape)
                 self.set_color_prop(self._LO_ORANGES[2])
-                self.set_shape_properties(x_start_shape, "RectangleShape")
+                self.set_shape_properties(x_start_shape, "GraphicObjectShape")
 
                 if x_start_shape is not None:
                     self.get_controller().set_selected_shape(x_start_shape)
@@ -111,7 +111,7 @@ class OrgChart(OrganizationChart):
 
                 # Create all shapes and tree items
                 for i in range(i_root, size):
-                    x_shape = self.create_shape("RectangleShape", i + (2 - i_root))
+                    x_shape = self.create_shape("GraphicObjectShape", i + (2 - i_root))
                     self._x_shapes.add(x_shape)
                     self.set_text_of_shape(x_shape, datas.get(i).get_value())
                     self.set_move_protect_of_shape(x_shape)
@@ -126,7 +126,7 @@ class OrgChart(OrganizationChart):
                         i_color_level = 4
 
                     self.set_color_prop(self._LO_COLORS_2[i_color][i_color_level])
-                    self.set_shape_properties(x_shape, "RectangleShape")
+                    self.set_shape_properties(x_shape, "GraphicObjectShape")
                     self._diagram_tree.add_to_rectangles(x_shape)
 
                     # Determine parent item based on level
@@ -299,7 +299,7 @@ class OrgChart(OrganizationChart):
                 # Get shape name (in real implementation, would use UNO API)
                 selected_shape_name = self.get_shape_name(x_selected_shape)
 
-                if ("RectangleShape" in selected_shape_name and
+                if ("GraphicObjectShape" in selected_shape_name and
                     "RectangleShape0" not in selected_shape_name):
 
                     selected_item = self._diagram_tree.get_tree_item(x_selected_shape)
@@ -316,7 +316,7 @@ class OrgChart(OrganizationChart):
                             self.clear_empty_diagram_and_recreate()
                         else:
                             top_shape_id += 1
-                            x_rectangle_shape = self.create_shape("RectangleShape", top_shape_id)
+                            x_rectangle_shape = self.create_shape("GraphicObjectShape", top_shape_id)
                             self._x_shapes.add(x_rectangle_shape)
                             self._diagram_tree.add_to_rectangles(x_rectangle_shape)
 
@@ -353,7 +353,7 @@ class OrgChart(OrganizationChart):
                             # Set shape properties
                             self.set_text_of_shape(x_rectangle_shape, " ")
                             self.set_move_protect_of_shape(x_rectangle_shape)
-                            self.set_shape_properties(x_rectangle_shape, "RectangleShape")
+                            self.set_shape_properties(x_rectangle_shape, "GraphicObjectShape")
 
                             # Create connector if not root level
                             if top_shape_id > 1:

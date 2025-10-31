@@ -40,14 +40,11 @@ class MainJob(unohelper.Base, XJobExecutor):
         self.model = desktop.getCurrentComponent()
 
         if args == "symbolDialog":
-            self.onSymbolDialog(self.model)
+            open_symbol_dialog(self.ctx, self.model, None)
         if args == "testSymbol":
             self.insertSymbol(self.model, "sfgpewrh--mt")
         if args == "orgChart":
             self.onOrgChart()
-
-    def onSymbolDialog(self, model):
-        open_symbol_dialog(self.ctx, model)
 
     def onOrgChart(self):
         """Create a simple organization chart"""

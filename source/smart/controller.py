@@ -320,7 +320,7 @@ class Controller(unohelper.Base, XSelectionChangeListener):
 
     def instantiate_diagram(self):
         """Instantiate diagram based on type"""
-        self._diagram = OrgChart(self, self._gui, self._x_frame)
+        self._diagram = OrgChart(self, self._gui, self._x_frame, self._x_context)
 
     def get_selected_shapes(self):
         """Get selected shapes collection"""

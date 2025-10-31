@@ -32,7 +32,8 @@ class Gui:
     def execute_properties_dialog(self):
         ctx = self._x_context
         model = self._x_frame.getController().getModel()
-        open_symbol_dialog(ctx, model)
+        controller = self.get_controller()
+        open_symbol_dialog(ctx, model, controller)
 
     def set_visible_control_dialog(self, visible: bool):
         """Set visibility of control dialog"""

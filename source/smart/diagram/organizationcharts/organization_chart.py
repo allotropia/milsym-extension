@@ -62,8 +62,8 @@ class OrganizationChart(Diagram):
     FIRST_COLORTHEMEGRADIENT_STYLE_VALUE = 4
     FIRST_COLORSCHEME_STYLE_VALUE = 14
 
-    def __init__(self, controller, gui, x_frame):
-        super().__init__(controller, gui, x_frame)
+    def __init__(self, controller, gui, x_frame, x_context):
+        super().__init__(controller, gui, x_frame, x_context)
 
         # Rates of measure of group shape (e.g.: 10:6)
         self._group_width = 0

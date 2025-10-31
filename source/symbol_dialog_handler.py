@@ -7,8 +7,8 @@ import unohelper
 import tempfile
 from unohelper import systemPathToFileUrl
 from com.sun.star.awt import XDialogEventHandler
-from com.sun.star.beans import NamedValue
-from pickle import FALSE
+from com.sun.star.awt import Size, Point
+from com.sun.star.beans import NamedValue, PropertyValue
 
 base_dir = os.path.dirname(__file__)
 if base_dir not in sys.path:
@@ -19,14 +19,16 @@ from data import country_data
 
 class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
-    def __init__(self, ctx, model, dialog):
+    def __init__(self, ctx, model, controller, dialog):
         self.ctx = ctx
         self.model = model
+        self.controller = controller
         self.dialog = dialog
         self.sidc_options = {}
         self.listbox_values = {}
         self.disable_callHandler = False
         self.hex_color_value = None
+        self.final_svg_data = None
 
         self.factory = self.ctx.getServiceManager().createInstanceWithContext("com.sun.star.script.provider.MasterScriptProviderFactory", self.ctx)
         self.provider = self.factory.createScriptProvider(model)
@@ -153,8 +155,14 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             return True
         elif self.button_handler(dialog, methodName):
             return True
+        elif methodName == "dialog_btSave":
+            svg_data = self.final_svg_data
+            self.controller.get_diagram().set_svg_data(svg_data)
+            dialog.endExecute()
+            return True
         elif methodName == "dialog_btCancel":
             dialog.endExecute()
+            return True
         else:
             return False
 
@@ -450,6 +458,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             # Assuming the result contains SVG data
             if result and len(result) > 0:
                 svg_data = str(result[0])
+                self.final_svg_data = svg_data
                 with open(temp_svg_path, 'w', encoding='utf-8') as preview_file:
                     preview_file.write(svg_data)
                 svg_url = systemPathToFileUrl(temp_svg_path)

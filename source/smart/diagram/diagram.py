@@ -6,9 +6,14 @@
 Base Diagram class - stub implementation
 Python port of Diagram.java
 """
+import sys
+import unohelper
+import officehelper
+import os
+import uno
 
 from abc import ABC, abstractmethod
-
+from com.sun.star.beans import PropertyValue
 from com.sun.star.awt import Point, Size
 
 class Diagram(ABC):
@@ -28,10 +33,11 @@ class Diagram(ABC):
         0xff00ff, 0x00ffff, 0x800000, 0x008000
     ]
 
-    def __init__(self, controller, gui, x_frame):
+    def __init__(self, controller, gui, x_frame, x_context):
         self._controller = controller
         self._gui = gui
         self._x_frame = x_frame
+        self._x_context = x_context
         self._x_model = x_frame.getController().getModel()
         self._x_draw_page = None
         self._x_shapes = None
@@ -136,6 +142,29 @@ class Diagram(ABC):
         # not needed
         print(f"Setting color to {hex(color)}")
 
+    # set SVG data from symbol dialog
+    def set_svg_data(self, svg_data):
+        x_selected_shapes = self.get_controller().get_selected_shapes()
+        for i in range(x_selected_shapes.getCount()):
+            x_shape = x_selected_shapes.getByIndex(i)
+            if x_shape is not None:
+                self.set_new_shape_properties(x_shape, "GraphicObjectShape", svg_data)
+
+    def set_new_shape_properties(self, shape, shape_type: str, svg_data):
+        """Set shape properties"""
+        try:
+            if shape_type == "GraphicObjectShape":
+                graphic_provider = self._x_context.ServiceManager.createInstanceWithContext("com.sun.star.graphic.GraphicProvider", self._x_context)
+                pipe = self._x_context.ServiceManager.createInstanceWithContext("com.sun.star.io.Pipe", self._x_context)
+                pipe.writeBytes(uno.ByteSequence(svg_data.encode('utf-8')))
+                pipe.flush()
+                pipe.closeOutput()
+                media_properties = (PropertyValue("InputStream", 0, pipe, 0),)
+                graphic = graphic_provider.queryGraphic(media_properties)
+                shape.setPropertyValue("Graphic", graphic)
+        except Exception as ex:
+            print(f"Error setting shape properties: {ex}")
+
     def set_shape_properties(self, shape, shape_type: str):
         """Set shape properties"""
         try:
@@ -146,51 +175,12 @@ class Diagram(ABC):
                     shape.setPropertyValue("TextFitToSize", 0)  # NONE
                     shape.setPropertyValue("CharHeight", 40.0)
 
-            elif shape_type == "RectangleShape":
-                if self.is_modify_colors_prop():
-                    self.set_color_settings_of_shape(shape)
-
-                # Corner radius settings
-                if self.get_rounded_prop() == 0:  # NULL_ROUNDED
-                    shape.setPropertyValue("CornerRadius", 0)
-                elif self.get_rounded_prop() == 1:  # MEDIUM_ROUNDED
-                    shape.setPropertyValue("CornerRadius", 500)  # CORNER_RADIUS2
-                elif self.get_rounded_prop() == 2:  # EXTRA_ROUNDED
-                    shape.setPropertyValue("CornerRadius", 1000)  # CORNER_RADIUS3
-
-                # Line/outline settings
-                if self.is_outline_prop():
-                    shape.setPropertyValue("LineStyle", 1)  # SOLID
-                    shape.setPropertyValue("LineWidth", self.get_shapes_line_width_prop())
-                else:
-                    shape.setPropertyValue("LineStyle", 0)  # NONE
-
-                # Shadow settings
-                if self.is_shadow_prop():
-                    shape.setPropertyValue("Shadow", True)
-                    shape.setPropertyValue("ShadowXDistance", 100)  # SHADOW_DIST1
-                    shape.setPropertyValue("ShadowYDistance", -100)  # -SHADOW_DIST1
-                    shape.setPropertyValue("ShadowTransparence", 50)  # SHADOW_TRANSP
-
-                    # Determine shadow color
-                    shadow_color = -1
-                    try:
-                        fill_style = shape.getPropertyValue("FillStyle")
-                        if fill_style == 1:  # SOLID
-                            shadow_color = int(shape.getPropertyValue("FillColor"))
-                        else:
-                            gradient = shape.getPropertyValue("FillGradient")
-                            start_color = gradient.StartColor
-                            end_color = gradient.EndColor
-                            shadow_color = min(start_color, end_color)
-                    except Exception:
-                        pass
-
-                    if shadow_color == -1:
-                        shadow_color = 8421504  # Default gray
-                    shape.setPropertyValue("ShadowColor", shadow_color)
-                else:
-                    shape.setPropertyValue("Shadow", False)
+            elif shape_type == "GraphicObjectShape" :
+                svg_url = "vnd.sun.star.extension://com.collabora.milsymbol/img/friend.svg"
+                graphic_provider = self._x_context.ServiceManager.createInstanceWithContext("com.sun.star.graphic.GraphicProvider", self._x_context)
+                media_properties = (PropertyValue("URL", 0, svg_url, 0),)
+                graphic = graphic_provider.queryGraphic(media_properties)
+                shape.setPropertyValue("Graphic", graphic)
 
                 self.set_font_properties_of_shape(shape)
 
