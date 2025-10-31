@@ -1,13 +1,20 @@
 # SPDX-License-Identifier: MPL-2.0
 
-import os
-import sys
+import platform
 from symbol_dialog_handler import SymbolDialogHandler
 
 def open_symbol_dialog(ctx, model, controller):
     dialog_provider = ctx.getServiceManager().createInstanceWithContext(
         "com.sun.star.awt.DialogProvider2", ctx)
-    dialog_url = "vnd.sun.star.extension://com.collabora.milsymbol/dialog/MilitarySymbolDlg.xdl"
+
+    system = platform.system()  # 'Windows', 'Linux'
+    if system == "Windows":
+        dialog_file = "MilitarySymbolDlg_WINDOWS.xdl"
+    else:
+        dialog_file = "MilitarySymbolDlg_LINUX.xdl"
+
+    dialog_url = f"vnd.sun.star.extension://com.collabora.milsymbol/dialog/{dialog_file}"
+
     try:
         handler = SymbolDialogHandler(ctx, model, controller, None)
         dialog = dialog_provider.createDialogWithHandler(dialog_url, handler)

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1.2" baseProfile="tiny" width="47.4" height="32.4" viewBox="16 41 210 168">
+  <text x="195" y="200" text-anchor="start" font-size="40" font-family="Arial" font-weight="bold" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" stroke="rgba(237, 237, 237,1)" fill="none">!</text>
+  <path d="M25,50 l150,0 0,100 -150,0 z Z" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" stroke="rgba(237, 237, 237,1)" fill="none"></path>
+  <path d="M25,50 l150,0 0,100 -150,0 z" stroke-width="4" stroke="black" fill="rgb(128,224,255)" fill-opacity="1"></path>
+  <text x="195" y="200" text-anchor="start" font-size="40" font-family="Arial" font-weight="bold" fill="black">!</text>
+</svg>
