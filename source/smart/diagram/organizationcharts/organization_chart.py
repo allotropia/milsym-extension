@@ -423,7 +423,7 @@ class OrganizationChart(Diagram):
             # Remove specific shape
             if x_selected_shape is not None:
                 selected_shape_name = x_selected_shape.getName()
-                if "RectangleShape" in selected_shape_name and "RectangleShape0" not in selected_shape_name:
+                if "GraphicObjectShape" in selected_shape_name and "RectangleShape0" not in selected_shape_name:
 
                     if selected_shape_name.endswith("RectangleShape1"):
                         title = self.get_gui().get_dialog_property_value("Strings", "ShapeRemoveError.Title")
