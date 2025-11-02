@@ -36,6 +36,7 @@ rsync -av \
     --exclude="milsymbol/sigint-reinforced-specialheadquarter.js" \
     --exclude="milsymbol/stack-extension.mjs" \
     --exclude="milsymbol/country-flags.js" \
+    --exclude="*~" \
     --exclude=".git/" \
     --exclude=".gitignore" \
     --exclude="$TEMP_DIR/" \

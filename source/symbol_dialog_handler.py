@@ -16,6 +16,7 @@ if base_dir not in sys.path:
 
 from data import symbols_data
 from data import country_data
+from utils import insertSvgGraphic
 
 class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
@@ -29,6 +30,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         self.disable_callHandler = False
         self.hex_color_value = None
         self.final_svg_data = None
+        self.final_svg_args = None
 
         self.factory = self.ctx.getServiceManager().createInstanceWithContext("com.sun.star.script.provider.MasterScriptProviderFactory", self.ctx)
         self.provider = self.factory.createScriptProvider(model)
@@ -156,8 +158,10 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         elif self.button_handler(dialog, methodName):
             return True
         elif methodName == "dialog_btSave":
-            svg_data = self.final_svg_data
-            self.controller.get_diagram().set_svg_data(svg_data)
+            if self.controller is not None:
+                self.controller.get_diagram().set_svg_data(self.final_svg_data)
+            else:
+                insertSvgGraphic(self.ctx, self.model, self.final_svg_data)
             dialog.endExecute()
             return True
         elif methodName == "dialog_btCancel":
@@ -459,6 +463,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             if result and len(result) > 0:
                 svg_data = str(result[0])
                 self.final_svg_data = svg_data
+                self.final_svg_args = args
                 with open(temp_svg_path, 'w', encoding='utf-8') as preview_file:
                     preview_file.write(svg_data)
                 svg_url = systemPathToFileUrl(temp_svg_path)
