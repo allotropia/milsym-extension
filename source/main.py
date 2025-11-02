@@ -95,7 +95,8 @@ class MainJob(unohelper.Base, XJobExecutor):
             result = script.invoke(args, (), ())
             # Assuming the result contains SVG data
             if result and len(result) > 0:
-                insertSvgGraphic(self.ctx, model, str(result[0]))
+                insertSvgGraphic(self.ctx, model,
+                                 str(result[0]),args)
 
         except Exception as e:
             print(f"Error executing script: {e}")

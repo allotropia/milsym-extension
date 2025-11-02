@@ -10,9 +10,10 @@ if base_dir not in sys.path:
 
 from com.sun.star.awt import Size, Point
 from com.sun.star.beans import NamedValue, PropertyValue
+from com.sun.star.xml import AttributeData
 
 
-def insertSvgGraphic(ctx, model, svg_data):
+def insertSvgGraphic(ctx, model, svg_data, params):
     try:
         pipe = ctx.ServiceManager.createInstanceWithContext(
             "com.sun.star.io.Pipe", ctx)
@@ -32,6 +33,9 @@ def insertSvgGraphic(ctx, model, svg_data):
         shape_size.Height = 930
         shape_size.Width = 4000
         shape.setSize(shape_size)
+
+        # set MilSym-specific user defined attributes
+        insertGraphicAttributes(shape, params)
 
         # TODO: Set default anchoring for text documents
         #try:
@@ -74,3 +78,20 @@ def insertSvgGraphic(ctx, model, svg_data):
     except Exception as e:
         print(f"Error inserting SVG graphic: {e}")
 
+
+def insertGraphicAttributes(shape, params):
+    attributeHash = shape.UserDefinedAttributes
+    userAttrs = AttributeData()
+
+    # first tuple is unnamed 'milsym code' entry. special handling.
+    userAttrs.Type = "CDATA"
+    userAttrs.Value = params[0]
+    attributeHash["MilSymCode"] = userAttrs
+
+    for entry in params[1:]:
+        userAttrs.Type = "CDATA"
+        userAttrs.Value = entry.Value
+        attributeHash["MilSym" + entry.Name[0].upper() + entry.Name[1:]] = userAttrs
+
+    # seems we're getting a copy above; set it explicitely
+    shape.setPropertyValue("UserDefinedAttributes", attributeHash)

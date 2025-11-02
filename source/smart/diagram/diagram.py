@@ -15,6 +15,7 @@ import uno
 from abc import ABC, abstractmethod
 from com.sun.star.beans import PropertyValue
 from com.sun.star.awt import Point, Size
+from com.sun.star.xml import AttributeData
 
 class Diagram(ABC):
     """Base diagram class - simplified version of the Java Diagram class"""
@@ -145,10 +146,14 @@ class Diagram(ABC):
     # set SVG data from symbol dialog
     def set_svg_data(self, svg_data):
         x_selected_shapes = self.get_controller().get_selected_shapes()
+        last_shape = None
         for i in range(x_selected_shapes.getCount()):
             x_shape = x_selected_shapes.getByIndex(i)
             if x_shape is not None:
+                last_shape = x_shape
                 self.set_new_shape_properties(x_shape, "GraphicObjectShape", svg_data)
+
+        return last_shape
 
     def set_new_shape_properties(self, shape, shape_type: str, svg_data):
         """Set shape properties"""
@@ -162,6 +167,7 @@ class Diagram(ABC):
                 media_properties = (PropertyValue("InputStream", 0, pipe, 0),)
                 graphic = graphic_provider.queryGraphic(media_properties)
                 shape.setPropertyValue("Graphic", graphic)
+
         except Exception as ex:
             print(f"Error setting shape properties: {ex}")
 

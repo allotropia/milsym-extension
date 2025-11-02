@@ -16,7 +16,7 @@ if base_dir not in sys.path:
 
 from data import symbols_data
 from data import country_data
-from utils import insertSvgGraphic
+from utils import insertSvgGraphic, insertGraphicAttributes
 
 class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
@@ -159,9 +159,15 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             return True
         elif methodName == "dialog_btSave":
             if self.controller is not None:
-                self.controller.get_diagram().set_svg_data(self.final_svg_data)
+                shape = self.controller.get_diagram().set_svg_data(
+                    self.final_svg_data)
+                insertGraphicAttributes(shape,
+                                        self.final_svg_args)
             else:
-                insertSvgGraphic(self.ctx, self.model, self.final_svg_data)
+                insertSvgGraphic(
+                    self.ctx, self.model,
+                    self.final_svg_data,
+                    self.final_svg_args)
             dialog.endExecute()
             return True
         elif methodName == "dialog_btCancel":
