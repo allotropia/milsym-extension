@@ -8,6 +8,7 @@
 
 import os
 import sys
+import uno
 import unohelper
 
 base_dir = os.path.dirname(__file__)
@@ -158,8 +159,8 @@ class Gui:
         m_res_root_url = self.get_package_location() + "/dialog/"
 
         try:
-            args = (m_res_root_url, True, self.get_locale(), dialog_name, '', None)
-            x_resources = self._x_context.ServiceManager.createInstanceWithArgumentsAndContext('com.sun.star.resource.StringResourceWithLocation', args, self._x_context)
+            args = (m_res_root_url, True, self.get_locale(), dialog_name, '', uno.Any("com.sun.star.task.XInteractionHandler", None))
+            x_resources = uno.invoke(self._x_context.ServiceManager, 'createInstanceWithArgumentsAndContext', ('com.sun.star.resource.StringResourceWithLocation', args, self._x_context))
         except Exception as ex:
             print(f"Error creating string resource: {ex}")
 
