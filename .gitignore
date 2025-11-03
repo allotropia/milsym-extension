@@ -1,5 +1,7 @@
 *.oxt
+milsymbol/milsymbol.js
 *.py[codz]
 __pycache__/
 *$py.class
 .vscode
+*~
