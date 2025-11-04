@@ -43,6 +43,7 @@ rsync -av \
     --exclude="milsymbol/sigint-reinforced-specialheadquarter.js" \
     --exclude="milsymbol/stack-extension.mjs" \
     --exclude="milsymbol/country-flags.js" \
+    --exclude="milsymbol/convert-to-unicode.py" \
     --exclude="*~" \
     --exclude=".git/" \
     --exclude=".gitignore" \

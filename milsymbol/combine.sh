@@ -18,7 +18,7 @@ set -e  # Exit on any error
 INPUT_FILE="milsymbol-3.0.3.js"
 OUTPUT_FILE="milsymbol.js"
 
-cp $INPUT_FILE $OUTPUT_FILE
+python3 convert-to-unicode.py $INPUT_FILE > $OUTPUT_FILE
 
 # Replace 'const' and 'let' with 'var'
 sed -i -E -e 's/\<const|let\>/var/g' $OUTPUT_FILE
