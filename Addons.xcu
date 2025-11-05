@@ -13,6 +13,7 @@
           <node oor:name="M1" oor:op="replace">
             <prop oor:name="Title">
               <value xml:lang="en-US">Symbol Dialog</value>
+              <value xml:lang="de-DE">Symbol-Dialog öffnen...</value>
             </prop>
             <prop oor:name="URL">
               <value>service:com.collabora.milsymbol.do?symbolDialog</value>
@@ -24,6 +25,7 @@
           <node oor:name="M2" oor:op="replace">
             <prop oor:name="Title">
               <value xml:lang="en-US">Insert Test Symbol</value>
+              <value xml:lang="de-DE">Test-Symbol einfügen</value>
             </prop>
             <prop oor:name="URL">
               <value>service:com.collabora.milsymbol.do?testSymbol</value>
@@ -35,6 +37,7 @@
           <node oor:name="M3" oor:op="replace">
             <prop oor:name="Title">
               <value xml:lang="en-US">Insert Test Org Chart</value>
+              <value xml:lang="de-DE">Test-Organigramm einfügen</value>
             </prop>
             <prop oor:name="URL">
               <value>service:com.collabora.milsymbol.do?orgChart</value>
