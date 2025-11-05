@@ -101,3 +101,8 @@ def insertGraphicAttributes(shape, params):
 
     # seems we're getting a copy above; set it explicitely
     shape.setPropertyValue("UserDefinedAttributes", attributeHash)
+
+
+def getExtensionBasePath(ctx, extensionName="com.collabora.milsymbol"):
+    srv = ctx.getByName("/singletons/com.sun.star.deployment.PackageInformationProvider")
+    return os.path.basename(srv.getPackageLocation(extensionName))

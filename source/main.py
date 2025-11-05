@@ -17,14 +17,13 @@ if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
 
 from symbol_dialog import open_symbol_dialog
-from utils import insertSvgGraphic
+from utils import insertSvgGraphic, getExtensionBasePath
 from smart.controller import Controller
 from smart.diagram.data_of_diagram import DataOfDiagram
 
 from com.sun.star.awt import Size, Point
 from com.sun.star.beans import NamedValue, PropertyValue
 from com.sun.star.task import XJobExecutor
-#from com.sun.star.text import TextContentAnchorType
 
 
 # The MainJob is a UNO component derived from unohelper.Base class
@@ -83,7 +82,8 @@ class MainJob(unohelper.Base, XJobExecutor):
             "com.sun.star.script.provider.MasterScriptProviderFactory", self.ctx)
         provider = factory.createScriptProvider(model)
         script = provider.getScript(
-            "vnd.sun.star.script:milsymbol.milsymbol.js?language=JavaScript&location=user:uno_packages/milsymbol-extension.oxt")
+            "vnd.sun.star.script:milsymbol.milsymbol.js?language=JavaScript&location=user:uno_packages/" +
+            getExtensionBasePath(self.ctx))
 
         args = (
             code,

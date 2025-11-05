@@ -22,7 +22,7 @@ if base_dir not in sys.path:
 
 from data import symbols_data
 from data import country_data
-from utils import insertSvgGraphic, insertGraphicAttributes
+from utils import insertSvgGraphic, insertGraphicAttributes, getExtensionBasePath
 
 class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
@@ -40,7 +40,9 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
         self.factory = self.ctx.getServiceManager().createInstanceWithContext("com.sun.star.script.provider.MasterScriptProviderFactory", self.ctx)
         self.provider = self.factory.createScriptProvider(model)
-        self.script = self.provider.getScript("vnd.sun.star.script:milsymbol.milsymbol.js?language=JavaScript&location=user:uno_packages/milsymbol-extension.oxt")
+        self.script = self.provider.getScript(
+            "vnd.sun.star.script:milsymbol.milsymbol.js?language=JavaScript&location=user:uno_packages/" +
+            getExtensionBasePath(self.ctx))
 
     def init_dialog_controls(self):
         self.init_listbox(self.dialog)
