@@ -74,7 +74,7 @@ class OrgChart(OrganizationChart):
                 # Create base control shape
                 x_base_shape = self.create_shape(
                     "RectangleShape", 0,
-                    self._page_props.border_left, self._page_props.border_top,
+                    self.page_props.border_left, self.page_props.border_top,
                     self._draw_area_width, self._draw_area_height
                 )
                 self._x_shapes.add(x_base_shape)
@@ -87,7 +87,7 @@ class OrgChart(OrganizationChart):
                 # Create start shape
                 x_start_shape = self.create_shape(
                     "RectangleShape", 1,
-                    self._page_props.border_left, self._page_props.border_top,
+                    self.page_props.border_left, self.page_props.border_top,
                     self._draw_area_width, self._draw_area_height
                 )
                 self._x_shapes.add(x_start_shape)
@@ -204,7 +204,7 @@ class OrgChart(OrganizationChart):
             # Create base control shape
             x_base_shape = self.create_shape(
                 "RectangleShape", 0,
-                self._page_props.border_left + self._half_diff, self._page_props.border_top,
+                self.page_props.border_left + self._half_diff, self.page_props.border_top,
                 self._draw_area_width, self._draw_area_height
             )
             self._x_shapes.add(x_base_shape)
@@ -229,9 +229,9 @@ class OrgChart(OrganizationChart):
                 ver_space = 0
 
             # Create start shape (root)
-            x_coord = (self._page_props.border_left + self._half_diff +
+            x_coord = (self.page_props.border_left + self._half_diff +
                       self._draw_area_width // 2 - shape_width // 2)
-            y_coord = self._page_props.border_top
+            y_coord = self.page_props.border_top
 
             x_start_shape = self.create_shape(
                 "RectangleShape", 1, x_coord, y_coord, shape_width, shape_height
@@ -243,8 +243,8 @@ class OrgChart(OrganizationChart):
             self.set_shape_properties(x_start_shape, "RectangleShape")
 
             # Create child shapes
-            x_coord = self._page_props.border_left + self._half_diff
-            y_coord = self._page_props.border_top + shape_height + ver_space
+            x_coord = self.page_props.border_left + self._half_diff
+            y_coord = self.page_props.border_top + shape_height + ver_space
             x_selected_shape = None
 
             for i in range(2, n + 1):

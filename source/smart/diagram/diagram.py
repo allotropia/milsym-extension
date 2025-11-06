@@ -65,7 +65,7 @@ class Diagram(ABC):
                 self.border_right = 1000
                 self.border_bottom = 1000
 
-        self._page_props = PageProps()
+        self.page_props = PageProps()
 
     def get_controller(self):
         """Get controller reference"""
@@ -450,27 +450,27 @@ class Diagram(ABC):
             border_left = border_right = border_top = border_bottom = 1000
 
         # Update page properties
-        self._page_props.Width = width
-        self._page_props.Height = height
-        self._page_props.BorderLeft = border_left
-        self._page_props.BorderRight = border_right
-        self._page_props.BorderTop = border_top
-        self._page_props.BorderBottom = border_bottom
+        self.page_props.Width = width
+        self.page_props.Height = height
+        self.page_props.BorderLeft = border_left
+        self.page_props.BorderRight = border_right
+        self.page_props.BorderTop = border_top
+        self.page_props.BorderBottom = border_bottom
 
     def set_group_size(self):
         """Set group size based on page properties"""
         # Calculate available drawing area
         if self._x_draw_page is None:
             self._x_draw_page = self.get_controller().get_current_page()
-        if self._page_props is None:
+        if self.page_props is None:
             self.adjust_page_props()
-        if self._page_props is not None:
-            self._draw_area_width = (self._page_props.Width -
-                                     self._page_props.BorderLeft -
-                                     self._page_props.BorderRight)
-            self._draw_area_height = (self._page_props.Height -
-                                      self._page_props.BorderTop -
-                                      self._page_props.BorderBottom)
+        if self.page_props is not None:
+            self._draw_area_width = (self.page_props.Width -
+                                     self.page_props.BorderLeft -
+                                     self.page_props.BorderRight)
+            self._draw_area_height = (self.page_props.Height -
+                                      self.page_props.BorderTop -
+                                      self.page_props.BorderBottom)
 
     @abstractmethod
     def get_diagram_type_name(self) -> str:
