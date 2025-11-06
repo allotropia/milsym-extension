@@ -213,7 +213,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         current_symbol = self.get_current_symbol(selected_index)
 
         self.symbolSet_value =                  self.fill_listbox(dialog, "ltbSymbolSet",       symbols_data.SYMBOLS, selected_index)
-        self.mainIcon_value =                   self.fill_listbox(dialog, "ltbMainIcon",        current_symbol["MainIcon"], 1)
+        self.mainIcon_value =                   self.fill_listbox(dialog, "ltbMainIcon",        current_symbol["MainIcon"], 0)
         self.firstIcon_value =                  self.fill_listbox(dialog, "ltbFirstIcon",       current_symbol["FirstIconModifier"], 0)
         self.secondIcon_value =                 self.fill_listbox(dialog, "ltbSecondIcon",      current_symbol["SecondIconModifier"], 0)
         self.echelonMobility_value =            self.fill_listbox(dialog, "ltbEchelonMobility", current_symbol["EchelonMobility"], 0)

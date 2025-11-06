@@ -23,6 +23,9 @@ python3 convert-to-unicode.py $INPUT_FILE > $OUTPUT_FILE
 # Replace 'const' and 'let' with 'var'
 sed -i -E -e 's/\<const|let\>/var/g' $OUTPUT_FILE
 
+# Replace unsafe length check with null-safe version
+sed -i -e 's/e=0<E.pre.length||0<E.post.length/e=(E.pre\&\&E.pre.length>0)\|\|(E.post\&\&E.post.length>0)/' "$OUTPUT_FILE"
+
 sed -e 's/^export default {/const pathsReinforced = {/' \
  paths-reinforced.js >> $OUTPUT_FILE
 sed -E -e 's|^import pathsReinforced from "./paths-reinforced";||' \

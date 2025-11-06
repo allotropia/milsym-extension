@@ -266,7 +266,7 @@ SYMBOL_DETAILS = {
             {"label": "Missile", "value": "110000"}
         ],
         "FirstIconModifier": [
-            {"label": "Unspecified", "value": "000"},
+            {"label": "Unspecified", "value": "000000"},
             {"label": "Air  –  Launch Origin", "value": "001"},
             {"label": "Space  –  Launch Origin", "value": "004"},
             {"label": "Subsurface  –  Launch Origin", "value": "003"},
@@ -338,7 +338,7 @@ SYMBOL_DETAILS = {
     
     "SPACE":{
         "MainIcon": [
-            {"label": "Unspecified", "value": "0000"},
+            {"label": "Unspecified", "value": "000000"},
             {"label": "Military", "value": "0000"},
             {"label": "Space Vehicle  –  Military", "value": "0000"},
             {"label": "Re-Entry Vehicle  –  Military", "value": "0000"},
@@ -376,7 +376,7 @@ SYMBOL_DETAILS = {
             {"label": "Manual Track", "value": "0000"}
         ],
         "FirstIconModifier": [
-            {"label": "Unspecified", "value": "00"},
+            {"label": "Unspecified", "value": "000"},
             {"label": "Armored  –  Capability", "value": "00"},
             {"label": "Attack or Attack/Strike  –  Capability", "value": "00"},
             {"label": "Ballistic Missile/Ballistic Missile Defense Shooter  –  Capability", "value": "00"},
@@ -452,7 +452,7 @@ SYMBOL_DETAILS = {
             {"label": "Team/Crew  –  Support Level", "value": "00"}
         ],
         "SecondIconModifier": [
-            {"label": "Unspecified", "value": "00"},
+            {"label": "Unspecified", "value": "000"},
             {"label": "Electromagnetic Warfare (ASAT)  –  Only used with Anti-Satellite Weapon Main Icon", "value": "00"},
             {"label": "Autonomous Control  –  Capability", "value": "00"},
             {"label": "Close Range  –  Capability", "value": "00"},
@@ -508,16 +508,17 @@ SYMBOL_DETAILS = {
         
     "SPACE_MISSILE": {
         "MainIcon": [
-            {"label": "Missile", "value": "00"}
+            {"label": "Missile", "value": "110000"}
         ],
         "FirstIconModifier": [
-            {"label": "Unspecified", "value": "00"},
+            {"label": "Unspecified", "value": "000"},
             {"label": "Space  –  Launch Origin", "value": "00"},
             {"label": "Ballistic  –  Missile Class", "value": "00"},
             {"label": "Hypersonic  –  Missile Class", "value": "00"},
             {"label": "Interceptor  –  Missile Class", "value": "00"}
         ],
         "SecondIconModifier": [
+            {"label": "Unspecified", "value": "000"},
             {"label": "Cyberspace  –  Capability", "value": "00"},
             {"label": "Expendable  –  Capability", "value": "00"},
             {"label": "Heavy  –  Capability", "value": "00"},
@@ -1033,7 +1034,7 @@ SYMBOL_DETAILS = {
     
     "LAND_CIVILIAN_UNIT_ORGANIZATION": {
         "MainIcon": [
-            {"label": "Unspecified", "value": "00"},
+            {"label": "Unspecified", "value": "000000"},
             {"label": "Environmental Protection  –  Civilian", "value": "00"},
             {"label": "Government Organization  –  Civilian", "value": "00"},
             {"label": "Individual  –  Civilian", "value": "00"},
@@ -1046,7 +1047,7 @@ SYMBOL_DETAILS = {
             {"label": "Emergency Medical Operation  –  Civilian", "value": "00"}
         ],
         "FirstIconModifier": [
-            {"label": "Unspecified", "value": "00"},
+            {"label": "Unspecified", "value": "000"},
             {"label": "Armored  –  Capability", "value": "00"},
             {"label": "Attack or Attack/Strike  –  Capability", "value": "00"},
             {"label": "Ballistic Missile/Ballistic Missile Defense Shooter  –  Capability", "value": "00"},
@@ -1130,7 +1131,7 @@ SYMBOL_DETAILS = {
             {"label": "Team/Crew  –  Support Level", "value": "00"}
         ],
         "SecondIconModifier": [
-            {"label": "Unspecified", "value": "00"},
+            {"label": "Unspecified", "value": "000"},
             {"label": "Autonomous Control  –  Capability", "value": "00"},
             {"label": "Close Range  –  Capability", "value": "00"},
             {"label": "Cyberspace  –  Capability", "value": "00"},
@@ -1175,19 +1176,39 @@ SYMBOL_DETAILS = {
     },
     
     "LAND_EQUIPMENT": {
-        "MainIcon": [],
-        "FirstIconModifier": [],
-        "SecondIconModifier": [],
-        "EchelonMobility": [],
-        "HeadquartersTaskforceDummy": []
+        "MainIcon": [
+            {"label": "Unspecified", "value": "000000"}
+        ],
+        "FirstIconModifier": [
+            {"label": "Unspecified", "value": "000"}
+        ],
+        "SecondIconModifier": [
+            {"label": "Unspecified", "value": "000"}
+        ],
+        "EchelonMobility": [
+            {"label": "Unspecified", "value": "00"},
+        ],
+        "HeadquartersTaskforceDummy": [
+            {"label": "Unspecified", "value": "00"},
+        ]
     },
     
     "LAND_INSTALLATIONS": {
-        "MainIcon": [],
-        "FirstIconModifier": [],
-        "SecondIconModifier": [],
-        "EchelonMobility": [],
-        "HeadquartersTaskforceDummy": []
+        "MainIcon": [
+            {"label": "Unspecified", "value": "000000"}
+        ],
+        "FirstIconModifier": [
+            {"label": "Unspecified", "value": "000"}
+        ],
+        "SecondIconModifier": [
+            {"label": "Unspecified", "value": "000"}
+        ],
+        "EchelonMobility": [
+            {"label": "Unspecified", "value": "00"},
+        ],
+        "HeadquartersTaskforceDummy": [
+            {"label": "Unspecified", "value": "00"},
+        ]
     },
     
     "CONTROL_MEASURE": {
@@ -1199,91 +1220,201 @@ SYMBOL_DETAILS = {
     },
     
     "DISMOUNTED_INDIVIDUALS": {
-        "MainIcon": [],
-        "FirstIconModifier": [],
-        "SecondIconModifier": [],
-        "EchelonMobility": [],
-        "HeadquartersTaskforceDummy": []
+        "MainIcon": [
+            {"label": "Unspecified", "value": "000000"}
+        ],
+        "FirstIconModifier": [
+            {"label": "Unspecified", "value": "000"}
+        ],
+        "SecondIconModifier": [
+            {"label": "Unspecified", "value": "000"}
+        ],
+        "EchelonMobility": [
+            {"label": "Unspecified", "value": "00"},
+        ],
+        "HeadquartersTaskforceDummy": [
+            {"label": "Unspecified", "value": "00"},
+        ]
     },
     
     "SEA_SURFACE": {
-        "MainIcon": [],
-        "FirstIconModifier": [],
-        "SecondIconModifier": [],
-        "EchelonMobility": [],
-        "HeadquartersTaskforceDummy": []
+        "MainIcon": [
+            {"label": "Unspecified", "value": "000000"}
+        ],
+        "FirstIconModifier": [
+            {"label": "Unspecified", "value": "000"}
+        ],
+        "SecondIconModifier": [
+            {"label": "Unspecified", "value": "000"}
+        ],
+        "EchelonMobility": [
+            {"label": "Unspecified", "value": "00"},
+        ],
+        "HeadquartersTaskforceDummy": [
+            {"label": "Unspecified", "value": "00"},
+        ]
     },
     
     "SEA_SUBSURFACE": {
-        "MainIcon": [],
-        "FirstIconModifier": [],
-        "SecondIconModifier": [],
-        "EchelonMobility": [],
-        "HeadquartersTaskforceDummy": []
+        "MainIcon": [
+            {"label": "Unspecified", "value": "000000"}
+        ],
+        "FirstIconModifier": [
+            {"label": "Unspecified", "value": "000"}
+        ],
+        "SecondIconModifier": [
+            {"label": "Unspecified", "value": "000"}
+        ],
+        "EchelonMobility": [
+            {"label": "Unspecified", "value": "00"},
+        ],
+        "HeadquartersTaskforceDummy": [
+            {"label": "Unspecified", "value": "00"},
+        ]
     },
     
     "MINE_WARFARE": {
-        "MainIcon": [],
-        "FirstIconModifier": [],
-        "SecondIconModifier": [],
-        "EchelonMobility": [],
-        "HeadquartersTaskforceDummy": []
+        "MainIcon": [
+            {"label": "Unspecified", "value": "000000"}
+        ],
+        "FirstIconModifier": [
+            {"label": "Unspecified", "value": "000"}
+        ],
+        "SecondIconModifier": [
+            {"label": "Unspecified", "value": "000"}
+        ],
+        "EchelonMobility": [
+            {"label": "Unspecified", "value": "00"},
+        ],
+        "HeadquartersTaskforceDummy": [
+            {"label": "Unspecified", "value": "00"},
+        ]
     },
     
     "ACTIVITY_EVENT": {
-        "MainIcon": [],
-        "FirstIconModifier": [],
-        "SecondIconModifier": [],
-        "EchelonMobility": [],
-        "HeadquartersTaskforceDummy": []
+        "MainIcon": [
+            {"label": "Unspecified", "value": "000000"}
+        ],
+        "FirstIconModifier": [
+            {"label": "Unspecified", "value": "000"}
+        ],
+        "SecondIconModifier": [
+            {"label": "Unspecified", "value": "000"}
+        ],
+        "EchelonMobility": [
+            {"label": "Unspecified", "value": "00"},
+        ],
+        "HeadquartersTaskforceDummy": [
+            {"label": "Unspecified", "value": "00"},
+        ]
     },
     
     "SIGNALS_INTELLIGENCE_SPACE": {
-        "MainIcon": [],
-        "FirstIconModifier": [],
-        "SecondIconModifier": [],
-        "EchelonMobility": [],
-        "HeadquartersTaskforceDummy": []
+        "MainIcon": [
+            {"label": "Unspecified", "value": "000000"}
+        ],
+        "FirstIconModifier": [
+            {"label": "Unspecified", "value": "000"}
+        ],
+        "SecondIconModifier": [
+            {"label": "Unspecified", "value": "000"}
+        ],
+        "EchelonMobility": [
+            {"label": "Unspecified", "value": "00"},
+        ],
+        "HeadquartersTaskforceDummy": [
+            {"label": "Unspecified", "value": "00"},
+        ]
     },
     
     "SIGNALS_INTELLIGENCE_AIR": {
-        "MainIcon": [],
-        "FirstIconModifier": [],
-        "SecondIconModifier": [],
-        "EchelonMobility": [],
-        "HeadquartersTaskforceDummy": []
+        "MainIcon": [
+            {"label": "Unspecified", "value": "000000"}
+        ],
+        "FirstIconModifier": [
+            {"label": "Unspecified", "value": "000"}
+        ],
+        "SecondIconModifier": [
+            {"label": "Unspecified", "value": "000"}
+        ],
+        "EchelonMobility": [
+            {"label": "Unspecified", "value": "00"},
+        ],
+        "HeadquartersTaskforceDummy": [
+            {"label": "Unspecified", "value": "00"},
+        ]
     },
     
     "SIGNALS_INTELLIGENCE_LAND": {
-        "MainIcon": [],
-        "FirstIconModifier": [],
-        "SecondIconModifier": [],
-        "EchelonMobility": [],
-        "HeadquartersTaskforceDummy": []
+        "MainIcon": [
+            {"label": "Unspecified", "value": "000000"}
+        ],
+        "FirstIconModifier": [
+            {"label": "Unspecified", "value": "000"}
+        ],
+        "SecondIconModifier": [
+            {"label": "Unspecified", "value": "000"}
+        ],
+        "EchelonMobility": [
+            {"label": "Unspecified", "value": "00"},
+        ],
+        "HeadquartersTaskforceDummy": [
+            {"label": "Unspecified", "value": "00"},
+        ]
     },
     
     "SIGNALS_INTELLIGENCE_SURFACE": {
-        "MainIcon": [],
-        "FirstIconModifier": [],
-        "SecondIconModifier": [],
-        "EchelonMobility": [],
-        "HeadquartersTaskforceDummy": []
+        "MainIcon": [
+            {"label": "Unspecified", "value": "000000"}
+        ],
+        "FirstIconModifier": [
+            {"label": "Unspecified", "value": "000"}
+        ],
+        "SecondIconModifier": [
+            {"label": "Unspecified", "value": "000"}
+        ],
+        "EchelonMobility": [
+            {"label": "Unspecified", "value": "00"},
+        ],
+        "HeadquartersTaskforceDummy": [
+            {"label": "Unspecified", "value": "00"},
+        ]
     },
     
     "SIGNALS_INTELLIGENCE_SUBSURFACE": {
-        "MainIcon": [],
-        "FirstIconModifier": [],
-        "SecondIconModifier": [],
-        "EchelonMobility": [],
-        "HeadquartersTaskforceDummy": []
+        "MainIcon": [
+            {"label": "Unspecified", "value": "000000"}
+        ],
+        "FirstIconModifier": [
+            {"label": "Unspecified", "value": "000"}
+        ],
+        "SecondIconModifier": [
+            {"label": "Unspecified", "value": "000"}
+        ],
+        "EchelonMobility": [
+            {"label": "Unspecified", "value": "00"},
+        ],
+        "HeadquartersTaskforceDummy": [
+            {"label": "Unspecified", "value": "00"},
+        ]
     },
     
     "CYBERSPACE": {
-        "MainIcon": [],
-        "FirstIconModifier": [],
-        "SecondIconModifier": [],
-        "EchelonMobility": [],
-        "HeadquartersTaskforceDummy": []
+        "MainIcon": [
+            {"label": "Unspecified", "value": "000000"}
+        ],
+        "FirstIconModifier": [
+            {"label": "Unspecified", "value": "000"}
+        ],
+        "SecondIconModifier": [
+            {"label": "Unspecified", "value": "000"}
+        ],
+        "EchelonMobility": [
+            {"label": "Unspecified", "value": "00"},
+        ],
+        "HeadquartersTaskforceDummy": [
+            {"label": "Unspecified", "value": "00"},
+        ]
     }
 }
 
