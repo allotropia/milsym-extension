@@ -172,9 +172,6 @@ class OrganizationChartTree(ABC):
 
     def get_tree_item(self, shape):
         """Get tree item for a given shape"""
-        print("get_tree_item ", shape)
-        print("self._x_root_shape ", self._x_root_shape)
-        print("self._root_item ", self._root_item)
         if self._x_root_shape is not None:
             if shape == self._x_root_shape:
                 return self._root_item
@@ -204,7 +201,6 @@ class OrganizationChartTree(ABC):
         """Get connector shape that connects to this rectangle shape"""
         for x_conn_shape in self._connector_list:
             if x_rect_shape == self.get_end_shape_of_connector(x_conn_shape):
-                print("Found dad connector shape:", x_conn_shape)
                 return x_conn_shape
         return None
 

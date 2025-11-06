@@ -266,7 +266,6 @@ class Controller(unohelper.Base, XSelectionChangeListener):
         return None
 
     def create_diagram(self, data=None):
-        print("Controller::create_diagram called")
         """Create diagram with optional data"""
         self.remove_selection_listener()
         self.instantiate_diagram()

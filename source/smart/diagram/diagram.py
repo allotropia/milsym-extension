@@ -105,7 +105,6 @@ class Diagram(ABC):
                 print(f"Error setting group shape size and position: {ex}")
 
     def create_shape(self, shape_type: str, shape_id: int, x: int = 0, y: int = 0, width: int = 0, height: int = 0):
-        print(f"Creating {shape_type} with ID {shape_id} at ({x}, {y}) size ({width}, {height})")
         x_shape = None
         try:
             # Create shape using LibreOffice service manager
@@ -135,7 +134,6 @@ class Diagram(ABC):
 
     def set_text_of_shape(self, shape, text: str):
         """Set text content of a shape"""
-        print(f"Setting text '{text}' on shape")
         shape.setString(text)
 
     def set_move_protect_of_shape(self, shape):
@@ -148,7 +146,7 @@ class Diagram(ABC):
     def set_color_prop(self, color: int):
         """Set color property"""
         # not needed
-        print(f"Setting color to {hex(color)}")
+        pass
 
     # set SVG data from symbol dialog
     def set_svg_data(self, svg_data):
@@ -343,7 +341,6 @@ class Diagram(ABC):
     def init_diagram(self):
         """Initialize diagram"""
         try:
-            print("2 Initializing diagram...")
             x_curr_shape = None
             curr_shape_name = ""
             self._x_draw_page = self.get_controller().get_current_page()
@@ -390,7 +387,6 @@ class Diagram(ABC):
 
             # Create group shape
             self._x_group_shape = self._x_model.createInstance("com.sun.star.drawing.GroupShape")
-            print("Created group shape:", self._x_group_shape)
 
             # Set name for the group shape
             self._x_group_shape.setName(self.get_diagram_type_name() + str(self._diagram_id) + "-GroupShape")

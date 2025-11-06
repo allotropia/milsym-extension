@@ -206,7 +206,6 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
         self.dialog = dialog
 
     def callHandlerMethod(self, dialog, eventObject, methodName):
-        print("callHandlerMethod ", methodName)
         if methodName == "OnAdd":
             if self.get_controller().get_diagram() is not None:
                 self.get_controller().remove_selection_listener()

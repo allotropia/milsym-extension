@@ -54,7 +54,6 @@ class MainJob(unohelper.Base, XJobExecutor):
 
     def onOrgChart(self):
         """Create a simple organization chart"""
-        print("Creating simple organization chart...")
 
         # Create controller and GUI instances (stub implementations)
         controller = Controller(None, self.ctx, self.desktop.getCurrentFrame())
@@ -70,11 +69,9 @@ class MainJob(unohelper.Base, XJobExecutor):
         data.add(3, "Senior Developer")         # Level 3 (under Dev Manager)
         data.add(3, "Junior Developer")         # Level 3 (under Dev Manager)
 
-        print(f"Created data with {data.size()} items")
         data.print_data()
 
         # Create the diagram (this calls stub methods)
-        print("\nCreating diagram...")
         controller.create_diagram(data)
 
     def insertSymbol(self, model, code):

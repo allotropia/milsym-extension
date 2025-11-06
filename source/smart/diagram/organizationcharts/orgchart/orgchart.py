@@ -23,7 +23,6 @@ class OrgChart(OrganizationChart):
     """Organization chart implementation"""
 
     def __init__(self, controller, gui, x_frame, x_context):
-        print("OrgChart::__init__ called")
         super().__init__(controller, gui, x_frame, x_context)
         self._diagram_tree = None
 
@@ -50,7 +49,6 @@ class OrgChart(OrganizationChart):
         return "OrganizationDiagram"
 
     def create_diagram(self, datas):
-        print("Creating organization chart diagram orgchart.py ...")
         """Create diagram from data"""
         if isinstance(datas, int):
             # Create simple diagram with n shapes
@@ -59,7 +57,6 @@ class OrgChart(OrganizationChart):
 
         # Create diagram from DataOfDiagram
         last_hor_level = OrgChartTree.LAST_HOR_LEVEL
-        print("last_hor_level:", last_hor_level)
 
         if not datas.is_empty():
             super().create_diagram(datas)

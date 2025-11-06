@@ -486,7 +486,6 @@ class OrganizationChart(Diagram):
 
     def create_diagram(self, data=None):
         """Create diagram - base implementation"""
-        print("Creating organization chart diagram...")
         super().create_diagram(data)
 
     def set_null_selected_item(self, item):
