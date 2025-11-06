@@ -16,6 +16,7 @@ if base_dir not in sys.path:
 
 from com.sun.star.awt import Size, Point
 from com.sun.star.beans import NamedValue, PropertyValue
+from com.sun.star.text.TextContentAnchorType import AT_PARAGRAPH
 from com.sun.star.xml import AttributeData
 
 
@@ -44,10 +45,10 @@ def insertSvgGraphic(ctx, model, svg_data, params):
         insertGraphicAttributes(shape, params)
 
         # TODO: Set default anchoring for text documents
-        #try:
-        #    shape.setPropertyValue("AnchorType", TextContentAnchorType.AT_PARAGRAPH)
-        #except:
-        #    pass  # Not all document types support anchoring
+        try:
+            shape.setPropertyValue("AnchorType", AT_PARAGRAPH)
+        except:
+            pass  # Not all document types support anchoring
 
         # Writer
         if model.supportsService("com.sun.star.text.TextDocument"):

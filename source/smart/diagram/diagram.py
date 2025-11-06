@@ -22,6 +22,7 @@ import uno
 from abc import ABC, abstractmethod
 from com.sun.star.beans import PropertyValue
 from com.sun.star.awt import Point, Size
+from com.sun.star.text.TextContentAnchorType import AT_PARAGRAPH
 from com.sun.star.xml import AttributeData
 
 class Diagram(ABC):
@@ -398,6 +399,7 @@ class Diagram(ABC):
 
     def add_group_shape_to_draw_page(self):
         if self._x_model.supportsService("com.sun.star.text.TextDocument"): # Writer
+            self._x_group_shape.setPropertyValue("AnchorType", AT_PARAGRAPH)
             self._x_draw_page.getText().insertTextContent( self._x_draw_page, self._x_group_shape, True)
         elif self._x_model.supportsService("com.sun.star.sheet.SpreadsheetDocument"): # Calc
             self._x_draw_page.getDrawPage().add(self._x_group_shape)
