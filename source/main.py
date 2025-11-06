@@ -60,14 +60,10 @@ class MainJob(unohelper.Base, XJobExecutor):
 
         # Create hierarchical data
         data = DataOfDiagram()
-        data.add(0, "CEO")                    # Level 0 (root)
-        data.add(1, "Chief Technology Officer")  # Level 1
-        data.add(1, "Chief Financial Officer")   # Level 1
-        data.add(1, "Chief Marketing Officer")   # Level 1
-        data.add(2, "Development Manager")       # Level 2 (under CTO)
-        data.add(2, "QA Manager")               # Level 2 (under CTO)
-        data.add(3, "Senior Developer")         # Level 3 (under Dev Manager)
-        data.add(3, "Junior Developer")         # Level 3 (under Dev Manager)
+        data.add(0, "")  # Level 0 (root)
+        data.add(1, "")  # Level 1
+        data.add(1, "")  # Level 1
+        data.add(1, "")  # Level 1
 
         data.print_data()
 
