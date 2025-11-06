@@ -293,10 +293,10 @@ class Diagram(ABC):
         return False
 
     def is_connector_end_arrow_prop(self):
-        return True
+        return False
 
     def get_connectors_line_width_prop(self):
-        return 100
+        return 40
 
     def set_connector_shape_props(self, connector_shape, start_shape, start_conn_pos: int, end_shape, end_conn_pos: int):
         """Set connector shape properties"""
