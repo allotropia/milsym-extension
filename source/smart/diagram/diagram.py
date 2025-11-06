@@ -48,6 +48,7 @@ class Diagram(ABC):
         self._x_frame = x_frame
         self._x_context = x_context
         self._x_model = x_frame.getController().getModel()
+        self._x_controller = x_frame.getController()
         self._x_draw_page = None
         self._x_shapes = None
         self._diagram_id = -1
@@ -400,7 +401,8 @@ class Diagram(ABC):
     def add_group_shape_to_draw_page(self):
         if self._x_model.supportsService("com.sun.star.text.TextDocument"): # Writer
             self._x_group_shape.setPropertyValue("AnchorType", AT_PARAGRAPH)
-            self._x_draw_page.getText().insertTextContent( self._x_draw_page, self._x_group_shape, True)
+            cursor = self._x_controller.getViewCursor()
+            cursor.getText().insertTextContent(cursor, self._x_group_shape, False)
         elif self._x_model.supportsService("com.sun.star.sheet.SpreadsheetDocument"): # Calc
             self._x_draw_page.getDrawPage().add(self._x_group_shape)
         else: # Impress/Draw
@@ -408,40 +410,35 @@ class Diagram(ABC):
 
     def adjust_page_props(self):
         """Adjust page properties"""
-        width = 0
-        height = 0
-        border_left = 0
-        border_right = 0
-        border_top = 0
-        border_bottom = 0
+        # Default values - use A4 size
+        width = 21000  # Default A4 width
+        height = 29700  # Default A4 height
+        border_left = 1000
+        border_right = 1000
+        border_top = 1000
+        border_bottom = 1000
 
-        try:
-            # In Python UNO, draw page has direct access to property methods
-            x_page_properties = self._x_draw_page
+        # Writer does not provide a page size via the draw page
+        if not self._x_model.supportsService("com.sun.star.text.TextDocument"):
+            try:
+                width = int(self._x_draw_page.getPropertyValue("Width"))
+                height = int(self._x_draw_page.getPropertyValue("Height"))
+                border_left = int(self._x_draw_page.getPropertyValue("BorderLeft"))
+                border_right = int(self._x_draw_page.getPropertyValue("BorderRight"))
+                border_top = int(self._x_draw_page.getPropertyValue("BorderTop"))
+                border_bottom = int(self._x_draw_page.getPropertyValue("BorderBottom"))
 
-            width = int(x_page_properties.getPropertyValue("Width"))
-            height = int(x_page_properties.getPropertyValue("Height"))
-            border_left = int(x_page_properties.getPropertyValue("BorderLeft"))
-            border_right = int(x_page_properties.getPropertyValue("BorderRight"))
-            border_top = int(x_page_properties.getPropertyValue("BorderTop"))
-            border_bottom = int(x_page_properties.getPropertyValue("BorderBottom"))
-
-            # Ensure minimum border values
-            if border_left < 1000:
-                border_left = 1000
-            if border_right < 1000:
-                border_right = 1000
-            if border_top < 1000:
-                border_top = 1000
-            if border_bottom < 1000:
-                border_bottom = 1000
-
-        except Exception as ex:
-            print(f"Error in adjust_page_props: {ex}")
-            # Set default values on error
-            width = 21000  # Default A4 width
-            height = 29700  # Default A4 height
-            border_left = border_right = border_top = border_bottom = 1000
+                # Ensure minimum border values
+                if border_left < 1000:
+                    border_left = 1000
+                if border_right < 1000:
+                    border_right = 1000
+                if border_top < 1000:
+                    border_top = 1000
+                if border_bottom < 1000:
+                    border_bottom = 1000
+            except Exception as ex:
+                print(f"Error in adjust_page_props: {ex}")
 
         # Update page properties
         self.page_props.Width = width

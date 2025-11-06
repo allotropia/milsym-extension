@@ -199,7 +199,7 @@ class Controller(unohelper.Base, XSelectionChangeListener):
     def get_current_page(self):
         model= self._x_frame.getController().getModel()
         if model.supportsService("com.sun.star.text.TextDocument"):
-            return self._x_controller.getViewCursor() # Writer
+            return model.getDrawPage()
         elif model.supportsService("com.sun.star.sheet.SpreadsheetDocument"):
             return self._x_controller.getActiveSheet() # Calc
         else:
