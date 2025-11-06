@@ -13,7 +13,7 @@
 OrgChart class - Main organization chart implementation
 Python port of OrgChart.java
 """
-
+from ...diagram import Diagram
 from ..organization_chart import OrganizationChart
 from .orgchart_tree import OrgChartTree
 from .orgchart_tree_item import OrgChartTreeItem
@@ -70,7 +70,7 @@ class OrgChart(OrganizationChart):
 
                 # Create base control shape
                 x_base_shape = self.create_shape(
-                    "RectangleShape", 0,
+                    Diagram.DIAGRAM_BASE_SHAPE_TYPE, 0,
                     self.page_props.border_left, self.page_props.border_top,
                     self._draw_area_width, self._draw_area_height
                 )
@@ -83,7 +83,7 @@ class OrgChart(OrganizationChart):
 
                 # Create start shape
                 x_start_shape = self.create_shape(
-                    "RectangleShape", 1,
+                    Diagram.DIAGRAM_SHAPE_TYPE, 1,
                     self.page_props.border_left, self.page_props.border_top,
                     self._draw_area_width, self._draw_area_height
                 )
@@ -91,7 +91,7 @@ class OrgChart(OrganizationChart):
 
                 self.set_move_protect_of_shape(x_start_shape)
                 self.set_color_prop(self._LO_ORANGES[2])
-                self.set_shape_properties(x_start_shape, "GraphicObjectShape")
+                self.set_shape_properties(x_start_shape, Diagram.DIAGRAM_SHAPE_TYPE)
 
                 if x_start_shape is not None:
                     self.get_controller().set_selected_shape(x_start_shape)
@@ -110,7 +110,7 @@ class OrgChart(OrganizationChart):
 
                 # Create all shapes and tree items
                 for i in range(i_root, size):
-                    x_shape = self.create_shape("GraphicObjectShape", i + (2 - i_root))
+                    x_shape = self.create_shape(Diagram.DIAGRAM_SHAPE_TYPE, i + (2 - i_root))
                     self._x_shapes.add(x_shape)
                     self.set_move_protect_of_shape(x_shape)
 
@@ -124,7 +124,7 @@ class OrgChart(OrganizationChart):
                         i_color_level = 4
 
                     self.set_color_prop(self._LO_COLORS_2[i_color][i_color_level])
-                    self.set_shape_properties(x_shape, "GraphicObjectShape")
+                    self.set_shape_properties(x_shape, Diagram.DIAGRAM_SHAPE_TYPE)
                     self._diagram_tree.add_to_rectangles(x_shape)
 
                     # Determine parent item based on level
@@ -139,7 +139,7 @@ class OrgChart(OrganizationChart):
                             dad_item = dad_item.get_dad()
 
                     # Create connector shape
-                    x_connector_shape = self.create_shape("ConnectorShape", i + (2 - i_root))
+                    x_connector_shape = self.create_shape(Diagram.CONNECTOR_SHAPE, i + (2 - i_root))
                     self._x_shapes.add(x_connector_shape)
                     self.set_move_protect_of_shape(x_connector_shape)
 
@@ -194,7 +194,7 @@ class OrgChart(OrganizationChart):
 
             # Create base control shape
             x_base_shape = self.create_shape(
-                "RectangleShape", 0,
+                Diagram.DIAGRAM_BASE_SHAPE_TYPE, 0,
                 self.page_props.border_left + self._half_diff, self.page_props.border_top,
                 self._draw_area_width, self._draw_area_height
             )
@@ -225,12 +225,12 @@ class OrgChart(OrganizationChart):
             y_coord = self.page_props.border_top
 
             x_start_shape = self.create_shape(
-                "RectangleShape", 1, x_coord, y_coord, shape_width, shape_height
+                Diagram.DIAGRAM_SHAPE_TYPE, 1, x_coord, y_coord, shape_width, shape_height
             )
             self._x_shapes.add(x_start_shape)
             self.set_move_protect_of_shape(x_start_shape)
             self.set_color_prop(self._ORG_CHART_COLORS[0])
-            self.set_shape_properties(x_start_shape, "RectangleShape")
+            self.set_shape_properties(x_start_shape, Diagram.DIAGRAM_SHAPE_TYPE)
 
             # Create child shapes
             x_coord = self.page_props.border_left + self._half_diff
@@ -239,17 +239,17 @@ class OrgChart(OrganizationChart):
 
             for i in range(2, n + 1):
                 x_rect_shape = self.create_shape(
-                    "RectangleShape", i,
+                    Diagram.DIAGRAM_SHAPE_TYPE, i,
                     x_coord + (shape_width + hor_space) * (i - 2), y_coord,
                     shape_width, shape_height
                 )
                 self._x_shapes.add(x_rect_shape)
                 self.set_move_protect_of_shape(x_rect_shape)
                 self.set_color_prop(self._ORG_CHART_COLORS[(i - 1) % 8])
-                self.set_shape_properties(x_rect_shape, "RectangleShape")
+                self.set_shape_properties(x_rect_shape, Diagram.DIAGRAM_SHAPE_TYPE)
 
                 # Create connector
-                x_connector_shape = self.create_shape("ConnectorShape", i)
+                x_connector_shape = self.create_shape(Diagram.CONNECTOR_SHAPE, i)
                 self._x_shapes.add(x_connector_shape)
                 self.set_move_protect_of_shape(x_connector_shape)
                 self.set_connector_shape_props(x_connector_shape, x_start_shape, 2, x_rect_shape, 0)
@@ -295,8 +295,8 @@ class OrgChart(OrganizationChart):
                 # Get shape name (in real implementation, would use UNO API)
                 selected_shape_name = self.get_shape_name(x_selected_shape)
 
-                if ("GraphicObjectShape" in selected_shape_name and
-                    "RectangleShape0" not in selected_shape_name):
+                if (Diagram.DIAGRAM_SHAPE_TYPE in selected_shape_name and
+                    Diagram.DIAGRAM_BASE_SHAPE_TYPE not in selected_shape_name):
 
                     selected_item = self._diagram_tree.get_tree_item(x_selected_shape)
 
@@ -312,7 +312,7 @@ class OrgChart(OrganizationChart):
                             self.clear_empty_diagram_and_recreate()
                         else:
                             top_shape_id += 1
-                            x_rectangle_shape = self.create_shape("GraphicObjectShape", top_shape_id)
+                            x_rectangle_shape = self.create_shape(Diagram.DIAGRAM_SHAPE_TYPE, top_shape_id)
                             self._x_shapes.add(x_rectangle_shape)
                             self._diagram_tree.add_to_rectangles(x_rectangle_shape)
 
@@ -348,11 +348,11 @@ class OrgChart(OrganizationChart):
 
                             # Set shape properties
                             self.set_move_protect_of_shape(x_rectangle_shape)
-                            self.set_shape_properties(x_rectangle_shape, "GraphicObjectShape")
+                            self.set_shape_properties(x_rectangle_shape, Diagram.DIAGRAM_SHAPE_TYPE)
 
                             # Create connector if not root level
                             if top_shape_id > 1:
-                                x_connector_shape = self.create_shape("ConnectorShape", top_shape_id)
+                                x_connector_shape = self.create_shape(Diagram.CONNECTOR_SHAPE, top_shape_id)
                                 self._x_shapes.add(x_connector_shape)
                                 self.set_move_protect_of_shape(x_connector_shape)
                                 self._diagram_tree.add_to_connectors(x_connector_shape)

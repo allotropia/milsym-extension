@@ -28,6 +28,11 @@ from com.sun.star.xml import AttributeData
 class Diagram(ABC):
     """Base diagram class - simplified version of the Java Diagram class"""
 
+    # Shape types
+    DIAGRAM_SHAPE_TYPE = "GraphicObjectShape"  # start shape and child shapes
+    DIAGRAM_BASE_SHAPE_TYPE = "RectangleShape" # base control shape
+    CONNECTOR_SHAPE = "ConnectorShape"         # connector shape
+
     # Connection types
     CONN_LINE = 0
     CONN_CURVE = 1
@@ -113,7 +118,9 @@ class Diagram(ABC):
             x_shape = self._x_model.createInstance(f"com.sun.star.drawing.{shape_type}")
 
             # Set shape name
-            shape_name = f"{self.get_diagram_type_name()}{self._diagram_id}-{shape_type}{shape_id}"
+            shape_name = f"{self.get_diagram_type_name()}{self._diagram_id}-{shape_type}"
+            if shape_type != self.DIAGRAM_BASE_SHAPE_TYPE:
+                shape_name += f"{shape_id}"
             x_shape.setName(shape_name)
 
             # Set position and size
@@ -154,14 +161,14 @@ class Diagram(ABC):
             x_shape = x_selected_shapes.getByIndex(i)
             if x_shape is not None:
                 last_shape = x_shape
-                self.set_new_shape_properties(x_shape, "GraphicObjectShape", svg_data)
+                self.set_new_shape_properties(x_shape, self.DIAGRAM_SHAPE_TYPE, svg_data)
 
         return last_shape
 
     def set_new_shape_properties(self, shape, shape_type: str, svg_data):
         """Set shape properties"""
         try:
-            if shape_type == "GraphicObjectShape":
+            if shape_type == self.DIAGRAM_SHAPE_TYPE:
                 graphic_provider = self._x_context.ServiceManager.createInstanceWithContext("com.sun.star.graphic.GraphicProvider", self._x_context)
                 pipe = self._x_context.ServiceManager.createInstanceWithContext("com.sun.star.io.Pipe", self._x_context)
                 pipe.writeBytes(uno.ByteSequence(svg_data.encode('utf-8')))
@@ -177,14 +184,7 @@ class Diagram(ABC):
     def set_shape_properties(self, shape, shape_type: str):
         """Set shape properties"""
         try:
-            if shape_type == "BaseShape":
-                if self.is_text_fit_prop():
-                    shape.setPropertyValue("TextFitToSize", 1)  # PROPORTIONAL
-                else:
-                    shape.setPropertyValue("TextFitToSize", 0)  # NONE
-                    shape.setPropertyValue("CharHeight", 40.0)
-
-            elif shape_type == "GraphicObjectShape" :
+            if shape_type == self.DIAGRAM_SHAPE_TYPE:
                 svg_url = "vnd.sun.star.extension://com.collabora.milsymbol/img/friend.svg"
                 graphic_provider = self._x_context.ServiceManager.createInstanceWithContext("com.sun.star.graphic.GraphicProvider", self._x_context)
                 media_properties = (PropertyValue("URL", 0, svg_url, 0),)
@@ -193,7 +193,7 @@ class Diagram(ABC):
 
                 self.set_font_properties_of_shape(shape)
 
-            elif shape_type == "ConnectorShape":
+            elif shape_type == self.CONNECTOR_SHAPE:
                 if self.is_text_fit_prop():
                     shape.setPropertyValue("TextFitToSize", 1)  # PROPORTIONAL
                 else:

@@ -242,7 +242,7 @@ class OrganizationChart(Diagram):
             for i in range(self._x_shapes.getCount()):
                 x_curr_shape = self._x_shapes.getByIndex(i)
                 curr_shape_name = self.get_shape_name(x_curr_shape)
-                if "RectangleShape" in curr_shape_name:
+                if Diagram.DIAGRAM_SHAPE_TYPE in curr_shape_name:
                     shape_id = self.get_controller().get_shape_id(curr_shape_name)
                     if shape_id > i_top_shape_id:
                         i_top_shape_id = shape_id
@@ -424,9 +424,9 @@ class OrganizationChart(Diagram):
             # Remove specific shape
             if x_selected_shape is not None:
                 selected_shape_name = x_selected_shape.getName()
-                if "GraphicObjectShape" in selected_shape_name and "RectangleShape0" not in selected_shape_name:
+                if Diagram.DIAGRAM_SHAPE_TYPE in selected_shape_name and Diagram.DIAGRAM_BASE_SHAPE_TYPE not in selected_shape_name:
 
-                    if selected_shape_name.endswith("RectangleShape1"):
+                    if selected_shape_name.endswith(Diagram.DIAGRAM_SHAPE_TYPE + "1"):
                         title = self.get_gui().get_dialog_property_value("Strings", "ShapeRemoveError.Title")
                         message = self.get_gui().get_dialog_property_value("Strings", "ShapeRemoveError.Message")
                         self.get_gui().show_message_box(title, message)

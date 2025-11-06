@@ -15,7 +15,7 @@ Python port of OrganizationChartTree.java
 """
 
 from abc import ABC, abstractmethod
-
+from ..diagram import Diagram
 
 class OrganizationChartTree(ABC):
     """Base class for organization chart trees"""
@@ -126,13 +126,12 @@ class OrganizationChartTree(ABC):
                 curr_shape = self._x_shapes.getByIndex(i)
                 curr_shape_name = self.get_org_chart().get_shape_name(curr_shape)
 
-                if "RectangleShape" in curr_shape_name:
-                    if curr_shape_name.endswith("RectangleShape0"):
-                        self.set_control_shape(curr_shape)
-                    else:
-                        self.add_to_rectangles(curr_shape)
+                if curr_shape_name.endswith(Diagram.DIAGRAM_BASE_SHAPE_TYPE):
+                    self.set_control_shape(curr_shape)
+                elif Diagram.DIAGRAM_SHAPE_TYPE in curr_shape_name:
+                    self.add_to_rectangles(curr_shape)
 
-                if "ConnectorShape" in curr_shape_name:
+                if Diagram.CONNECTOR_SHAPE in curr_shape_name:
                     self.add_to_connectors(curr_shape)
 
         except Exception as ex:

@@ -270,7 +270,7 @@ class OrganizationChartTreeItem(ABC):
         """Set properties recursively for tree items"""
         if self._first_child is not None:
             self._first_child.set_properties()
-        self.get_diagram_tree().get_org_chart().set_shape_properties(self._x_rectangle_shape, "RectangleShape")
+        self.get_diagram_tree().get_org_chart().set_shape_properties(self._x_rectangle_shape, Diagram.DIAGRAM_SHAPE_TYPE)
         if self._first_sibling is not None:
             self._first_sibling.set_properties()
 
