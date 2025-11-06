@@ -255,11 +255,6 @@ class OrganizationChart(Diagram):
         """Set draw area for organization chart with shadow allowance"""
 
         try:
-            # Allow horizontal place for shadow properties
-            self.page_props.BorderTop += (Diagram.SHADOW_DIST1 + 100)
-            self._draw_area_width -= (2 * Diagram.SHADOW_DIST1 + 100)
-            self._draw_area_height -= (Diagram.SHADOW_DIST1 + 100)
-
             origin_gs_width = self._draw_area_width
 
             if (self._draw_area_width / self._group_width) <= (self._draw_area_height / self._group_height):
@@ -274,7 +269,6 @@ class OrganizationChart(Diagram):
             if origin_gs_width > self._draw_area_width:
                 self._half_diff = (origin_gs_width - self._draw_area_width) // 2
 
-            self._half_diff += Diagram.SHADOW_DIST1
             self._x_group_shape.setPosition(
                 Point(self.page_props.BorderLeft + self._half_diff, self.page_props.BorderTop)
             )
