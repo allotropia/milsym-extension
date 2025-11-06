@@ -89,11 +89,6 @@ class OrgChart(OrganizationChart):
                 )
                 self._x_shapes.add(x_start_shape)
 
-                if is_root_item:
-                    self.set_text_of_shape(x_start_shape, datas.get(0).get_value())
-                else:
-                    self.set_text_of_shape(x_start_shape, " ")
-
                 self.set_move_protect_of_shape(x_start_shape)
                 self.set_color_prop(self._LO_ORANGES[2])
                 self.set_shape_properties(x_start_shape, "GraphicObjectShape")
@@ -117,7 +112,6 @@ class OrgChart(OrganizationChart):
                 for i in range(i_root, size):
                     x_shape = self.create_shape("GraphicObjectShape", i + (2 - i_root))
                     self._x_shapes.add(x_shape)
-                    self.set_text_of_shape(x_shape, datas.get(i).get_value())
                     self.set_move_protect_of_shape(x_shape)
 
                     # Set color based on level
@@ -234,7 +228,6 @@ class OrgChart(OrganizationChart):
                 "RectangleShape", 1, x_coord, y_coord, shape_width, shape_height
             )
             self._x_shapes.add(x_start_shape)
-            self.set_text_of_shape(x_start_shape, " ")
             self.set_move_protect_of_shape(x_start_shape)
             self.set_color_prop(self._ORG_CHART_COLORS[0])
             self.set_shape_properties(x_start_shape, "RectangleShape")
@@ -251,7 +244,6 @@ class OrgChart(OrganizationChart):
                     shape_width, shape_height
                 )
                 self._x_shapes.add(x_rect_shape)
-                self.set_text_of_shape(x_rect_shape, " ")
                 self.set_move_protect_of_shape(x_rect_shape)
                 self.set_color_prop(self._ORG_CHART_COLORS[(i - 1) % 8])
                 self.set_shape_properties(x_rect_shape, "RectangleShape")
@@ -355,7 +347,6 @@ class OrgChart(OrganizationChart):
                                 selected_item.set_first_sibling(new_tree_item)
 
                             # Set shape properties
-                            self.set_text_of_shape(x_rectangle_shape, " ")
                             self.set_move_protect_of_shape(x_rectangle_shape)
                             self.set_shape_properties(x_rectangle_shape, "GraphicObjectShape")
 

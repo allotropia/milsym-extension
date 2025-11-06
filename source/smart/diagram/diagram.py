@@ -132,10 +132,6 @@ class Diagram(ABC):
         """Show edit dialog - to be overridden in subclasses"""
         pass
 
-    def set_text_of_shape(self, shape, text: str):
-        """Set text content of a shape"""
-        shape.setString(text)
-
     def set_move_protect_of_shape(self, shape):
         """Set move protection on a shape"""
         try:
