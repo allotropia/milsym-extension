@@ -7,7 +7,14 @@ their licenses.
 ---------------------------------------------------------------------------
 
 Under directory milsymbol/, we include a copy of SpatialIllusions'
-milsymbol JavaScript library, under the following license:
+milsymbol JavaScript library. We also use the following three JavaScript libraries:
+
+- https://github.com/spatialillusions/stanag-app6
+- https://github.com/spatialillusions/mil-std-2525
+- https://github.com/spatialillusions/milstandard-e
+
+These libraries are used to populate listbox elements in symbols_data.py,
+under the following license:
 
 The MIT License (MIT)
 
