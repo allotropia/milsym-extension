@@ -19,7 +19,7 @@
 	            </prop>
 		       	<prop oor:name="ContextList">
 	           		<value oor:separator=";">
-	           			WriterVariants, any, visible ;
+						WriterVariants, any, visible ; Calc, any, visible ; Impress, any, visible ; Draw, any, visible ;
 	               	</value>
 	           	</prop>
 	       	</node>
@@ -37,7 +37,7 @@
             	</prop>
             	<prop oor:name="ContextList">
             		<value oor:separator=";">
-            			WriterVariants, any, visible ;
+						WriterVariants, any, visible ; Calc, any, visible ; Impress, any, visible ; Draw, any, visible ;
                 	</value>
             	</prop>
             	<prop oor:name="ImplementationURL" oor:type="xs:string">
