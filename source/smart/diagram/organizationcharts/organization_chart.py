@@ -188,6 +188,7 @@ class OrganizationChart(Diagram):
 
                 control_shape.setString(text)
             control_shape.MoveProtect = True
+            control_shape.SizeProtect = True
             control_shape.Visible = False
 
     def get_hor_level_of_control_shape(self, control_shape) -> int:
@@ -225,6 +226,7 @@ class OrganizationChart(Diagram):
     def set_control_shape_props(self, control_shape):
         """Set control shape properties"""
         control_shape.MoveProtect = True
+        control_shape.SizeProtect = True
         control_shape.Visible = False
 
     def set_color_mode_and_style_of_control_shape(self, control_shape):

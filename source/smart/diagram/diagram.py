@@ -149,9 +149,10 @@ class Diagram(ABC):
         pass
 
     def set_move_protect_of_shape(self, shape):
-        """Set move protection on a shape"""
+        """Set move/resize protection on a shape"""
         try:
             shape.setPropertyValue("MoveProtect", True)
+            shape.setPropertyValue("SizeProtect", True)
         except Exception as ex:
             print(f"Error setting move protection: {ex}")
 
