@@ -1,317 +1,319 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE dlg:window PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "dialog.dtd">
-<dlg:window xmlns:dlg="http://openoffice.org/2000/dialog" xmlns:script="http://openoffice.org/2000/script" dlg:id="MilSymDlg" dlg:tab-index="3" dlg:left="100" dlg:top="30" dlg:width="525" dlg:height="390" dlg:closeable="true" dlg:moveable="true" dlg:title="Military Symbols">
+<dlg:window xmlns:dlg="http://openoffice.org/2000/dialog" xmlns:script="http://openoffice.org/2000/script" dlg:id="MilSymDlg" dlg:tab-index="3" dlg:left="100" dlg:top="30" dlg:width="525" dlg:height="390" dlg:help-text="&amp;0.MilSymDlg.HelpText" dlg:closeable="true" dlg:moveable="true" dlg:title="&amp;1.MilSymDlg.Title">
  <script:event script:event-name="on-mousedown" script:macro-name="vnd.sun.star.UNO:click_dialog" script:language="UNO"/>
  <dlg:styles>
-  <dlg:style dlg:style-id="0" dlg:border="none"/>
+  <dlg:style dlg:style-id="0" dlg:border="none" dlg:font-height="8"/>
   <dlg:style dlg:style-id="1" dlg:font-height="10"/>
   <dlg:style dlg:style-id="2" dlg:font-height="8"/>
  </dlg:styles>
  <dlg:bulletinboard>
-  <dlg:titledbox dlg:id="tlbPreview" dlg:tab-index="40" dlg:left="347" dlg:top="7" dlg:width="174" dlg:height="101">
-   <dlg:title dlg:value="Preview"/>
+  <dlg:titledbox dlg:id="tlbPreview" dlg:tab-index="40" dlg:left="347" dlg:top="7" dlg:width="174" dlg:height="101" dlg:help-text="&amp;2.MilSymDlg.tlbPreview.HelpText">
+   <dlg:title dlg:value="&amp;3.MilSymDlg.tlbPreview.Label"/>
   </dlg:titledbox>
-  <dlg:img dlg:style-id="0" dlg:id="imgPreview" dlg:tab-index="41" dlg:left="349" dlg:top="14" dlg:width="168" dlg:height="91" dlg:scale-image="false" dlg:scale-mode="none" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="1" dlg:id="lbRealExerSimul" dlg:tab-index="0" dlg:left="6" dlg:top="9" dlg:width="140" dlg:height="10" dlg:value="Reality / Exercise / Simulation" dlg:valign="top" dlg:tabstop="true"/>
-  <dlg:button dlg:id="btReality" dlg:tab-index="1" dlg:left="4" dlg:top="22" dlg:width="40" dlg:height="25" dlg:tabstop="true" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/reality.svg" dlg:grab-focus="false">
+  <dlg:img dlg:style-id="0" dlg:id="imgPreview" dlg:tab-index="41" dlg:left="349" dlg:top="14" dlg:width="168" dlg:height="91" dlg:help-text="&amp;4.MilSymDlg.imgPreview.HelpText" dlg:scale-image="false" dlg:scale-mode="none" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="1" dlg:id="lbRealExerSimul" dlg:tab-index="0" dlg:left="6" dlg:top="9" dlg:width="140" dlg:height="10" dlg:help-text="&amp;5.MilSymDlg.lbRealExerSimul.HelpText" dlg:value="&amp;6.MilSymDlg.lbRealExerSimul.Label" dlg:valign="top" dlg:tabstop="true"/>
+  <dlg:button dlg:id="btReality" dlg:tab-index="2" dlg:left="4" dlg:top="22" dlg:width="40" dlg:height="25" dlg:help-text="&amp;7.MilSymDlg.btReality.HelpText" dlg:tabstop="true" dlg:value="&amp;8.MilSymDlg.btReality.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/reality.svg" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btReality" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:id="btExercise" dlg:tab-index="2" dlg:left="52" dlg:top="21" dlg:width="40" dlg:height="26" dlg:tabstop="true" dlg:valign="top" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/exercise_win.svg" dlg:grab-focus="false">
+  <dlg:button dlg:id="btExercise" dlg:tab-index="3" dlg:left="52" dlg:top="21" dlg:width="40" dlg:height="26" dlg:help-text="&amp;9.MilSymDlg.btExercise.HelpText" dlg:tabstop="true" dlg:value="&amp;10.MilSymDlg.btExercise.Label" dlg:valign="top" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/exercise_win.svg" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btExercise" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:id="btSimulation" dlg:tab-index="0" dlg:left="100" dlg:top="21" dlg:width="40" dlg:height="26" dlg:tabstop="true" dlg:valign="top" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/simulation_win.svg" dlg:image-position="top-center" dlg:grab-focus="false">
+  <dlg:button dlg:id="btSimulation" dlg:tab-index="1" dlg:left="100" dlg:top="21" dlg:width="40" dlg:height="26" dlg:help-text="&amp;11.MilSymDlg.btSimulation.HelpText" dlg:tabstop="true" dlg:value="&amp;12.MilSymDlg.btSimulation.Label" dlg:valign="top" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/simulation_win.svg" dlg:image-position="top-center" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btSimulation" script:language="UNO"/>
   </dlg:button>
-  <dlg:text dlg:style-id="2" dlg:id="lbReality" dlg:tab-index="22" dlg:left="4" dlg:top="49" dlg:width="40" dlg:height="10" dlg:value="Reality" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="2" dlg:id="lbExercise" dlg:tab-index="21" dlg:left="52" dlg:top="49" dlg:width="40" dlg:height="10" dlg:value="Exercise" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="2" dlg:id="lbSimulation" dlg:tab-index="23" dlg:left="100" dlg:top="49" dlg:width="40" dlg:height="10" dlg:value="Simulation" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="1" dlg:id="lbAffiliation" dlg:tab-index="24" dlg:left="6" dlg:top="61" dlg:width="140" dlg:height="10" dlg:value=" Affiliation" dlg:valign="center"/>
-  <dlg:button dlg:id="btPending" dlg:tab-index="4" dlg:left="4" dlg:top="73" dlg:width="40" dlg:height="26" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/pending_win.svg" dlg:image-position="top-center" dlg:grab-focus="false">
+  <dlg:text dlg:style-id="2" dlg:id="lbReality" dlg:tab-index="22" dlg:left="4" dlg:top="49" dlg:width="40" dlg:height="10" dlg:help-text="&amp;13.MilSymDlg.lbReality.HelpText" dlg:value="&amp;14.MilSymDlg.lbReality.Label" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="2" dlg:id="lbExercise" dlg:tab-index="21" dlg:left="52" dlg:top="49" dlg:width="40" dlg:height="10" dlg:help-text="&amp;15.MilSymDlg.lbExercise.HelpText" dlg:value="&amp;16.MilSymDlg.lbExercise.Label" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="2" dlg:id="lbSimulation" dlg:tab-index="23" dlg:left="100" dlg:top="49" dlg:width="40" dlg:height="10" dlg:help-text="&amp;17.MilSymDlg.lbSimulation.HelpText" dlg:value="&amp;18.MilSymDlg.lbSimulation.Label" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="1" dlg:id="lbAffiliation" dlg:tab-index="24" dlg:left="6" dlg:top="61" dlg:width="140" dlg:height="10" dlg:help-text="&amp;19.MilSymDlg.lbAffiliation.HelpText" dlg:value="&amp;20.MilSymDlg.lbAffiliation.Label" dlg:valign="center"/>
+  <dlg:button dlg:id="btPending" dlg:tab-index="4" dlg:left="4" dlg:top="73" dlg:width="40" dlg:height="26" dlg:help-text="&amp;21.MilSymDlg.btPending.HelpText" dlg:value="&amp;22.MilSymDlg.btPending.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/pending_win.svg" dlg:image-position="top-center" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btPending" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:id="btUnknown" dlg:tab-index="5" dlg:left="52" dlg:top="73" dlg:width="40" dlg:height="26" dlg:tabstop="true" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/unknown_win.svg" dlg:image-position="top-center" dlg:grab-focus="false">
+  <dlg:button dlg:id="btUnknown" dlg:tab-index="5" dlg:left="52" dlg:top="73" dlg:width="40" dlg:height="26" dlg:help-text="&amp;23.MilSymDlg.btUnknown.HelpText" dlg:tabstop="true" dlg:value="&amp;24.MilSymDlg.btUnknown.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/unknown_win.svg" dlg:image-position="top-center" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btUnknown" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:id="btAssumedFriend" dlg:tab-index="6" dlg:left="100" dlg:top="73" dlg:width="40" dlg:height="26" dlg:tabstop="true" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/assumedfriend.svg" dlg:grab-focus="false">
+  <dlg:button dlg:id="btAssumedFriend" dlg:tab-index="6" dlg:left="100" dlg:top="73" dlg:width="40" dlg:height="26" dlg:help-text="&amp;25.MilSymDlg.btAssumedFriend.HelpText" dlg:tabstop="true" dlg:value="&amp;26.MilSymDlg.btAssumedFriend.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/assumedfriend.svg" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btAssumedFriend" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:id="btFriend" dlg:tab-index="7" dlg:left="148" dlg:top="73" dlg:width="40" dlg:height="26" dlg:tabstop="true" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/friend_win.svg" dlg:image-position="top-center" dlg:grab-focus="false">
+  <dlg:button dlg:id="btFriend" dlg:tab-index="7" dlg:left="148" dlg:top="73" dlg:width="40" dlg:height="26" dlg:help-text="&amp;27.MilSymDlg.btFriend.HelpText" dlg:tabstop="true" dlg:value="&amp;28.MilSymDlg.btFriend.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/friend_win.svg" dlg:image-position="top-center" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btFriend" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:id="btNeutral" dlg:tab-index="8" dlg:left="196" dlg:top="73" dlg:width="40" dlg:height="26" dlg:tabstop="true" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/neutral.svg" dlg:grab-focus="false">
+  <dlg:button dlg:id="btNeutral" dlg:tab-index="8" dlg:left="196" dlg:top="73" dlg:width="40" dlg:height="26" dlg:help-text="&amp;29.MilSymDlg.btNeutral.HelpText" dlg:tabstop="true" dlg:value="&amp;30.MilSymDlg.btNeutral.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/neutral.svg" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btNeutral" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:id="btSuspectJoker" dlg:tab-index="9" dlg:left="244" dlg:top="73" dlg:width="40" dlg:height="26" dlg:tabstop="true" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/suspectjoker_win.svg" dlg:grab-focus="false">
+  <dlg:button dlg:id="btSuspectJoker" dlg:tab-index="9" dlg:left="244" dlg:top="73" dlg:width="40" dlg:height="26" dlg:help-text="&amp;31.MilSymDlg.btSuspectJoker.HelpText" dlg:tabstop="true" dlg:value="&amp;32.MilSymDlg.btSuspectJoker.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/suspectjoker_win.svg" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btSuspectJoker" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:id="btHostileFaker" dlg:tab-index="10" dlg:left="292" dlg:top="73" dlg:width="40" dlg:height="26" dlg:tabstop="true" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/hostilefaker_win.svg" dlg:grab-focus="false">
+  <dlg:button dlg:id="btHostileFaker" dlg:tab-index="10" dlg:left="292" dlg:top="73" dlg:width="40" dlg:height="26" dlg:help-text="&amp;33.MilSymDlg.btHostileFaker.HelpText" dlg:tabstop="true" dlg:value="&amp;34.MilSymDlg.btHostileFaker.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/hostilefaker_win.svg" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btHostileFaker" script:language="UNO"/>
   </dlg:button>
-  <dlg:text dlg:style-id="2" dlg:id="lbPending" dlg:tab-index="33" dlg:left="4" dlg:top="101" dlg:width="40" dlg:height="10" dlg:value="Pending" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="2" dlg:id="lbUnknown" dlg:tab-index="37" dlg:left="52" dlg:top="101" dlg:width="40" dlg:height="10" dlg:value="Unknown" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="2" dlg:id="lbAssumedFriend" dlg:tab-index="34" dlg:left="92" dlg:top="101" dlg:width="56" dlg:height="15" dlg:value="Assumed Friend" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="2" dlg:id="lbFriend" dlg:tab-index="35" dlg:left="148" dlg:top="101" dlg:width="40" dlg:height="10" dlg:value="Friend" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="2" dlg:id="lbNeutral" dlg:tab-index="36" dlg:left="196" dlg:top="101" dlg:width="45" dlg:height="10" dlg:value="Neutral" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="2" dlg:id="lbSuspectJoker" dlg:tab-index="38" dlg:left="241" dlg:top="101" dlg:width="46" dlg:height="10" dlg:value="Suspect/Joker" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="2" dlg:id="lbHostileFaker" dlg:tab-index="39" dlg:left="289" dlg:top="101" dlg:width="46" dlg:height="10" dlg:value="Hostile/Faker" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
-  <dlg:button dlg:style-id="2" dlg:id="tabbed_btBasic" dlg:tab-index="98" dlg:left="4" dlg:top="117" dlg:width="40" dlg:height="14" dlg:page="2" dlg:tabstop="true" dlg:value="Basic" dlg:valign="center" dlg:grab-focus="false">
+  <dlg:text dlg:style-id="2" dlg:id="lbPending" dlg:tab-index="33" dlg:left="4" dlg:top="101" dlg:width="40" dlg:height="10" dlg:help-text="&amp;35.MilSymDlg.lbPending.HelpText" dlg:value="&amp;36.MilSymDlg.lbPending.Label" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="2" dlg:id="lbUnknown" dlg:tab-index="37" dlg:left="52" dlg:top="101" dlg:width="40" dlg:height="10" dlg:help-text="&amp;37.MilSymDlg.lbUnknown.HelpText" dlg:value="&amp;38.MilSymDlg.lbUnknown.Label" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="2" dlg:id="lbAssumedFriend" dlg:tab-index="34" dlg:left="92" dlg:top="101" dlg:width="56" dlg:height="15" dlg:help-text="&amp;39.MilSymDlg.lbAssumedFriend.HelpText" dlg:value="&amp;40.MilSymDlg.lbAssumedFriend.Label" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="2" dlg:id="lbFriend" dlg:tab-index="35" dlg:left="148" dlg:top="101" dlg:width="40" dlg:height="10" dlg:help-text="&amp;41.MilSymDlg.lbFriend.HelpText" dlg:value="&amp;42.MilSymDlg.lbFriend.Label" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="2" dlg:id="lbNeutral" dlg:tab-index="36" dlg:left="196" dlg:top="101" dlg:width="45" dlg:height="10" dlg:help-text="&amp;43.MilSymDlg.lbNeutral.HelpText" dlg:value="&amp;44.MilSymDlg.lbNeutral.Label" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="2" dlg:id="lbSuspectJoker" dlg:tab-index="38" dlg:left="241" dlg:top="101" dlg:width="46" dlg:height="10" dlg:help-text="&amp;45.MilSymDlg.lbSuspectJoker.HelpText" dlg:value="&amp;46.MilSymDlg.lbSuspectJoker.Label" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="2" dlg:id="lbHostileFaker" dlg:tab-index="39" dlg:left="289" dlg:top="101" dlg:width="46" dlg:height="10" dlg:help-text="&amp;47.MilSymDlg.lbHostileFaker.HelpText" dlg:value="&amp;48.MilSymDlg.lbHostileFaker.Label" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
+  <dlg:button dlg:style-id="0" dlg:id="tabbed_btBasic" dlg:tab-index="98" dlg:left="4" dlg:top="117" dlg:width="40" dlg:height="14" dlg:page="2" dlg:help-text="&amp;49.MilSymDlg.tabbed_btBasic.HelpText" dlg:tabstop="true" dlg:value="&amp;50.MilSymDlg.tabbed_btBasic.Label" dlg:valign="center" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:tabbed_btBasic" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:style-id="1" dlg:id="btBasicSelect" dlg:tab-index="96" dlg:left="4" dlg:top="115" dlg:width="44" dlg:height="16" dlg:page="1" dlg:tabstop="true" dlg:value="Basic" dlg:valign="center" dlg:grab-focus="false"/>
-  <dlg:button dlg:style-id="2" dlg:id="tabbed_btAdvance" dlg:tab-index="100" dlg:left="44" dlg:top="117" dlg:width="40" dlg:height="14" dlg:page="1" dlg:tabstop="true" dlg:value="Advance" dlg:grab-focus="false">
+  <dlg:button dlg:style-id="1" dlg:id="btBasicSelect" dlg:tab-index="96" dlg:left="4" dlg:top="115" dlg:width="44" dlg:height="16" dlg:page="1" dlg:help-text="&amp;51.MilSymDlg.btBasicSelect.HelpText" dlg:tabstop="true" dlg:value="&amp;52.MilSymDlg.btBasicSelect.Label" dlg:valign="center" dlg:grab-focus="false"/>
+  <dlg:button dlg:style-id="0" dlg:id="tabbed_btAdvance" dlg:tab-index="100" dlg:left="44" dlg:top="117" dlg:width="40" dlg:height="14" dlg:page="1" dlg:help-text="&amp;53.MilSymDlg.tabbed_btAdvance.HelpText" dlg:tabstop="true" dlg:value="&amp;54.MilSymDlg.tabbed_btAdvance.Label" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:tabbed_btAdvance" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:style-id="1" dlg:id="btAdvanceSelect" dlg:tab-index="97" dlg:left="40" dlg:top="115" dlg:width="44" dlg:height="16" dlg:page="2" dlg:tabstop="true" dlg:value="Advance" dlg:valign="center" dlg:grab-focus="false"/>
-  <dlg:titledbox dlg:id="tlbGroup" dlg:tab-index="148" dlg:left="4" dlg:top="130" dlg:width="517" dlg:height="239"/>
-  <dlg:textfield dlg:style-id="1" dlg:id="tbSearch" dlg:tab-index="11" dlg:left="10" dlg:top="137" dlg:width="245" dlg:height="12" dlg:page="1" dlg:valign="center" dlg:value=" Type to search...">
-    <script:event script:event-name="on-textchange" script:macro-name="vnd.sun.star.UNO:search_change" script:language="UNO"/>
-    <script:event script:event-name="on-mousedown" script:macro-name="vnd.sun.star.UNO:search_click" script:language="UNO"/>
-    <script:event script:event-name="on-blur" script:macro-name="vnd.sun.star.UNO:search_blur" script:language="UNO"/>
+  <dlg:button dlg:style-id="1" dlg:id="btAdvanceSelect" dlg:tab-index="97" dlg:left="40" dlg:top="115" dlg:width="44" dlg:height="16" dlg:page="2" dlg:help-text="&amp;55.MilSymDlg.btAdvanceSelect.HelpText" dlg:tabstop="true" dlg:value="&amp;56.MilSymDlg.btAdvanceSelect.Label" dlg:valign="center" dlg:grab-focus="false"/>
+  <dlg:titledbox dlg:id="tlbGroup" dlg:tab-index="148" dlg:left="4" dlg:top="130" dlg:width="517" dlg:height="239" dlg:help-text="&amp;57.MilSymDlg.tlbGroup.HelpText">
+   <dlg:title dlg:value="&amp;58.MilSymDlg.tlbGroup.Label"/>
+  </dlg:titledbox>
+  <dlg:textfield dlg:style-id="1" dlg:id="tbSearch" dlg:tab-index="11" dlg:left="10" dlg:top="137" dlg:width="245" dlg:height="12" dlg:page="1" dlg:help-text="&amp;59.MilSymDlg.tbSearch.HelpText" dlg:valign="center" dlg:value="&amp;60.MilSymDlg.tbSearch.Text">
+   <script:event script:event-name="on-textchange" script:macro-name="vnd.sun.star.UNO:search_change" script:language="UNO"/>
+   <script:event script:event-name="on-mousedown" script:macro-name="vnd.sun.star.UNO:search_click" script:language="UNO"/>
+   <script:event script:event-name="on-blur" script:macro-name="vnd.sun.star.UNO:search_blur" script:language="UNO"/>
   </dlg:textfield>
-  <dlg:menulist dlg:style-id="1" dlg:id="ltbSearch" dlg:tab-index="12" dlg:left="10" dlg:top="150" dlg:width="244" dlg:height="0" dlg:page="1">
+  <dlg:menulist dlg:style-id="1" dlg:id="ltbSearch" dlg:tab-index="12" dlg:left="10" dlg:top="150" dlg:width="244" dlg:height="0" dlg:page="1" dlg:help-text="&amp;61.MilSymDlg.ltbSearch.HelpText">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:action_ltbSearch" script:language="UNO"/>
    <script:event script:event-name="on-mousedown" script:macro-name="vnd.sun.star.UNO:click_Search" script:language="UNO"/>
   </dlg:menulist>
-  <dlg:text dlg:style-id="1" dlg:id="lbSymbolSet" dlg:tab-index="27" dlg:left="10" dlg:top="157" dlg:width="120" dlg:height="10" dlg:page="1" dlg:value="Symbol set" dlg:valign="center"/>
-  <dlg:menulist dlg:style-id="1" dlg:id="ltbSymbolSet" dlg:tab-index="13" dlg:left="137" dlg:top="156" dlg:width="118" dlg:height="12" dlg:page="1" dlg:spin="true">
+  <dlg:text dlg:style-id="1" dlg:id="lbSymbolSet" dlg:tab-index="27" dlg:left="10" dlg:top="157" dlg:width="120" dlg:height="10" dlg:page="1" dlg:help-text="&amp;62.MilSymDlg.lbSymbolSet.HelpText" dlg:value="&amp;63.MilSymDlg.lbSymbolSet.Label" dlg:valign="center"/>
+  <dlg:menulist dlg:style-id="1" dlg:id="ltbSymbolSet" dlg:tab-index="13" dlg:left="137" dlg:top="156" dlg:width="118" dlg:height="12" dlg:page="1" dlg:help-text="&amp;64.MilSymDlg.ltbSymbolSet.HelpText" dlg:spin="true">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:ltbSymbolSet" script:language="UNO"/>
    <script:event script:event-name="on-mousedown" script:macro-name="vnd.sun.star.UNO:click_ltbSymbolSet" script:language="UNO"/>
   </dlg:menulist>
-  <dlg:text dlg:style-id="1" dlg:id="lbMainIcon" dlg:tab-index="28" dlg:left="10" dlg:top="173" dlg:width="120" dlg:height="12" dlg:page="1" dlg:value="Main Icon" dlg:valign="center"/>
-  <dlg:menulist dlg:style-id="1" dlg:id="ltbMainIcon" dlg:tab-index="14" dlg:left="137" dlg:top="172" dlg:width="118" dlg:height="12" dlg:page="1" dlg:spin="true">
+  <dlg:text dlg:style-id="1" dlg:id="lbMainIcon" dlg:tab-index="28" dlg:left="10" dlg:top="173" dlg:width="120" dlg:height="12" dlg:page="1" dlg:help-text="&amp;65.MilSymDlg.lbMainIcon.HelpText" dlg:value="&amp;66.MilSymDlg.lbMainIcon.Label" dlg:valign="center"/>
+  <dlg:menulist dlg:style-id="1" dlg:id="ltbMainIcon" dlg:tab-index="14" dlg:left="137" dlg:top="172" dlg:width="118" dlg:height="12" dlg:page="1" dlg:help-text="&amp;67.MilSymDlg.ltbMainIcon.HelpText" dlg:spin="true">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:ltbMainIcon" script:language="UNO"/>
    <script:event script:event-name="on-mousedown" script:macro-name="vnd.sun.star.UNO:click_ltbMainIcon" script:language="UNO"/>
   </dlg:menulist>
-  <dlg:text dlg:style-id="1" dlg:id="lbFirstIcon" dlg:tab-index="29" dlg:left="10" dlg:top="191" dlg:width="120" dlg:height="10" dlg:page="1" dlg:value="First Icon Modifier" dlg:valign="center"/>
-  <dlg:menulist dlg:style-id="1" dlg:id="ltbFirstIcon" dlg:tab-index="15" dlg:left="137" dlg:top="190" dlg:width="118" dlg:height="12" dlg:page="1" dlg:spin="true">
+  <dlg:text dlg:style-id="1" dlg:id="lbFirstIcon" dlg:tab-index="29" dlg:left="10" dlg:top="191" dlg:width="120" dlg:height="10" dlg:page="1" dlg:help-text="&amp;68.MilSymDlg.lbFirstIcon.HelpText" dlg:value="&amp;69.MilSymDlg.lbFirstIcon.Label" dlg:valign="center"/>
+  <dlg:menulist dlg:style-id="1" dlg:id="ltbFirstIcon" dlg:tab-index="15" dlg:left="137" dlg:top="190" dlg:width="118" dlg:height="12" dlg:page="1" dlg:help-text="&amp;70.MilSymDlg.ltbFirstIcon.HelpText" dlg:spin="true">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:ltbFirstIcon" script:language="UNO"/>
    <script:event script:event-name="on-mousedown" script:macro-name="vnd.sun.star.UNO:click_ltbFirstIcon" script:language="UNO"/>
   </dlg:menulist>
-  <dlg:text dlg:style-id="1" dlg:id="lbSecondIcon" dlg:tab-index="30" dlg:left="10" dlg:top="208" dlg:width="120" dlg:height="10" dlg:page="1" dlg:value="Second Icon Modifier" dlg:valign="center"/>
-  <dlg:menulist dlg:style-id="1" dlg:id="ltbSecondIcon" dlg:tab-index="16" dlg:left="137" dlg:top="207" dlg:width="118" dlg:height="12" dlg:page="1" dlg:spin="true">
+  <dlg:text dlg:style-id="1" dlg:id="lbSecondIcon" dlg:tab-index="30" dlg:left="10" dlg:top="208" dlg:width="120" dlg:height="10" dlg:page="1" dlg:help-text="&amp;71.MilSymDlg.lbSecondIcon.HelpText" dlg:value="&amp;72.MilSymDlg.lbSecondIcon.Label" dlg:valign="center"/>
+  <dlg:menulist dlg:style-id="1" dlg:id="ltbSecondIcon" dlg:tab-index="16" dlg:left="137" dlg:top="207" dlg:width="118" dlg:height="12" dlg:page="1" dlg:help-text="&amp;73.MilSymDlg.ltbSecondIcon.HelpText" dlg:spin="true">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:ltbSecondIcon" script:language="UNO"/>
    <script:event script:event-name="on-mousedown" script:macro-name="vnd.sun.star.UNO:click_ltbSecondIcon" script:language="UNO"/>
   </dlg:menulist>
-  <dlg:text dlg:style-id="1" dlg:id="lbEchelonMobility" dlg:tab-index="31" dlg:left="10" dlg:top="225" dlg:width="120" dlg:height="10" dlg:page="1" dlg:value="Echelon / Mobility" dlg:valign="center"/>
-  <dlg:menulist dlg:style-id="1" dlg:id="ltbEchelonMobility" dlg:tab-index="17" dlg:left="137" dlg:top="224" dlg:width="118" dlg:height="12" dlg:page="1" dlg:spin="true">
+  <dlg:text dlg:style-id="1" dlg:id="lbEchelonMobility" dlg:tab-index="31" dlg:left="10" dlg:top="225" dlg:width="120" dlg:height="10" dlg:page="1" dlg:help-text="&amp;74.MilSymDlg.lbEchelonMobility.HelpText" dlg:value="&amp;75.MilSymDlg.lbEchelonMobility.Label" dlg:valign="center"/>
+  <dlg:menulist dlg:style-id="1" dlg:id="ltbEchelonMobility" dlg:tab-index="17" dlg:left="137" dlg:top="224" dlg:width="118" dlg:height="12" dlg:page="1" dlg:help-text="&amp;76.MilSymDlg.ltbEchelonMobility.HelpText" dlg:spin="true">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:ltbEchelonMobility" script:language="UNO"/>
    <script:event script:event-name="on-mousedown" script:macro-name="vnd.sun.star.UNO:click_ltbEchelonMobility" script:language="UNO"/>
   </dlg:menulist>
-  <dlg:text dlg:style-id="1" dlg:id="lbHeadTaskDummy" dlg:tab-index="32" dlg:left="10" dlg:top="242" dlg:width="120" dlg:height="10" dlg:page="1" dlg:value="Headquarters / Taskforce / Dummy" dlg:valign="center"/>
-  <dlg:menulist dlg:style-id="1" dlg:id="ltbHeadTaskDummy" dlg:tab-index="18" dlg:left="137" dlg:top="241" dlg:width="118" dlg:height="12" dlg:page="1" dlg:spin="true">
+  <dlg:text dlg:style-id="1" dlg:id="lbHeadTaskDummy" dlg:tab-index="32" dlg:left="10" dlg:top="242" dlg:width="120" dlg:height="10" dlg:page="1" dlg:help-text="&amp;77.MilSymDlg.lbHeadTaskDummy.HelpText" dlg:value="&amp;78.MilSymDlg.lbHeadTaskDummy.Label" dlg:valign="center"/>
+  <dlg:menulist dlg:style-id="1" dlg:id="ltbHeadTaskDummy" dlg:tab-index="18" dlg:left="137" dlg:top="241" dlg:width="118" dlg:height="12" dlg:page="1" dlg:help-text="&amp;79.MilSymDlg.ltbHeadTaskDummy.HelpText" dlg:spin="true">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:ltbHeadTaskDummy" script:language="UNO"/>
    <script:event script:event-name="on-mousedown" script:macro-name="vnd.sun.star.UNO:click_ltbHeadTaskDummy" script:language="UNO"/>
   </dlg:menulist>
-  <dlg:text dlg:style-id="1" dlg:id="lbStatus" dlg:tab-index="25" dlg:left="10" dlg:top="259" dlg:width="120" dlg:height="10" dlg:page="1" dlg:value="Status" dlg:valign="center"/>
-  <dlg:button dlg:id="btPresent" dlg:tab-index="83" dlg:left="10" dlg:top="272" dlg:width="35" dlg:height="25" dlg:page="1" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/present.svg" dlg:grab-focus="false">
+  <dlg:text dlg:style-id="1" dlg:id="lbStatus" dlg:tab-index="25" dlg:left="10" dlg:top="259" dlg:width="120" dlg:height="10" dlg:page="1" dlg:help-text="&amp;80.MilSymDlg.lbStatus.HelpText" dlg:value="&amp;81.MilSymDlg.lbStatus.Label" dlg:valign="center"/>
+  <dlg:button dlg:id="btPresent" dlg:tab-index="83" dlg:left="10" dlg:top="272" dlg:width="35" dlg:height="25" dlg:page="1" dlg:help-text="&amp;82.MilSymDlg.btPresent.HelpText" dlg:value="&amp;83.MilSymDlg.btPresent.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/present.svg" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btPresent" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:id="btPlanned" dlg:tab-index="84" dlg:left="52" dlg:top="272" dlg:width="35" dlg:height="25" dlg:page="1" dlg:tabstop="true" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/planned.svg" dlg:image-position="top-center" dlg:grab-focus="false">
+  <dlg:button dlg:id="btPlanned" dlg:tab-index="84" dlg:left="52" dlg:top="272" dlg:width="35" dlg:height="25" dlg:page="1" dlg:help-text="&amp;84.MilSymDlg.btPlanned.HelpText" dlg:tabstop="true" dlg:value="&amp;85.MilSymDlg.btPlanned.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/planned.svg" dlg:image-position="top-center" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btPlanned" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:id="btFullyCapable" dlg:tab-index="85" dlg:left="94" dlg:top="272" dlg:width="35" dlg:height="25" dlg:page="1" dlg:tabstop="true" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/fullycapable_win.svg" dlg:grab-focus="false">
+  <dlg:button dlg:id="btFullyCapable" dlg:tab-index="85" dlg:left="94" dlg:top="272" dlg:width="35" dlg:height="25" dlg:page="1" dlg:help-text="&amp;86.MilSymDlg.btFullyCapable.HelpText" dlg:tabstop="true" dlg:value="&amp;87.MilSymDlg.btFullyCapable.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/fullycapable_win.svg" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btFullyCapable" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:id="btDamaged" dlg:tab-index="86" dlg:left="136" dlg:top="272" dlg:width="35" dlg:height="25" dlg:page="1" dlg:tabstop="true" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/damaged_win.svg" dlg:grab-focus="false">
+  <dlg:button dlg:id="btDamaged" dlg:tab-index="86" dlg:left="136" dlg:top="272" dlg:width="35" dlg:height="25" dlg:page="1" dlg:help-text="&amp;88.MilSymDlg.btDamaged.HelpText" dlg:tabstop="true" dlg:value="&amp;89.MilSymDlg.btDamaged.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/damaged_win.svg" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btDamaged" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:id="btDestroyed" dlg:tab-index="87" dlg:left="178" dlg:top="272" dlg:width="35" dlg:height="25" dlg:page="1" dlg:tabstop="true" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/destroyed_win.svg" dlg:grab-focus="false">
+  <dlg:button dlg:id="btDestroyed" dlg:tab-index="87" dlg:left="178" dlg:top="272" dlg:width="35" dlg:height="25" dlg:page="1" dlg:help-text="&amp;90.MilSymDlg.btDestroyed.HelpText" dlg:tabstop="true" dlg:value="&amp;91.MilSymDlg.btDestroyed.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/destroyed_win.svg" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btDestroyed" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:id="btFullToCapacity" dlg:tab-index="88" dlg:left="220" dlg:top="272" dlg:width="35" dlg:height="25" dlg:page="1" dlg:tabstop="true" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/fulltocapacity_win.svg" dlg:grab-focus="false">
+  <dlg:button dlg:id="btFullToCapacity" dlg:tab-index="88" dlg:left="220" dlg:top="272" dlg:width="35" dlg:height="25" dlg:page="1" dlg:help-text="&amp;92.MilSymDlg.btFullToCapacity.HelpText" dlg:tabstop="true" dlg:value="&amp;93.MilSymDlg.btFullToCapacity.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/fulltocapacity_win.svg" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btFullToCapacity" script:language="UNO"/>
   </dlg:button>
-  <dlg:text dlg:style-id="2" dlg:id="lbPresent" dlg:tab-index="89" dlg:left="8" dlg:top="299" dlg:width="38" dlg:height="14" dlg:page="1" dlg:value="Present" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="2" dlg:id="lbPlanned" dlg:tab-index="90" dlg:left="50" dlg:top="299" dlg:width="38" dlg:height="14" dlg:page="1" dlg:value="Planned" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="2" dlg:id="lbFullyCapable" dlg:tab-index="91" dlg:left="89" dlg:top="299" dlg:width="45" dlg:height="14" dlg:page="1" dlg:value="Fully Capable" dlg:align="center" dlg:valign="top" dlg:multiline="true" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="2" dlg:id="lbDamaged" dlg:tab-index="92" dlg:left="134" dlg:top="299" dlg:width="38" dlg:height="14" dlg:page="1" dlg:value="Damaged" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="2" dlg:id="lbDestroyed" dlg:tab-index="93" dlg:left="176" dlg:top="299" dlg:width="38" dlg:height="14" dlg:page="1" dlg:value="Destroyed" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="2" dlg:id="lbFullToCapacity" dlg:tab-index="94" dlg:left="217" dlg:top="299" dlg:width="40" dlg:height="14" dlg:page="1" dlg:value="Full to capacity" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="1" dlg:id="lbReinforcedOrReduced" dlg:tab-index="26" dlg:left="10" dlg:top="311" dlg:width="120" dlg:height="10" dlg:page="1" dlg:value="Reinforced or Reduced" dlg:valign="center"/>
-  <dlg:button dlg:id="btNotApplicableReinReduc" dlg:tab-index="76" dlg:left="10" dlg:top="324" dlg:width="35" dlg:height="25" dlg:page="1" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/notApplicable.svg" dlg:grab-focus="false">
+  <dlg:text dlg:style-id="2" dlg:id="lbPresent" dlg:tab-index="89" dlg:left="8" dlg:top="299" dlg:width="38" dlg:height="14" dlg:page="1" dlg:help-text="&amp;94.MilSymDlg.lbPresent.HelpText" dlg:value="&amp;95.MilSymDlg.lbPresent.Label" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="2" dlg:id="lbPlanned" dlg:tab-index="90" dlg:left="50" dlg:top="299" dlg:width="38" dlg:height="14" dlg:page="1" dlg:help-text="&amp;96.MilSymDlg.lbPlanned.HelpText" dlg:value="&amp;97.MilSymDlg.lbPlanned.Label" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="2" dlg:id="lbFullyCapable" dlg:tab-index="91" dlg:left="89" dlg:top="299" dlg:width="45" dlg:height="14" dlg:page="1" dlg:help-text="&amp;98.MilSymDlg.lbFullyCapable.HelpText" dlg:value="&amp;99.MilSymDlg.lbFullyCapable.Label" dlg:align="center" dlg:valign="top" dlg:multiline="true" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="2" dlg:id="lbDamaged" dlg:tab-index="92" dlg:left="134" dlg:top="299" dlg:width="38" dlg:height="14" dlg:page="1" dlg:help-text="&amp;100.MilSymDlg.lbDamaged.HelpText" dlg:value="&amp;101.MilSymDlg.lbDamaged.Label" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="2" dlg:id="lbDestroyed" dlg:tab-index="93" dlg:left="176" dlg:top="299" dlg:width="38" dlg:height="14" dlg:page="1" dlg:help-text="&amp;102.MilSymDlg.lbDestroyed.HelpText" dlg:value="&amp;103.MilSymDlg.lbDestroyed.Label" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="2" dlg:id="lbFullToCapacity" dlg:tab-index="94" dlg:left="217" dlg:top="299" dlg:width="40" dlg:height="14" dlg:page="1" dlg:help-text="&amp;104.MilSymDlg.lbFullToCapacity.HelpText" dlg:value="&amp;105.MilSymDlg.lbFullToCapacity.Label" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="1" dlg:id="lbReinforcedOrReduced" dlg:tab-index="26" dlg:left="10" dlg:top="311" dlg:width="120" dlg:height="10" dlg:page="1" dlg:help-text="&amp;106.MilSymDlg.lbReinforcedOrReduced.HelpText" dlg:value="&amp;107.MilSymDlg.lbReinforcedOrReduced.Label" dlg:valign="center"/>
+  <dlg:button dlg:id="btNotApplicableReinReduc" dlg:tab-index="76" dlg:left="10" dlg:top="324" dlg:width="35" dlg:height="25" dlg:page="1" dlg:help-text="&amp;108.MilSymDlg.btNotApplicableReinReduc.HelpText" dlg:value="&amp;109.MilSymDlg.btNotApplicableReinReduc.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/notApplicable.svg" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btNotApplicableReinReduc" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:id="btReinforced" dlg:tab-index="77" dlg:left="52" dlg:top="323" dlg:width="35" dlg:height="27" dlg:page="1" dlg:valign="top" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/reinforced_win.svg" dlg:grab-focus="false">
+  <dlg:button dlg:id="btReinforced" dlg:tab-index="77" dlg:left="52" dlg:top="323" dlg:width="35" dlg:height="27" dlg:page="1" dlg:help-text="&amp;110.MilSymDlg.btReinforced.HelpText" dlg:value="&amp;111.MilSymDlg.btReinforced.Label" dlg:valign="top" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/reinforced_win.svg" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btReinforced" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:id="btReduced" dlg:tab-index="78" dlg:left="94" dlg:top="323" dlg:width="35" dlg:height="27" dlg:page="1" dlg:tabstop="true" dlg:valign="top" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/reduced_win.svg" dlg:grab-focus="false">
+  <dlg:button dlg:id="btReduced" dlg:tab-index="78" dlg:left="94" dlg:top="323" dlg:width="35" dlg:height="27" dlg:page="1" dlg:help-text="&amp;112.MilSymDlg.btReduced.HelpText" dlg:tabstop="true" dlg:value="&amp;113.MilSymDlg.btReduced.Label" dlg:valign="top" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/reduced_win.svg" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btReduced" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:id="btReinforcedReduced" dlg:tab-index="79" dlg:left="136" dlg:top="323" dlg:width="34" dlg:height="27" dlg:page="1" dlg:tabstop="true" dlg:valign="top" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/reinforcedAndReduced_win.svg" dlg:grab-focus="false">
+  <dlg:button dlg:id="btReinforcedReduced" dlg:tab-index="79" dlg:left="136" dlg:top="323" dlg:width="34" dlg:height="27" dlg:page="1" dlg:help-text="&amp;114.MilSymDlg.btReinforcedReduced.HelpText" dlg:tabstop="true" dlg:value="&amp;115.MilSymDlg.btReinforcedReduced.Label" dlg:valign="top" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/reinforcedAndReduced_win.svg" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btReinforcedReduced" script:language="UNO"/>
   </dlg:button>
-  <dlg:text dlg:style-id="2" dlg:id="lbNotApplicableReinforcedReduced" dlg:tab-index="80" dlg:left="5" dlg:top="351" dlg:width="45" dlg:height="15" dlg:page="1" dlg:value="Not applicable" dlg:align="center" dlg:valign="top" dlg:multiline="true" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="2" dlg:id="lbReinforced" dlg:tab-index="81" dlg:left="50" dlg:top="351" dlg:width="38" dlg:height="15" dlg:page="1" dlg:value="Reinforced" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="2" dlg:id="lbReduced" dlg:tab-index="82" dlg:left="92" dlg:top="351" dlg:width="38" dlg:height="15" dlg:page="1" dlg:value="Reduced" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="2" dlg:id="lbReinforcedReduced" dlg:tab-index="95" dlg:left="131" dlg:top="351" dlg:width="44" dlg:height="15" dlg:page="1" dlg:value="Reinforced and Reduced" dlg:align="center" dlg:valign="top" dlg:multiline="true" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="1" dlg:id="lbSpecialHeadquart" dlg:tab-index="46" dlg:left="270" dlg:top="157" dlg:width="110" dlg:height="12" dlg:page="1" dlg:value="Special Headquarters" dlg:valign="center" dlg:tabstop="false"/>
-  <dlg:textfield dlg:style-id="1" dlg:id="tbSpecialHeadquart" dlg:tab-index="47" dlg:left="385" dlg:top="157" dlg:width="130" dlg:height="12" dlg:page="1">
+  <dlg:text dlg:style-id="2" dlg:id="lbNotApplicableReinforcedReduced" dlg:tab-index="80" dlg:left="5" dlg:top="351" dlg:width="45" dlg:height="15" dlg:page="1" dlg:help-text="&amp;116.MilSymDlg.lbNotApplicableReinforcedReduced.HelpText" dlg:value="&amp;117.MilSymDlg.lbNotApplicableReinforcedReduced.Label" dlg:align="center" dlg:valign="top" dlg:multiline="true" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="2" dlg:id="lbReinforced" dlg:tab-index="81" dlg:left="50" dlg:top="351" dlg:width="38" dlg:height="15" dlg:page="1" dlg:help-text="&amp;118.MilSymDlg.lbReinforced.HelpText" dlg:value="&amp;119.MilSymDlg.lbReinforced.Label" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="2" dlg:id="lbReduced" dlg:tab-index="82" dlg:left="92" dlg:top="351" dlg:width="38" dlg:height="15" dlg:page="1" dlg:help-text="&amp;120.MilSymDlg.lbReduced.HelpText" dlg:value="&amp;121.MilSymDlg.lbReduced.Label" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="2" dlg:id="lbReinforcedReduced" dlg:tab-index="95" dlg:left="131" dlg:top="351" dlg:width="44" dlg:height="15" dlg:page="1" dlg:help-text="&amp;122.MilSymDlg.lbReinforcedReduced.HelpText" dlg:value="&amp;123.MilSymDlg.lbReinforcedReduced.Label" dlg:align="center" dlg:valign="top" dlg:multiline="true" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="1" dlg:id="lbSpecialHeadquart" dlg:tab-index="46" dlg:left="270" dlg:top="157" dlg:width="110" dlg:height="12" dlg:page="1" dlg:help-text="&amp;124.MilSymDlg.lbSpecialHeadquart.HelpText" dlg:value="&amp;125.MilSymDlg.lbSpecialHeadquart.Label" dlg:valign="center" dlg:tabstop="false"/>
+  <dlg:textfield dlg:style-id="1" dlg:id="tbSpecialHeadquart" dlg:tab-index="47" dlg:left="385" dlg:top="157" dlg:width="130" dlg:height="12" dlg:page="1" dlg:help-text="&amp;126.MilSymDlg.tbSpecialHeadquart.HelpText" dlg:value="&amp;127.MilSymDlg.tbSpecialHeadquart.Text">
    <script:event script:event-name="on-textchange" script:macro-name="vnd.sun.star.UNO:tbSpecialHeadquart" script:language="UNO"/>
    <script:event script:event-name="on-mousedown" script:macro-name="vnd.sun.star.UNO:click_tbSpecialHeadquart" script:language="UNO"/>
   </dlg:textfield>
-  <dlg:text dlg:style-id="1" dlg:id="lbUnitNameUniqDesign" dlg:tab-index="42" dlg:left="270" dlg:top="173" dlg:width="110" dlg:height="12" dlg:page="1" dlg:value="Unit Name, Unique Designation" dlg:valign="center" dlg:tabstop="false"/>
-  <dlg:textfield dlg:style-id="1" dlg:id="tbUnitNameUniqDesign" dlg:tab-index="48" dlg:left="385" dlg:top="173" dlg:width="130" dlg:height="12" dlg:page="1">
+  <dlg:text dlg:style-id="1" dlg:id="lbUnitNameUniqDesign" dlg:tab-index="42" dlg:left="270" dlg:top="173" dlg:width="110" dlg:height="12" dlg:page="1" dlg:help-text="&amp;128.MilSymDlg.lbUnitNameUniqDesign.HelpText" dlg:value="&amp;129.MilSymDlg.lbUnitNameUniqDesign.Label" dlg:valign="center" dlg:tabstop="false"/>
+  <dlg:textfield dlg:style-id="1" dlg:id="tbUnitNameUniqDesign" dlg:tab-index="48" dlg:left="385" dlg:top="173" dlg:width="130" dlg:height="12" dlg:page="1" dlg:help-text="&amp;130.MilSymDlg.tbUnitNameUniqDesign.HelpText" dlg:value="&amp;131.MilSymDlg.tbUnitNameUniqDesign.Text">
    <script:event script:event-name="on-textchange" script:macro-name="vnd.sun.star.UNO:tbUnitNameUniqDesign" script:language="UNO"/>
    <script:event script:event-name="on-mousedown" script:macro-name="vnd.sun.star.UNO:click_tbUnitNameUniqDesign" script:language="UNO"/>
   </dlg:textfield>
-  <dlg:text dlg:style-id="1" dlg:id="lbHigherFormation" dlg:tab-index="45" dlg:left="270" dlg:top="190" dlg:width="110" dlg:height="12" dlg:page="1" dlg:value="Higher formation (Commanding unit)" dlg:valign="center"/>
-  <dlg:textfield dlg:style-id="1" dlg:id="tbHigherFormation" dlg:tab-index="49" dlg:left="385" dlg:top="190" dlg:width="130" dlg:height="12" dlg:page="1">
+  <dlg:text dlg:style-id="1" dlg:id="lbHigherFormation" dlg:tab-index="45" dlg:left="270" dlg:top="190" dlg:width="110" dlg:height="12" dlg:page="1" dlg:help-text="&amp;132.MilSymDlg.lbHigherFormation.HelpText" dlg:value="&amp;133.MilSymDlg.lbHigherFormation.Label" dlg:valign="center"/>
+  <dlg:textfield dlg:style-id="1" dlg:id="tbHigherFormation" dlg:tab-index="49" dlg:left="385" dlg:top="190" dlg:width="130" dlg:height="12" dlg:page="1" dlg:help-text="&amp;134.MilSymDlg.tbHigherFormation.HelpText" dlg:value="&amp;135.MilSymDlg.tbHigherFormation.Text">
    <script:event script:event-name="on-textchange" script:macro-name="vnd.sun.star.UNO:tbHigherFormation" script:language="UNO"/>
    <script:event script:event-name="on-mousedown" script:macro-name="vnd.sun.star.UNO:click_tbHigherFormation" script:language="UNO"/>
   </dlg:textfield>
-  <dlg:text dlg:style-id="1" dlg:id="lbAdditionalInfo" dlg:tab-index="43" dlg:left="270" dlg:top="207" dlg:width="110" dlg:height="12" dlg:page="1" dlg:value="Additional Information" dlg:valign="center"/>
-  <dlg:textfield dlg:style-id="1" dlg:id="tbAdditionalInfo" dlg:tab-index="50" dlg:left="385" dlg:top="207" dlg:width="130" dlg:height="12" dlg:page="1">
+  <dlg:text dlg:style-id="1" dlg:id="lbAdditionalInfo" dlg:tab-index="43" dlg:left="270" dlg:top="207" dlg:width="110" dlg:height="12" dlg:page="1" dlg:help-text="&amp;136.MilSymDlg.lbAdditionalInfo.HelpText" dlg:value="&amp;137.MilSymDlg.lbAdditionalInfo.Label" dlg:valign="center"/>
+  <dlg:textfield dlg:style-id="1" dlg:id="tbAdditionalInfo" dlg:tab-index="50" dlg:left="385" dlg:top="207" dlg:width="130" dlg:height="12" dlg:page="1" dlg:help-text="&amp;138.MilSymDlg.tbAdditionalInfo.HelpText" dlg:value="&amp;139.MilSymDlg.tbAdditionalInfo.Text">
    <script:event script:event-name="on-textchange" script:macro-name="vnd.sun.star.UNO:tbAdditionalInfo" script:language="UNO"/>
    <script:event script:event-name="on-mousedown" script:macro-name="vnd.sun.star.UNO:click_tbAdditionalInfo" script:language="UNO"/>
   </dlg:textfield>
-  <dlg:text dlg:style-id="1" dlg:id="lbRange" dlg:tab-index="44" dlg:left="270" dlg:top="224" dlg:width="110" dlg:height="12" dlg:page="1" dlg:value="Range" dlg:valign="center"/>
-  <dlg:textfield dlg:style-id="1" dlg:id="tbRange" dlg:tab-index="51" dlg:left="385" dlg:top="224" dlg:width="130" dlg:height="12" dlg:page="1">
+  <dlg:text dlg:style-id="1" dlg:id="lbRange" dlg:tab-index="44" dlg:left="270" dlg:top="224" dlg:width="110" dlg:height="12" dlg:page="1" dlg:help-text="&amp;140.MilSymDlg.lbRange.HelpText" dlg:value="&amp;141.MilSymDlg.lbRange.Label" dlg:valign="center"/>
+  <dlg:textfield dlg:style-id="1" dlg:id="tbRange" dlg:tab-index="51" dlg:left="385" dlg:top="224" dlg:width="130" dlg:height="12" dlg:page="1" dlg:help-text="&amp;142.MilSymDlg.tbRange.HelpText" dlg:value="&amp;143.MilSymDlg.tbRange.Text">
    <script:event script:event-name="on-mousedown" script:macro-name="vnd.sun.star.UNO:click_tbRange" script:language="UNO"/>
   </dlg:textfield>
-  <dlg:text dlg:style-id="1" dlg:id="lbStack" dlg:tab-index="52" dlg:left="270" dlg:top="259" dlg:width="110" dlg:height="10" dlg:page="1" dlg:value="Stack" dlg:valign="center"/>
-  <dlg:button dlg:id="btStack1" dlg:tab-index="54" dlg:left="270" dlg:top="272" dlg:width="35" dlg:height="25" dlg:page="1" dlg:tabstop="true" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/stack1.svg" dlg:grab-focus="false">
+  <dlg:text dlg:style-id="1" dlg:id="lbStack" dlg:tab-index="52" dlg:left="270" dlg:top="259" dlg:width="110" dlg:height="10" dlg:page="1" dlg:help-text="&amp;144.MilSymDlg.lbStack.HelpText" dlg:value="&amp;145.MilSymDlg.lbStack.Label" dlg:valign="center"/>
+  <dlg:button dlg:id="btStack1" dlg:tab-index="54" dlg:left="270" dlg:top="272" dlg:width="35" dlg:height="25" dlg:page="1" dlg:help-text="&amp;146.MilSymDlg.btStack1.HelpText" dlg:tabstop="true" dlg:value="&amp;147.MilSymDlg.btStack1.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/stack1.svg" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btStack1" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:id="btStack2" dlg:tab-index="55" dlg:left="312" dlg:top="272" dlg:width="35" dlg:height="25" dlg:page="1" dlg:tabstop="true" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/stack2_win.svg" dlg:grab-focus="false">
+  <dlg:button dlg:id="btStack2" dlg:tab-index="55" dlg:left="312" dlg:top="272" dlg:width="35" dlg:height="25" dlg:page="1" dlg:help-text="&amp;148.MilSymDlg.btStack2.HelpText" dlg:tabstop="true" dlg:value="&amp;149.MilSymDlg.btStack2.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/stack2_win.svg" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btStack2" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:id="btStack3" dlg:tab-index="56" dlg:left="354" dlg:top="272" dlg:width="35" dlg:height="25" dlg:page="1" dlg:tabstop="true" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/stack3_win.svg" dlg:grab-focus="false">
+  <dlg:button dlg:id="btStack3" dlg:tab-index="56" dlg:left="354" dlg:top="272" dlg:width="35" dlg:height="25" dlg:page="1" dlg:help-text="&amp;150.MilSymDlg.btStack3.HelpText" dlg:tabstop="true" dlg:value="&amp;151.MilSymDlg.btStack3.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/stack3_win.svg" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btStack3" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:id="btStack4" dlg:tab-index="57" dlg:left="396" dlg:top="272" dlg:width="35" dlg:height="25" dlg:page="1" dlg:tabstop="true" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/stack4_win.svg" dlg:grab-focus="false">
+  <dlg:button dlg:id="btStack4" dlg:tab-index="57" dlg:left="396" dlg:top="272" dlg:width="35" dlg:height="25" dlg:page="1" dlg:help-text="&amp;152.MilSymDlg.btStack4.HelpText" dlg:tabstop="true" dlg:value="&amp;153.MilSymDlg.btStack4.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/stack4_win.svg" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btStack4" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:id="btStack5" dlg:tab-index="58" dlg:left="438" dlg:top="272" dlg:width="35" dlg:height="25" dlg:page="1" dlg:tabstop="true" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/stack5_win.svg" dlg:grab-focus="false">
+  <dlg:button dlg:id="btStack5" dlg:tab-index="58" dlg:left="438" dlg:top="272" dlg:width="35" dlg:height="25" dlg:page="1" dlg:help-text="&amp;154.MilSymDlg.btStack5.HelpText" dlg:tabstop="true" dlg:value="&amp;155.MilSymDlg.btStack5.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/stack5_win.svg" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btStack5" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:id="btStack6" dlg:tab-index="59" dlg:left="480" dlg:top="272" dlg:width="35" dlg:height="25" dlg:page="1" dlg:tabstop="true" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/stack6_win.svg" dlg:grab-focus="false">
+  <dlg:button dlg:id="btStack6" dlg:tab-index="59" dlg:left="480" dlg:top="272" dlg:width="35" dlg:height="25" dlg:page="1" dlg:help-text="&amp;156.MilSymDlg.btStack6.HelpText" dlg:tabstop="true" dlg:value="&amp;157.MilSymDlg.btStack6.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/stack6_win.svg" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btStack6" script:language="UNO"/>
   </dlg:button>
-  <dlg:text dlg:style-id="2" dlg:id="lbStack1" dlg:tab-index="60" dlg:left="270" dlg:top="299" dlg:width="35" dlg:height="10" dlg:page="1" dlg:value="1" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="2" dlg:id="lbStack2" dlg:tab-index="61" dlg:left="312" dlg:top="299" dlg:width="35" dlg:height="10" dlg:page="1" dlg:value="2" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="2" dlg:id="lbStack3" dlg:tab-index="62" dlg:left="354" dlg:top="299" dlg:width="35" dlg:height="10" dlg:page="1" dlg:value="3" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="2" dlg:id="lbStack4" dlg:tab-index="63" dlg:left="396" dlg:top="299" dlg:width="35" dlg:height="10" dlg:page="1" dlg:value="4" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="2" dlg:id="lbStack5" dlg:tab-index="64" dlg:left="438" dlg:top="299" dlg:width="35" dlg:height="10" dlg:page="1" dlg:value="5" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="2" dlg:id="lbStack6" dlg:tab-index="65" dlg:left="480" dlg:top="299" dlg:width="35" dlg:height="10" dlg:page="1" dlg:value="6" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="1" dlg:id="lbColor" dlg:tab-index="53" dlg:left="270" dlg:top="311" dlg:width="120" dlg:height="10" dlg:page="1" dlg:value="Color" dlg:valign="center"/>
-  <dlg:button dlg:id="btNoFill" dlg:tab-index="66" dlg:left="270" dlg:top="324" dlg:width="35" dlg:height="25" dlg:page="1" dlg:tabstop="true" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/noFill.svg" dlg:grab-focus="false">
+  <dlg:text dlg:style-id="2" dlg:id="lbStack1" dlg:tab-index="60" dlg:left="270" dlg:top="299" dlg:width="35" dlg:height="10" dlg:page="1" dlg:help-text="&amp;158.MilSymDlg.lbStack1.HelpText" dlg:value="&amp;159.MilSymDlg.lbStack1.Label" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="2" dlg:id="lbStack2" dlg:tab-index="61" dlg:left="312" dlg:top="299" dlg:width="35" dlg:height="10" dlg:page="1" dlg:help-text="&amp;160.MilSymDlg.lbStack2.HelpText" dlg:value="&amp;161.MilSymDlg.lbStack2.Label" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="2" dlg:id="lbStack3" dlg:tab-index="62" dlg:left="354" dlg:top="299" dlg:width="35" dlg:height="10" dlg:page="1" dlg:help-text="&amp;162.MilSymDlg.lbStack3.HelpText" dlg:value="&amp;163.MilSymDlg.lbStack3.Label" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="2" dlg:id="lbStack4" dlg:tab-index="63" dlg:left="396" dlg:top="299" dlg:width="35" dlg:height="10" dlg:page="1" dlg:help-text="&amp;164.MilSymDlg.lbStack4.HelpText" dlg:value="&amp;165.MilSymDlg.lbStack4.Label" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="2" dlg:id="lbStack5" dlg:tab-index="64" dlg:left="438" dlg:top="299" dlg:width="35" dlg:height="10" dlg:page="1" dlg:help-text="&amp;166.MilSymDlg.lbStack5.HelpText" dlg:value="&amp;167.MilSymDlg.lbStack5.Label" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="2" dlg:id="lbStack6" dlg:tab-index="65" dlg:left="480" dlg:top="299" dlg:width="35" dlg:height="10" dlg:page="1" dlg:help-text="&amp;168.MilSymDlg.lbStack6.HelpText" dlg:value="&amp;169.MilSymDlg.lbStack6.Label" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="1" dlg:id="lbColor" dlg:tab-index="53" dlg:left="270" dlg:top="311" dlg:width="120" dlg:height="10" dlg:page="1" dlg:help-text="&amp;170.MilSymDlg.lbColor.HelpText" dlg:value="&amp;171.MilSymDlg.lbColor.Label" dlg:valign="center"/>
+  <dlg:button dlg:id="btNoFill" dlg:tab-index="66" dlg:left="270" dlg:top="324" dlg:width="35" dlg:height="25" dlg:page="1" dlg:help-text="&amp;172.MilSymDlg.btNoFill.HelpText" dlg:tabstop="true" dlg:value="&amp;173.MilSymDlg.btNoFill.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/noFill.svg" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btNoFill" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:id="btLight" dlg:tab-index="67" dlg:left="312" dlg:top="324" dlg:width="35" dlg:height="25" dlg:page="1" dlg:tabstop="true" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/light.svg" dlg:grab-focus="false">
+  <dlg:button dlg:id="btLight" dlg:tab-index="67" dlg:left="312" dlg:top="324" dlg:width="35" dlg:height="25" dlg:page="1" dlg:help-text="&amp;174.MilSymDlg.btLight.HelpText" dlg:tabstop="true" dlg:value="&amp;175.MilSymDlg.btLight.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/light.svg" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btLight" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:id="btMedium" dlg:tab-index="68" dlg:left="355" dlg:top="324" dlg:width="35" dlg:height="25" dlg:page="1" dlg:tabstop="true" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/medium.svg" dlg:grab-focus="false">
+  <dlg:button dlg:id="btMedium" dlg:tab-index="68" dlg:left="355" dlg:top="324" dlg:width="35" dlg:height="25" dlg:page="1" dlg:help-text="&amp;176.MilSymDlg.btMedium.HelpText" dlg:tabstop="true" dlg:value="&amp;177.MilSymDlg.btMedium.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/medium.svg" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btMedium" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:id="btDark" dlg:tab-index="69" dlg:left="397" dlg:top="324" dlg:width="35" dlg:height="25" dlg:page="1" dlg:tabstop="true" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/dark.svg" dlg:grab-focus="false">
+  <dlg:button dlg:id="btDark" dlg:tab-index="69" dlg:left="397" dlg:top="324" dlg:width="35" dlg:height="25" dlg:page="1" dlg:help-text="&amp;178.MilSymDlg.btDark.HelpText" dlg:tabstop="true" dlg:value="&amp;179.MilSymDlg.btDark.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/dark.svg" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btDark" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:id="btCustom" dlg:tab-index="70" dlg:left="438" dlg:top="324" dlg:width="35" dlg:height="25" dlg:page="1" dlg:tabstop="true" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/customColor.svg" dlg:grab-focus="false">
+  <dlg:button dlg:id="btCustom" dlg:tab-index="70" dlg:left="438" dlg:top="324" dlg:width="35" dlg:height="25" dlg:page="1" dlg:help-text="&amp;180.MilSymDlg.btCustom.HelpText" dlg:tabstop="true" dlg:value="&amp;181.MilSymDlg.btCustom.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/customColor.svg" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btCustom" script:language="UNO"/>
   </dlg:button>
-  <dlg:text dlg:style-id="2" dlg:id="lbNoFillColor" dlg:tab-index="71" dlg:left="268" dlg:top="351" dlg:width="38" dlg:height="15" dlg:page="1" dlg:value="No Fill" dlg:align="center" dlg:valign="top" dlg:multiline="true" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="2" dlg:id="lbLightColor" dlg:tab-index="72" dlg:left="310" dlg:top="351" dlg:width="38" dlg:height="15" dlg:page="1" dlg:value="Light" dlg:align="center" dlg:valign="top" dlg:multiline="true" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="2" dlg:id="lbMediumColor" dlg:tab-index="73" dlg:left="353" dlg:top="351" dlg:width="38" dlg:height="15" dlg:page="1" dlg:value="Medium" dlg:align="center" dlg:valign="top" dlg:multiline="true" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="2" dlg:id="lbDarkColor" dlg:tab-index="74" dlg:left="395" dlg:top="351" dlg:width="38" dlg:height="15" dlg:page="1" dlg:value="Dark" dlg:align="center" dlg:valign="top" dlg:multiline="true" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="2" dlg:id="lbCustomColor" dlg:tab-index="75" dlg:left="433" dlg:top="351" dlg:width="46" dlg:height="15" dlg:page="1" dlg:value="Custom Color" dlg:align="center" dlg:valign="top" dlg:multiline="true" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="1" dlg:id="lbAltitudeDepth" dlg:tab-index="99" dlg:left="10" dlg:top="138" dlg:width="100" dlg:height="12" dlg:page="2" dlg:value="Altitude / Depth" dlg:valign="center"/>
-  <dlg:textfield dlg:style-id="1" dlg:id="tbAltitudeDepth" dlg:tab-index="128" dlg:left="114" dlg:top="138" dlg:width="135" dlg:height="12" dlg:page="2">
+  <dlg:text dlg:style-id="2" dlg:id="lbNoFillColor" dlg:tab-index="71" dlg:left="268" dlg:top="351" dlg:width="38" dlg:height="15" dlg:page="1" dlg:help-text="&amp;182.MilSymDlg.lbNoFillColor.HelpText" dlg:value="&amp;183.MilSymDlg.lbNoFillColor.Label" dlg:align="center" dlg:valign="top" dlg:multiline="true" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="2" dlg:id="lbLightColor" dlg:tab-index="72" dlg:left="310" dlg:top="351" dlg:width="38" dlg:height="15" dlg:page="1" dlg:help-text="&amp;184.MilSymDlg.lbLightColor.HelpText" dlg:value="&amp;185.MilSymDlg.lbLightColor.Label" dlg:align="center" dlg:valign="top" dlg:multiline="true" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="2" dlg:id="lbMediumColor" dlg:tab-index="73" dlg:left="353" dlg:top="351" dlg:width="38" dlg:height="15" dlg:page="1" dlg:help-text="&amp;186.MilSymDlg.lbMediumColor.HelpText" dlg:value="&amp;187.MilSymDlg.lbMediumColor.Label" dlg:align="center" dlg:valign="top" dlg:multiline="true" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="2" dlg:id="lbDarkColor" dlg:tab-index="74" dlg:left="395" dlg:top="351" dlg:width="38" dlg:height="15" dlg:page="1" dlg:help-text="&amp;188.MilSymDlg.lbDarkColor.HelpText" dlg:value="&amp;189.MilSymDlg.lbDarkColor.Label" dlg:align="center" dlg:valign="top" dlg:multiline="true" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="2" dlg:id="lbCustomColor" dlg:tab-index="75" dlg:left="433" dlg:top="351" dlg:width="46" dlg:height="15" dlg:page="1" dlg:help-text="&amp;190.MilSymDlg.lbCustomColor.HelpText" dlg:value="&amp;191.MilSymDlg.lbCustomColor.Label" dlg:align="center" dlg:valign="top" dlg:multiline="true" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="1" dlg:id="lbAltitudeDepth" dlg:tab-index="99" dlg:left="10" dlg:top="138" dlg:width="100" dlg:height="12" dlg:page="2" dlg:help-text="&amp;192.MilSymDlg.lbAltitudeDepth.HelpText" dlg:value="&amp;193.MilSymDlg.lbAltitudeDepth.Label" dlg:valign="center"/>
+  <dlg:textfield dlg:style-id="1" dlg:id="tbAltitudeDepth" dlg:tab-index="128" dlg:left="114" dlg:top="138" dlg:width="135" dlg:height="12" dlg:page="2" dlg:help-text="&amp;194.MilSymDlg.tbAltitudeDepth.HelpText" dlg:value="&amp;195.MilSymDlg.tbAltitudeDepth.Text">
    <script:event script:event-name="on-textchange" script:macro-name="vnd.sun.star.UNO:tbAltitudeDepth" script:language="UNO"/>
   </dlg:textfield>
-  <dlg:text dlg:style-id="1" dlg:id="lbCombatEffect" dlg:tab-index="101" dlg:left="10" dlg:top="158" dlg:width="100" dlg:height="12" dlg:page="2" dlg:value="Combat Effectiveness" dlg:valign="center"/>
-  <dlg:textfield dlg:style-id="1" dlg:id="tbCombatEffect" dlg:tab-index="130" dlg:left="114" dlg:top="158" dlg:width="135" dlg:height="12" dlg:page="2">
+  <dlg:text dlg:style-id="1" dlg:id="lbCombatEffect" dlg:tab-index="101" dlg:left="10" dlg:top="158" dlg:width="100" dlg:height="12" dlg:page="2" dlg:help-text="&amp;196.MilSymDlg.lbCombatEffect.HelpText" dlg:value="&amp;197.MilSymDlg.lbCombatEffect.Label" dlg:valign="center"/>
+  <dlg:textfield dlg:style-id="1" dlg:id="tbCombatEffect" dlg:tab-index="130" dlg:left="114" dlg:top="158" dlg:width="135" dlg:height="12" dlg:page="2" dlg:help-text="&amp;198.MilSymDlg.tbCombatEffect.HelpText" dlg:value="&amp;199.MilSymDlg.tbCombatEffect.Text">
    <script:event script:event-name="on-textchange" script:macro-name="vnd.sun.star.UNO:tbCombatEffect" script:language="UNO"/>
   </dlg:textfield>
-  <dlg:text dlg:style-id="1" dlg:id="lbCommonIdentifier" dlg:tab-index="102" dlg:left="10" dlg:top="178" dlg:width="100" dlg:height="12" dlg:page="2" dlg:value="Common identifier" dlg:valign="center"/>
-  <dlg:textfield dlg:style-id="1" dlg:id="tbCommonIdentifier" dlg:tab-index="129" dlg:left="114" dlg:top="178" dlg:width="135" dlg:height="12" dlg:page="2">
+  <dlg:text dlg:style-id="1" dlg:id="lbCommonIdentifier" dlg:tab-index="102" dlg:left="10" dlg:top="178" dlg:width="100" dlg:height="12" dlg:page="2" dlg:help-text="&amp;200.MilSymDlg.lbCommonIdentifier.HelpText" dlg:value="&amp;201.MilSymDlg.lbCommonIdentifier.Label" dlg:valign="center"/>
+  <dlg:textfield dlg:style-id="1" dlg:id="tbCommonIdentifier" dlg:tab-index="129" dlg:left="114" dlg:top="178" dlg:width="135" dlg:height="12" dlg:page="2" dlg:help-text="&amp;202.MilSymDlg.tbCommonIdentifier.HelpText" dlg:value="&amp;203.MilSymDlg.tbCommonIdentifier.Text">
    <script:event script:event-name="on-textchange" script:macro-name="vnd.sun.star.UNO:tbCommonIdentifier" script:language="UNO"/>
   </dlg:textfield>
-  <dlg:text dlg:style-id="1" dlg:id="lbDateTimeGroup" dlg:tab-index="103" dlg:left="10" dlg:top="198" dlg:width="100" dlg:height="12" dlg:page="2" dlg:value="Date Time Group" dlg:valign="center"/>
-  <dlg:textfield dlg:style-id="1" dlg:id="tbDateTimeGroup" dlg:tab-index="131" dlg:left="114" dlg:top="198" dlg:width="135" dlg:height="12" dlg:page="2">
+  <dlg:text dlg:style-id="1" dlg:id="lbDateTimeGroup" dlg:tab-index="103" dlg:left="10" dlg:top="198" dlg:width="100" dlg:height="12" dlg:page="2" dlg:help-text="&amp;204.MilSymDlg.lbDateTimeGroup.HelpText" dlg:value="&amp;205.MilSymDlg.lbDateTimeGroup.Label" dlg:valign="center"/>
+  <dlg:textfield dlg:style-id="1" dlg:id="tbDateTimeGroup" dlg:tab-index="131" dlg:left="114" dlg:top="198" dlg:width="135" dlg:height="12" dlg:page="2" dlg:help-text="&amp;206.MilSymDlg.tbDateTimeGroup.HelpText" dlg:value="&amp;207.MilSymDlg.tbDateTimeGroup.Text">
    <script:event script:event-name="on-textchange" script:macro-name="vnd.sun.star.UNO:tbDateTimeGroup" script:language="UNO"/>
   </dlg:textfield>
-  <dlg:text dlg:style-id="1" dlg:id="lbDirection" dlg:tab-index="104" dlg:left="10" dlg:top="218" dlg:width="100" dlg:height="12" dlg:page="2" dlg:value="Direction" dlg:valign="center"/>
-  <dlg:textfield dlg:style-id="1" dlg:id="tbDirection" dlg:tab-index="136" dlg:left="114" dlg:top="218" dlg:width="135" dlg:height="12" dlg:page="2">
+  <dlg:text dlg:style-id="1" dlg:id="lbDirection" dlg:tab-index="104" dlg:left="10" dlg:top="218" dlg:width="100" dlg:height="12" dlg:page="2" dlg:help-text="&amp;208.MilSymDlg.lbDirection.HelpText" dlg:value="&amp;209.MilSymDlg.lbDirection.Label" dlg:valign="center"/>
+  <dlg:textfield dlg:style-id="1" dlg:id="tbDirection" dlg:tab-index="136" dlg:left="114" dlg:top="218" dlg:width="135" dlg:height="12" dlg:page="2" dlg:help-text="&amp;210.MilSymDlg.tbDirection.HelpText" dlg:value="&amp;211.MilSymDlg.tbDirection.Text">
    <script:event script:event-name="on-textchange" script:macro-name="vnd.sun.star.UNO:tbDirection" script:language="UNO"/>
   </dlg:textfield>
-  <dlg:text dlg:style-id="1" dlg:id="lbEngageBarType" dlg:tab-index="105" dlg:left="10" dlg:top="242" dlg:width="100" dlg:height="12" dlg:page="2" dlg:value="Engagement Bar Type" dlg:valign="center"/>
-  <dlg:button dlg:id="btTarget" dlg:tab-index="122" dlg:left="114" dlg:top="242" dlg:width="35" dlg:height="28" dlg:page="2" dlg:tabstop="true" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/target_win.svg" dlg:image-position="top-center" dlg:grab-focus="false">
+  <dlg:text dlg:style-id="1" dlg:id="lbEngageBarType" dlg:tab-index="105" dlg:left="10" dlg:top="242" dlg:width="100" dlg:height="12" dlg:page="2" dlg:help-text="&amp;212.MilSymDlg.lbEngageBarType.HelpText" dlg:value="&amp;213.MilSymDlg.lbEngageBarType.Label" dlg:valign="center"/>
+  <dlg:button dlg:id="btTarget" dlg:tab-index="122" dlg:left="114" dlg:top="242" dlg:width="35" dlg:height="28" dlg:page="2" dlg:help-text="&amp;214.MilSymDlg.btTarget.HelpText" dlg:tabstop="true" dlg:value="&amp;215.MilSymDlg.btTarget.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/target_win.svg" dlg:image-position="top-center" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btTarget" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:id="btNonTarget" dlg:tab-index="123" dlg:left="164" dlg:top="242" dlg:width="35" dlg:height="28" dlg:page="2" dlg:tabstop="true" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/nonTarget_win.svg" dlg:image-position="top-center" dlg:grab-focus="false">
+  <dlg:button dlg:id="btNonTarget" dlg:tab-index="123" dlg:left="164" dlg:top="242" dlg:width="35" dlg:height="28" dlg:page="2" dlg:help-text="&amp;216.MilSymDlg.btNonTarget.HelpText" dlg:tabstop="true" dlg:value="&amp;217.MilSymDlg.btNonTarget.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/nonTarget_win.svg" dlg:image-position="top-center" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btNonTarget" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:id="btExpired" dlg:tab-index="124" dlg:left="214" dlg:top="242" dlg:width="35" dlg:height="28" dlg:page="2" dlg:tabstop="true" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/expired_win.svg" dlg:image-position="top-center" dlg:grab-focus="false">
+  <dlg:button dlg:id="btExpired" dlg:tab-index="124" dlg:left="214" dlg:top="242" dlg:width="35" dlg:height="28" dlg:page="2" dlg:help-text="&amp;218.MilSymDlg.btExpired.HelpText" dlg:tabstop="true" dlg:value="&amp;219.MilSymDlg.btExpired.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/expired_win.svg" dlg:image-position="top-center" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btExpired" script:language="UNO"/>
   </dlg:button>
-  <dlg:text dlg:style-id="2" dlg:id="lbTarget" dlg:tab-index="125" dlg:left="112" dlg:top="272" dlg:width="38" dlg:height="10" dlg:page="2" dlg:value="Target" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="2" dlg:id="lbNonTarget" dlg:tab-index="126" dlg:left="162" dlg:top="272" dlg:width="38" dlg:height="10" dlg:page="2" dlg:value="Non-Target" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="2" dlg:id="lbExpired" dlg:tab-index="127" dlg:left="212" dlg:top="272" dlg:width="38" dlg:height="10" dlg:page="2" dlg:value="Expired" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="1" dlg:id="lbEngageBarText" dlg:tab-index="137" dlg:left="10" dlg:top="289" dlg:width="100" dlg:height="12" dlg:page="2" dlg:value="Engagement Bar Text" dlg:valign="center"/>
-  <dlg:textfield dlg:style-id="1" dlg:id="tbEngageBarText" dlg:tab-index="132" dlg:left="114" dlg:top="289" dlg:width="135" dlg:height="12" dlg:page="2">
+  <dlg:text dlg:style-id="2" dlg:id="lbTarget" dlg:tab-index="125" dlg:left="112" dlg:top="272" dlg:width="38" dlg:height="10" dlg:page="2" dlg:help-text="&amp;220.MilSymDlg.lbTarget.HelpText" dlg:value="&amp;221.MilSymDlg.lbTarget.Label" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="2" dlg:id="lbNonTarget" dlg:tab-index="126" dlg:left="162" dlg:top="272" dlg:width="38" dlg:height="10" dlg:page="2" dlg:help-text="&amp;222.MilSymDlg.lbNonTarget.HelpText" dlg:value="&amp;223.MilSymDlg.lbNonTarget.Label" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="2" dlg:id="lbExpired" dlg:tab-index="127" dlg:left="212" dlg:top="272" dlg:width="38" dlg:height="10" dlg:page="2" dlg:help-text="&amp;224.MilSymDlg.lbExpired.HelpText" dlg:value="&amp;225.MilSymDlg.lbExpired.Label" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="1" dlg:id="lbEngageBarText" dlg:tab-index="137" dlg:left="10" dlg:top="289" dlg:width="100" dlg:height="12" dlg:page="2" dlg:help-text="&amp;226.MilSymDlg.lbEngageBarText.HelpText" dlg:value="&amp;227.MilSymDlg.lbEngageBarText.Label" dlg:valign="center"/>
+  <dlg:textfield dlg:style-id="1" dlg:id="tbEngageBarText" dlg:tab-index="132" dlg:left="114" dlg:top="289" dlg:width="135" dlg:height="12" dlg:page="2" dlg:help-text="&amp;228.MilSymDlg.tbEngageBarText.HelpText" dlg:value="&amp;229.MilSymDlg.tbEngageBarText.Text">
    <script:event script:event-name="on-textchange" script:macro-name="vnd.sun.star.UNO:tbEngageBarText" script:language="UNO"/>
   </dlg:textfield>
-  <dlg:text dlg:style-id="1" dlg:id="lbEquipTeardownTime" dlg:tab-index="138" dlg:left="10" dlg:top="309" dlg:width="100" dlg:height="12" dlg:page="2" dlg:value="Equipment Teardown Time" dlg:valign="center"/>
-  <dlg:textfield dlg:style-id="1" dlg:id="tbEquipTeardownTime" dlg:tab-index="134" dlg:left="114" dlg:top="309" dlg:width="135" dlg:height="12" dlg:page="2">
+  <dlg:text dlg:style-id="1" dlg:id="lbEquipTeardownTime" dlg:tab-index="138" dlg:left="10" dlg:top="309" dlg:width="100" dlg:height="12" dlg:page="2" dlg:help-text="&amp;230.MilSymDlg.lbEquipTeardownTime.HelpText" dlg:value="&amp;231.MilSymDlg.lbEquipTeardownTime.Label" dlg:valign="center"/>
+  <dlg:textfield dlg:style-id="1" dlg:id="tbEquipTeardownTime" dlg:tab-index="134" dlg:left="114" dlg:top="309" dlg:width="135" dlg:height="12" dlg:page="2" dlg:help-text="&amp;232.MilSymDlg.tbEquipTeardownTime.HelpText" dlg:value="&amp;233.MilSymDlg.tbEquipTeardownTime.Text">
    <script:event script:event-name="on-textchange" script:macro-name="vnd.sun.star.UNO:tbEquipTeardownTime" script:language="UNO"/>
   </dlg:textfield>
-  <dlg:text dlg:style-id="1" dlg:id="lbEvaluatRating" dlg:tab-index="139" dlg:left="10" dlg:top="329" dlg:width="100" dlg:height="12" dlg:page="2" dlg:value="Evaluation Rating" dlg:valign="center"/>
-  <dlg:textfield dlg:style-id="1" dlg:id="tbEvaluatRating" dlg:tab-index="133" dlg:left="114" dlg:top="329" dlg:width="135" dlg:height="12" dlg:page="2">
+  <dlg:text dlg:style-id="1" dlg:id="lbEvaluatRating" dlg:tab-index="139" dlg:left="10" dlg:top="329" dlg:width="100" dlg:height="12" dlg:page="2" dlg:help-text="&amp;234.MilSymDlg.lbEvaluatRating.HelpText" dlg:value="&amp;235.MilSymDlg.lbEvaluatRating.Label" dlg:valign="center"/>
+  <dlg:textfield dlg:style-id="1" dlg:id="tbEvaluatRating" dlg:tab-index="133" dlg:left="114" dlg:top="329" dlg:width="135" dlg:height="12" dlg:page="2" dlg:help-text="&amp;236.MilSymDlg.tbEvaluatRating.HelpText" dlg:value="&amp;237.MilSymDlg.tbEvaluatRating.Text">
    <script:event script:event-name="on-textchange" script:macro-name="vnd.sun.star.UNO:tbEvaluatRating" script:language="UNO"/>
   </dlg:textfield>
-  <dlg:text dlg:style-id="1" dlg:id="lbGuardedUnit" dlg:tab-index="140" dlg:left="10" dlg:top="349" dlg:width="100" dlg:height="12" dlg:page="2" dlg:value="Guarded unit" dlg:valign="center"/>
-  <dlg:textfield dlg:style-id="1" dlg:id="tbGuardedUnit" dlg:tab-index="135" dlg:left="114" dlg:top="349" dlg:width="135" dlg:height="12" dlg:page="2">
+  <dlg:text dlg:style-id="1" dlg:id="lbGuardedUnit" dlg:tab-index="140" dlg:left="10" dlg:top="349" dlg:width="100" dlg:height="12" dlg:page="2" dlg:help-text="&amp;238.MilSymDlg.lbGuardedUnit.HelpText" dlg:value="&amp;239.MilSymDlg.lbGuardedUnit.Label" dlg:valign="center"/>
+  <dlg:textfield dlg:style-id="1" dlg:id="tbGuardedUnit" dlg:tab-index="135" dlg:left="114" dlg:top="349" dlg:width="135" dlg:height="12" dlg:page="2" dlg:help-text="&amp;240.MilSymDlg.tbGuardedUnit.HelpText" dlg:value="&amp;241.MilSymDlg.tbGuardedUnit.Text">
    <script:event script:event-name="on-textchange" script:macro-name="vnd.sun.star.UNO:tbGuardedUnit" script:language="UNO"/>
   </dlg:textfield>
-  <dlg:text dlg:style-id="1" dlg:id="lbIFF_SIF_AIS" dlg:tab-index="110" dlg:left="284" dlg:top="138" dlg:width="90" dlg:height="12" dlg:page="2" dlg:value="IFF / SIF / AIS" dlg:valign="center" dlg:tabstop="false"/>
-  <dlg:textfield dlg:style-id="1" dlg:id="tbIFF_SIF_AIS" dlg:tab-index="111" dlg:left="380" dlg:top="138" dlg:width="135" dlg:height="12" dlg:page="2">
+  <dlg:text dlg:style-id="1" dlg:id="lbIFF_SIF_AIS" dlg:tab-index="110" dlg:left="284" dlg:top="138" dlg:width="90" dlg:height="12" dlg:page="2" dlg:help-text="&amp;242.MilSymDlg.lbIFF_SIF_AIS.HelpText" dlg:value="&amp;243.MilSymDlg.lbIFF_SIF_AIS.Label" dlg:valign="center" dlg:tabstop="false"/>
+  <dlg:textfield dlg:style-id="1" dlg:id="tbIFF_SIF_AIS" dlg:tab-index="111" dlg:left="380" dlg:top="138" dlg:width="135" dlg:height="12" dlg:page="2" dlg:help-text="&amp;244.MilSymDlg.tbIFF_SIF_AIS.HelpText" dlg:value="&amp;245.MilSymDlg.tbIFF_SIF_AIS.Text">
    <script:event script:event-name="on-textchange" script:macro-name="vnd.sun.star.UNO:tbIFF_SIF_AIS" script:language="UNO"/>
   </dlg:textfield>
-  <dlg:text dlg:style-id="1" dlg:id="lbLocation" dlg:tab-index="106" dlg:left="284" dlg:top="158" dlg:width="90" dlg:height="12" dlg:page="2" dlg:value="Location" dlg:valign="center" dlg:tabstop="false"/>
-  <dlg:textfield dlg:style-id="1" dlg:id="tbLocation" dlg:tab-index="112" dlg:left="380" dlg:top="158" dlg:width="135" dlg:height="12" dlg:page="2">
+  <dlg:text dlg:style-id="1" dlg:id="lbLocation" dlg:tab-index="106" dlg:left="284" dlg:top="158" dlg:width="90" dlg:height="12" dlg:page="2" dlg:help-text="&amp;246.MilSymDlg.lbLocation.HelpText" dlg:value="&amp;247.MilSymDlg.lbLocation.Label" dlg:valign="center" dlg:tabstop="false"/>
+  <dlg:textfield dlg:style-id="1" dlg:id="tbLocation" dlg:tab-index="112" dlg:left="380" dlg:top="158" dlg:width="135" dlg:height="12" dlg:page="2" dlg:help-text="&amp;248.MilSymDlg.tbLocation.HelpText" dlg:value="&amp;249.MilSymDlg.tbLocation.Text">
    <script:event script:event-name="on-textchange" script:macro-name="vnd.sun.star.UNO:tbLocation" script:language="UNO"/>
   </dlg:textfield>
-  <dlg:text dlg:style-id="1" dlg:id="lbPlatformType" dlg:tab-index="109" dlg:left="284" dlg:top="178" dlg:width="90" dlg:height="12" dlg:page="2" dlg:value="Platform Type" dlg:valign="center"/>
-  <dlg:textfield dlg:style-id="1" dlg:id="tbPlatformType" dlg:tab-index="113" dlg:left="380" dlg:top="178" dlg:width="135" dlg:height="12" dlg:page="2">
+  <dlg:text dlg:style-id="1" dlg:id="lbPlatformType" dlg:tab-index="109" dlg:left="284" dlg:top="178" dlg:width="90" dlg:height="12" dlg:page="2" dlg:help-text="&amp;250.MilSymDlg.lbPlatformType.HelpText" dlg:value="&amp;251.MilSymDlg.lbPlatformType.Label" dlg:valign="center"/>
+  <dlg:textfield dlg:style-id="1" dlg:id="tbPlatformType" dlg:tab-index="113" dlg:left="380" dlg:top="178" dlg:width="135" dlg:height="12" dlg:page="2" dlg:help-text="&amp;252.MilSymDlg.tbPlatformType.HelpText" dlg:value="&amp;253.MilSymDlg.tbPlatformType.Text">
    <script:event script:event-name="on-textchange" script:macro-name="vnd.sun.star.UNO:tbPlatformType" script:language="UNO"/>
   </dlg:textfield>
-  <dlg:text dlg:style-id="1" dlg:id="lbQuantity" dlg:tab-index="107" dlg:left="284" dlg:top="198" dlg:width="90" dlg:height="12" dlg:page="2" dlg:value="Quantity" dlg:valign="center"/>
-  <dlg:textfield dlg:style-id="1" dlg:id="tbQuantity" dlg:tab-index="114" dlg:left="380" dlg:top="198" dlg:width="135" dlg:height="12" dlg:page="2">
+  <dlg:text dlg:style-id="1" dlg:id="lbQuantity" dlg:tab-index="107" dlg:left="284" dlg:top="198" dlg:width="90" dlg:height="12" dlg:page="2" dlg:help-text="&amp;254.MilSymDlg.lbQuantity.HelpText" dlg:value="&amp;255.MilSymDlg.lbQuantity.Label" dlg:valign="center"/>
+  <dlg:textfield dlg:style-id="1" dlg:id="tbQuantity" dlg:tab-index="114" dlg:left="380" dlg:top="198" dlg:width="135" dlg:height="12" dlg:page="2" dlg:help-text="&amp;256.MilSymDlg.tbQuantity.HelpText" dlg:value="&amp;257.MilSymDlg.tbQuantity.Text">
    <script:event script:event-name="on-textchange" script:macro-name="vnd.sun.star.UNO:tbQuantity" script:language="UNO"/>
   </dlg:textfield>
-  <dlg:text dlg:style-id="1" dlg:id="lbSignatureEquipment" dlg:tab-index="108" dlg:left="284" dlg:top="218" dlg:width="90" dlg:height="12" dlg:page="2" dlg:value="Signature Equipment" dlg:valign="center"/>
-  <dlg:button dlg:id="btElectronicSignature" dlg:tab-index="119" dlg:left="430" dlg:top="221" dlg:width="35" dlg:height="28" dlg:page="2" dlg:tabstop="true" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/electronicSign.svg" dlg:grab-focus="false">
+  <dlg:text dlg:style-id="1" dlg:id="lbSignatureEquipment" dlg:tab-index="108" dlg:left="284" dlg:top="218" dlg:width="90" dlg:height="12" dlg:page="2" dlg:help-text="&amp;258.MilSymDlg.lbSignatureEquipment.HelpText" dlg:value="&amp;259.MilSymDlg.lbSignatureEquipment.Label" dlg:valign="center"/>
+  <dlg:button dlg:id="btElectronicSignature" dlg:tab-index="119" dlg:left="430" dlg:top="221" dlg:width="35" dlg:height="28" dlg:page="2" dlg:help-text="&amp;260.MilSymDlg.btElectronicSignature.HelpText" dlg:tabstop="true" dlg:value="&amp;261.MilSymDlg.btElectronicSignature.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/electronicSign.svg" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btElectronicSignature" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:id="btNotApplicableSignature" dlg:tab-index="118" dlg:left="380" dlg:top="221" dlg:width="35" dlg:height="28" dlg:page="2" dlg:tabstop="true" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/notApplicable.svg" dlg:grab-focus="false">
+  <dlg:button dlg:id="btNotApplicableSignature" dlg:tab-index="118" dlg:left="380" dlg:top="221" dlg:width="35" dlg:height="28" dlg:page="2" dlg:help-text="&amp;262.MilSymDlg.btNotApplicableSignature.HelpText" dlg:tabstop="true" dlg:value="&amp;263.MilSymDlg.btNotApplicableSignature.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/notApplicable.svg" dlg:grab-focus="false">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btNotApplicableSignature" script:language="UNO"/>
   </dlg:button>
-  <dlg:text dlg:style-id="2" dlg:id="lbNotApplicableSignature" dlg:tab-index="120" dlg:left="378" dlg:top="253" dlg:width="38" dlg:height="10" dlg:page="2" dlg:value="Not applicable" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="2" dlg:id="lbElectronicSignature" dlg:tab-index="121" dlg:left="419" dlg:top="253" dlg:width="57" dlg:height="10" dlg:page="2" dlg:value="Electronic Signature" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
-  <dlg:text dlg:style-id="1" dlg:id="lbSpecialDesign" dlg:tab-index="116" dlg:left="284" dlg:top="271" dlg:width="90" dlg:height="12" dlg:page="2" dlg:value="Special Designator" dlg:valign="center"/>
-  <dlg:textfield dlg:style-id="1" dlg:id="tbSpecialDesign" dlg:tab-index="115" dlg:left="380" dlg:top="271" dlg:width="135" dlg:height="12" dlg:page="2">
+  <dlg:text dlg:style-id="2" dlg:id="lbNotApplicableSignature" dlg:tab-index="120" dlg:left="378" dlg:top="253" dlg:width="38" dlg:height="10" dlg:page="2" dlg:help-text="&amp;264.MilSymDlg.lbNotApplicableSignature.HelpText" dlg:value="&amp;265.MilSymDlg.lbNotApplicableSignature.Label" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="2" dlg:id="lbElectronicSignature" dlg:tab-index="121" dlg:left="419" dlg:top="253" dlg:width="57" dlg:height="10" dlg:page="2" dlg:help-text="&amp;266.MilSymDlg.lbElectronicSignature.HelpText" dlg:value="&amp;267.MilSymDlg.lbElectronicSignature.Label" dlg:align="center" dlg:valign="top" dlg:tabstop="false"/>
+  <dlg:text dlg:style-id="1" dlg:id="lbSpecialDesign" dlg:tab-index="116" dlg:left="284" dlg:top="271" dlg:width="90" dlg:height="12" dlg:page="2" dlg:help-text="&amp;268.MilSymDlg.lbSpecialDesign.HelpText" dlg:value="&amp;269.MilSymDlg.lbSpecialDesign.Label" dlg:valign="center"/>
+  <dlg:textfield dlg:style-id="1" dlg:id="tbSpecialDesign" dlg:tab-index="115" dlg:left="380" dlg:top="271" dlg:width="135" dlg:height="12" dlg:page="2" dlg:help-text="&amp;270.MilSymDlg.tbSpecialDesign.HelpText" dlg:value="&amp;271.MilSymDlg.tbSpecialDesign.Text">
    <script:event script:event-name="on-textchange" script:macro-name="vnd.sun.star.UNO:tbSpecialDesign" script:language="UNO"/>
   </dlg:textfield>
-  <dlg:text dlg:style-id="1" dlg:id="lbSpeed" dlg:tab-index="117" dlg:left="284" dlg:top="289" dlg:width="90" dlg:height="12" dlg:page="2" dlg:value="Speed" dlg:valign="center"/>
-  <dlg:textfield dlg:style-id="1" dlg:id="tbSpeed" dlg:tab-index="144" dlg:left="380" dlg:top="289" dlg:width="135" dlg:height="12" dlg:page="2">
+  <dlg:text dlg:style-id="1" dlg:id="lbSpeed" dlg:tab-index="117" dlg:left="284" dlg:top="289" dlg:width="90" dlg:height="12" dlg:page="2" dlg:help-text="&amp;272.MilSymDlg.lbSpeed.HelpText" dlg:value="&amp;273.MilSymDlg.lbSpeed.Label" dlg:valign="center"/>
+  <dlg:textfield dlg:style-id="1" dlg:id="tbSpeed" dlg:tab-index="144" dlg:left="380" dlg:top="289" dlg:width="135" dlg:height="12" dlg:page="2" dlg:help-text="&amp;274.MilSymDlg.tbSpeed.HelpText" dlg:value="&amp;275.MilSymDlg.tbSpeed.Text">
    <script:event script:event-name="on-textchange" script:macro-name="vnd.sun.star.UNO:tbSpeed" script:language="UNO"/>
   </dlg:textfield>
-  <dlg:text dlg:style-id="1" dlg:id="lbStaffComments" dlg:tab-index="141" dlg:left="284" dlg:top="309" dlg:width="90" dlg:height="12" dlg:page="2" dlg:value="Staff comments" dlg:valign="center"/>
-  <dlg:textfield dlg:style-id="1" dlg:id="tbStaffComments" dlg:tab-index="145" dlg:left="380" dlg:top="309" dlg:width="135" dlg:height="12" dlg:page="2">
+  <dlg:text dlg:style-id="1" dlg:id="lbStaffComments" dlg:tab-index="141" dlg:left="284" dlg:top="309" dlg:width="90" dlg:height="12" dlg:page="2" dlg:help-text="&amp;276.MilSymDlg.lbStaffComments.HelpText" dlg:value="&amp;277.MilSymDlg.lbStaffComments.Label" dlg:valign="center"/>
+  <dlg:textfield dlg:style-id="1" dlg:id="tbStaffComments" dlg:tab-index="145" dlg:left="380" dlg:top="309" dlg:width="135" dlg:height="12" dlg:page="2" dlg:help-text="&amp;278.MilSymDlg.tbStaffComments.HelpText" dlg:value="&amp;279.MilSymDlg.tbStaffComments.Text">
    <script:event script:event-name="on-textchange" script:macro-name="vnd.sun.star.UNO:tbStaffComments" script:language="UNO"/>
   </dlg:textfield>
-  <dlg:text dlg:style-id="1" dlg:id="lbType" dlg:tab-index="142" dlg:left="284" dlg:top="329" dlg:width="90" dlg:height="12" dlg:page="2" dlg:value="Type" dlg:valign="center"/>
-  <dlg:textfield dlg:style-id="1" dlg:id="tbType" dlg:tab-index="146" dlg:left="380" dlg:top="329" dlg:width="135" dlg:height="12" dlg:page="2">
+  <dlg:text dlg:style-id="1" dlg:id="lbType" dlg:tab-index="142" dlg:left="284" dlg:top="329" dlg:width="90" dlg:height="12" dlg:page="2" dlg:help-text="&amp;280.MilSymDlg.lbType.HelpText" dlg:value="&amp;281.MilSymDlg.lbType.Label" dlg:valign="center"/>
+  <dlg:textfield dlg:style-id="1" dlg:id="tbType" dlg:tab-index="146" dlg:left="380" dlg:top="329" dlg:width="135" dlg:height="12" dlg:page="2" dlg:help-text="&amp;282.MilSymDlg.tbType.HelpText" dlg:value="&amp;283.MilSymDlg.tbType.Text">
    <script:event script:event-name="on-textchange" script:macro-name="vnd.sun.star.UNO:tbType" script:language="UNO"/>
   </dlg:textfield>
-  <dlg:text dlg:style-id="1" dlg:id="lbCountry" dlg:tab-index="143" dlg:left="284" dlg:top="349" dlg:width="90" dlg:height="12" dlg:page="2" dlg:value="Country" dlg:valign="center"/>
-  <dlg:menulist dlg:style-id="1" dlg:id="ltbCountry" dlg:tab-index="147" dlg:left="380" dlg:top="349" dlg:width="135" dlg:height="12" dlg:page="2" dlg:spin="true">
+  <dlg:text dlg:style-id="1" dlg:id="lbCountry" dlg:tab-index="143" dlg:left="284" dlg:top="349" dlg:width="90" dlg:height="12" dlg:page="2" dlg:help-text="&amp;284.MilSymDlg.lbCountry.HelpText" dlg:value="&amp;285.MilSymDlg.lbCountry.Label" dlg:valign="center"/>
+  <dlg:menulist dlg:style-id="1" dlg:id="ltbCountry" dlg:tab-index="147" dlg:left="380" dlg:top="349" dlg:width="135" dlg:height="12" dlg:page="2" dlg:help-text="&amp;286.MilSymDlg.ltbCountry.HelpText" dlg:spin="true">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:ltbCountry" script:language="UNO"/>
   </dlg:menulist>
-  <dlg:button dlg:id="btCancel" dlg:tab-index="19" dlg:left="429" dlg:top="372" dlg:width="45" dlg:height="15" dlg:value="Cancel" dlg:valign="center">
+  <dlg:button dlg:id="btCancel" dlg:tab-index="19" dlg:left="429" dlg:top="372" dlg:width="45" dlg:height="15" dlg:help-text="&amp;287.MilSymDlg.btCancel.HelpText" dlg:value="&amp;288.MilSymDlg.btCancel.Label" dlg:valign="center">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:dialog_btCancel" script:language="UNO"/>
   </dlg:button>
-  <dlg:button dlg:id="btSave" dlg:tab-index="20" dlg:left="476" dlg:top="372" dlg:width="45" dlg:height="15" dlg:value="Save" dlg:valign="center">
+  <dlg:button dlg:id="btSave" dlg:tab-index="20" dlg:left="476" dlg:top="372" dlg:width="45" dlg:height="15" dlg:help-text="&amp;289.MilSymDlg.btSave.HelpText" dlg:value="&amp;290.MilSymDlg.btSave.Label" dlg:valign="center">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:dialog_btSave" script:language="UNO"/>
   </dlg:button>
  </dlg:bulletinboard>
