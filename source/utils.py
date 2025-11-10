@@ -16,7 +16,7 @@ if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
 
 from com.sun.star.awt import Size, Point
-from com.sun.star.beans import NamedValue, PropertyValue
+from com.sun.star.beans import PropertyValue
 from com.sun.star.text.TextContentAnchorType import AT_PARAGRAPH
 from com.sun.star.xml import AttributeData
 
