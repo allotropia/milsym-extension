@@ -11,7 +11,6 @@
 
 """
 Controller class for LibreOffice extension
-Python port of Controller.java
 """
 
 import unohelper
@@ -68,26 +67,8 @@ class Controller(unohelper.Base, XSelectionChangeListener):
         self.add_selection_listener()
 
     def is_smart_diagram_shape(self, shape_name):
-        """Check if shape is a SmART diagram shape"""
-        return (shape_name.startswith("SimpleOrganizationDiagram") or
-                shape_name.startswith("TableHierarchyDiagram") or
-                shape_name.startswith("HorizontalOrganizationDiagram") or
-                shape_name.startswith("OrganizationDiagram") or
-                shape_name.startswith("VennDiagram") or
-                shape_name.startswith("PyramidDiagram") or
-                shape_name.startswith("CycleDiagram") or
-                shape_name.startswith("TargetDiagram") or
-                shape_name.startswith("ContinuousBlockProcess") or
-                shape_name.startswith("StaggeredProcess") or
-                shape_name.startswith("BendingProcess") or
-                shape_name.startswith("UpwardArrowProcess"))
-
-    def is_smart_organigram_shape(self, shape_name):
-        """Check if shape is a SmART organigram shape"""
-        return (shape_name.startswith("SimpleOrganizationDiagram") or
-                shape_name.startswith("TableHierarchyDiagram") or
-                shape_name.startswith("HorizontalOrganizationDiagram") or
-                shape_name.startswith("OrganizationDiagram"))
+        """Check if shape is a smart diagram shape"""
+        return shape_name.startswith("OrganizationDiagram")
 
     def set_new_size(self):
         """Set new diagram size"""
@@ -428,16 +409,9 @@ class Controller(unohelper.Base, XSelectionChangeListener):
         """Set text field of control dialog"""
         # TODO: Implement when GUI is available
 
-    # TODO: Add remaining methods from the Java implementation
-    # - create_diagram methods for different diagram types
-    # - test methods
-    # - utility methods
-    # - event handling methods
-
-
 # pythonloader loads a static g_ImplementationHelper variable
 g_ImplementationHelper = unohelper.ImplementationHelper()
 g_ImplementationHelper.addImplementation(
     Controller,  # UNO object class
-    "com.collabora.milsymbol.Controller",  # implementation name (customize for yourself)
+    "com.collabora.milsymbol.Controller",  # implementation name
     ("com.sun.star.view.XSelectionChangeListener",), )  # implemented services (only 1)
