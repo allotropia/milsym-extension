@@ -68,12 +68,12 @@ def insertSvgGraphic(ctx, model, svg_data, params):
 
         # set MilSym-specific user defined attributes
         insertGraphicAttributes(shape, params)
-
         # TODO: Set default anchoring for text documents
         try:
             shape.setPropertyValue("AnchorType", AT_PARAGRAPH)
         except:
             pass  # Not all document types support anchoring
+
 
         # Writer
         if model.supportsService("com.sun.star.text.TextDocument"):
@@ -82,10 +82,16 @@ def insertSvgGraphic(ctx, model, svg_data, params):
             cursor = view_cursor_supplier.getViewCursor()
             text = cursor.getText()
             text.insertTextContent(cursor, shape, True)
-            # Calc
+        # Calc
         elif model.supportsService("com.sun.star.sheet.SpreadsheetDocument"):
-            current_selection = model.getCurrentSelection()
+            controller = model.getCurrentController()
+            active_sheet = controller.getActiveSheet()
+            draw_page = active_sheet.getDrawPage()
+            draw_page.add(shape)
+
             try:
+                # Try to position at current selection
+                current_selection = model.getCurrentSelection()
                 cell_position = current_selection.getPropertyValue("Position")
                 shape.setPosition(cell_position)
             except:
@@ -94,12 +100,7 @@ def insertSvgGraphic(ctx, model, svg_data, params):
                 default_pos.X = 1000
                 default_pos.Y = 1000
                 shape.setPosition(default_pos)
-                controller = model.getCurrentController()
-                active_sheet = controller.getActiveSheet()
-                draw_page_supplier = active_sheet
-                draw_page = draw_page_supplier.getDrawPage()
-                draw_page.add(shape)
-                # Impress/Draw
+        # Impress/Draw
         elif (model.supportsService("com.sun.star.presentation.PresentationDocument") or
               model.supportsService("com.sun.star.drawing.DrawingDocument")):
             controller = model.getCurrentController()
