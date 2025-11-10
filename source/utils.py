@@ -9,6 +9,7 @@
 import sys
 import os
 import uno
+import xml.etree.ElementTree as ET
 
 base_dir = os.path.dirname(__file__)
 if base_dir not in sys.path:
@@ -34,11 +35,35 @@ def insertSvgGraphic(ctx, model, svg_data, params):
         shape = model.createInstance("com.sun.star.drawing.GraphicObjectShape")
         shape.setPropertyValue("Graphic", graphic)
 
-        # TODO: Make this dependent on actual SVG dimensions
-        # (parse width and height properties of the svg element)
+        # Parse SVG dimensions from the svg element
+        width = 4000  # Default width
+        height = 930  # Default height
+        factor = 26.46  # Conversion factor from pixels to 1/100mm (assuming 96 DPI)
+        try:
+            # Parse SVG using ElementTree
+            root = ET.fromstring(svg_data)
+
+            # Extract width and height attributes
+            width_str = root.get('width')
+            height_str = root.get('height')
+
+            if width_str:
+                # Remove units like 'px', 'pt', etc. and extract numeric value
+                width_num = ''.join(c for c in width_str if c.isdigit() or c == '.')
+                if width_num:
+                    width = int(float(width_num) * factor)
+
+            if height_str:
+                # Remove units like 'px', 'pt', etc. and extract numeric value
+                height_num = ''.join(c for c in height_str if c.isdigit() or c == '.')
+                if height_num:
+                    height = int(float(height_num) * factor)
+        except Exception as e:
+            print(f"Warning: Could not parse SVG dimensions, using defaults: {e}")
+
         shape_size = Size()
-        shape_size.Height = 930
-        shape_size.Width = 4000
+        shape_size.Height = height
+        shape_size.Width = width
         shape.setSize(shape_size)
 
         # set MilSym-specific user defined attributes
