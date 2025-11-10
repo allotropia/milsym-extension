@@ -21,6 +21,47 @@ from com.sun.star.text.TextContentAnchorType import AT_PARAGRAPH
 from com.sun.star.xml import AttributeData
 
 
+def parse_svg_dimensions(svg_data):
+    """Parse SVG dimensions and return width and height in 1/100mm units.
+
+    Args:
+        svg_data: SVG content as string
+
+    Returns:
+        Size(width, height)
+    """
+    width = 4000  # Default width
+    height = 930  # Default height
+    factor = 26.46  # Conversion factor from pixels to 1/100mm (assuming 96 DPI)
+
+    try:
+        # Parse SVG using ElementTree
+        root = ET.fromstring(svg_data)
+
+        # Extract width and height attributes
+        width_str = root.get('width')
+        height_str = root.get('height')
+
+        if width_str:
+            # Remove units like 'px', 'pt', etc. and extract numeric value
+            width_num = ''.join(c for c in width_str if c.isdigit() or c == '.')
+            if width_num:
+                width = int(float(width_num) * factor)
+
+        if height_str:
+            # Remove units like 'px', 'pt', etc. and extract numeric value
+            height_num = ''.join(c for c in height_str if c.isdigit() or c == '.')
+            if height_num:
+                height = int(float(height_num) * factor)
+    except Exception as e:
+        print(f"Warning: Could not parse SVG dimensions, using defaults: {e}")
+
+    shape_size = Size()
+    shape_size.Height = height
+    shape_size.Width = width
+    return shape_size
+
+
 def insertSvgGraphic(ctx, model, svg_data, params):
     try:
         pipe = ctx.ServiceManager.createInstanceWithContext(
@@ -35,36 +76,8 @@ def insertSvgGraphic(ctx, model, svg_data, params):
         shape = model.createInstance("com.sun.star.drawing.GraphicObjectShape")
         shape.setPropertyValue("Graphic", graphic)
 
-        # Parse SVG dimensions from the svg element
-        width = 4000  # Default width
-        height = 930  # Default height
-        factor = 26.46  # Conversion factor from pixels to 1/100mm (assuming 96 DPI)
-        try:
-            # Parse SVG using ElementTree
-            root = ET.fromstring(svg_data)
-
-            # Extract width and height attributes
-            width_str = root.get('width')
-            height_str = root.get('height')
-
-            if width_str:
-                # Remove units like 'px', 'pt', etc. and extract numeric value
-                width_num = ''.join(c for c in width_str if c.isdigit() or c == '.')
-                if width_num:
-                    width = int(float(width_num) * factor)
-
-            if height_str:
-                # Remove units like 'px', 'pt', etc. and extract numeric value
-                height_num = ''.join(c for c in height_str if c.isdigit() or c == '.')
-                if height_num:
-                    height = int(float(height_num) * factor)
-        except Exception as e:
-            print(f"Warning: Could not parse SVG dimensions, using defaults: {e}")
-
-        shape_size = Size()
-        shape_size.Height = height
-        shape_size.Width = width
-        shape.setSize(shape_size)
+        size = parse_svg_dimensions(svg_data)
+        shape.setSize(size)
 
         # set MilSym-specific user defined attributes
         insertGraphicAttributes(shape, params)

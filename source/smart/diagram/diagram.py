@@ -19,6 +19,13 @@ import officehelper
 import os
 import uno
 
+# Add parent directory to path to import utils
+base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+if base_dir not in sys.path:
+    sys.path.insert(0, base_dir)
+
+from utils import parse_svg_dimensions
+
 from abc import ABC, abstractmethod
 from com.sun.star.beans import PropertyValue
 from com.sun.star.awt import Point, Size
@@ -177,6 +184,10 @@ class Diagram(ABC):
                 media_properties = (PropertyValue("InputStream", 0, pipe, 0),)
                 graphic = graphic_provider.queryGraphic(media_properties)
                 shape.setPropertyValue("Graphic", graphic)
+
+                # Parse SVG dimensions and resize shape to maintain proportions
+                size = parse_svg_dimensions(svg_data)
+                shape.setSize(size)
 
         except Exception as ex:
             print(f"Error setting shape properties: {ex}")
