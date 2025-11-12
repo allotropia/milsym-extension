@@ -33,6 +33,17 @@ class SidebarFactory(unohelper.Base, XUIElementFactory):
             print("Sidebar factory error:", e)
 
 class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
+
+    # POS_X + POS_Y + POS_WIDTH + POS_HEIGHT = 1 + 2 + 4 + 8 = 15
+    POS_ALL = 15
+
+    MIN_WIDTH = 250
+    BUTTON_WIDTH = 60
+    BUTTON_HEIGHT = 30
+    TEXTBOX_HEIGHT = 28
+    VERTICAL_SPACING = 3
+    LEFT_MARGIN = TOP_MARGIN = RIGHT_MARGIN = BOTTOM_MARGIN = 6
+
     def __init__(self, ctx, xParentWindow, url):
         self.ctx = ctx
         self.xParentWindow = xParentWindow
@@ -61,7 +72,7 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
         return LayoutSize(0, -1, 0)
 
     def getMinimalWidth(self):
-        return 300
+        return self.MIN_WIDTH
 
     def getOrCreatePanelRootWindow(self):
         try:
@@ -73,29 +84,47 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
             container.setModel(container_model)
             container.createPeer(toolkit, self.xParentWindow)
 
+            # New button
+            x = self.LEFT_MARGIN
+            y = self.TOP_MARGIN
+            width = self.BUTTON_WIDTH
+            height = self.BUTTON_HEIGHT
             names = ("Name", "Label")
             values = ("btNew", "New")
-            btNew = self.createControl(self.ctx, "com.sun.star.awt.UnoControlButton", "com.sun.star.awt.UnoControlButtonModel",
-                                                    6, 6, 75, 35, names, values)
+            btNew = self.createControl(self.ctx, "com.sun.star.awt.UnoControlButton", "com.sun.star.awt.UnoControlButtonModel", x, y, width, height, names, values)
+
+            # Import/Export button
+            x = 0  # X position will be set later in onResize()
+            y = self.TOP_MARGIN
+            width = self.BUTTON_WIDTH
+            height = self.BUTTON_HEIGHT
             names = ("Name", "Label")
-            values = ("btImportExport", "...")
-            btImportExport = self.createControl(self.ctx, "com.sun.star.awt.UnoControlButton", "com.sun.star.awt.UnoControlButtonModel",
-                                                219, 6, 75, 35, names, values)
+            values = ("btImport", "...")
+            btImport = self.createControl(self.ctx, "com.sun.star.awt.UnoControlButton", "com.sun.star.awt.UnoControlButtonModel", x, y, width, height, names, values)
+
+            # Filter textbox
+            x = self.LEFT_MARGIN
+            y = self.TOP_MARGIN + self.BUTTON_HEIGHT + self.VERTICAL_SPACING
+            width = 0 # width will be set later in onResize()
+            height = self.TEXTBOX_HEIGHT
             names = ("Name", "Text",)
-            values = ("tbFilter", "",)
-            tbFilter = self.createControl(self.ctx, "com.sun.star.awt.UnoControlEdit", "com.sun.star.awt.UnoControlEditModel",
-                                          6, 47, 0, 35, names, values)
+            values = ("tbFilter", "Filtering...",)
+            tbFilter = self.createControl(self.ctx, "com.sun.star.awt.UnoControlEdit", "com.sun.star.awt.UnoControlEditModel", x, y, width, height, names, values)
+
+            # Tree control
+            x = self.LEFT_MARGIN
+            y = self.TOP_MARGIN + self.BUTTON_HEIGHT + self.VERTICAL_SPACING + self.TEXTBOX_HEIGHT + self.BOTTOM_MARGIN
+            width = 0   # width will be set later in onResize()
+            height = 0  # height will be set later in onResize()
             names = ("Name",)
             values = ("myTree",)
-            treeCtrl = self.createControl(self.ctx, "com.sun.star.awt.tree.TreeControl", "com.sun.star.awt.tree.TreeControlModel",
-                                          6, 88, 0, 0, names, values)
+            treeCtrl = self.createControl(self.ctx, "com.sun.star.awt.tree.TreeControl", "com.sun.star.awt.tree.TreeControlModel", x, y, width, height, names, values)
 
             container.addControl("btNew", btNew)
-            container.addControl("btImportExport", btImportExport)
+            container.addControl("btImport", btImport)
             container.addControl("tbFilter", tbFilter)
             container.addControl("treeCtrl", treeCtrl)
 
-            print("Coainter:", container)
             return container
 
         except Exception as e:
@@ -116,25 +145,29 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
     
     def onResize(self, event):    
         try:
-            toolpanel_size = self.toolpanel.getPosSize()
+            toolpanel_size = event.Source.getPosSize()
             toolpanel_width = toolpanel_size.Width
             toolpanel_height = toolpanel_size.Height
             
             treeCtrl = self.toolpanel.getControl("treeCtrl")
             if treeCtrl:
                 rect = treeCtrl.getPosSize()
-                treeCtrl.setPosSize(rect.X, rect.Y , toolpanel_width - 12, toolpanel_height - 94, 15)
+                new_treeCtrl_width = toolpanel_width - self.LEFT_MARGIN - self.RIGHT_MARGIN
+                new_treeCtrl_height = toolpanel_height - self.TOP_MARGIN - self.BUTTON_HEIGHT - self.VERTICAL_SPACING \
+                                      - self.TEXTBOX_HEIGHT - (self.VERTICAL_SPACING * 2) - self.BOTTOM_MARGIN
+                treeCtrl.setPosSize(rect.X, rect.Y , new_treeCtrl_width, new_treeCtrl_height, self.POS_ALL)
                 
             tbFilter = self.toolpanel.getControl("tbFilter")
             if tbFilter:
                 rect = tbFilter.getPosSize()
-                tbFilter.setPosSize(rect.X, rect.Y , toolpanel_width - 12, rect.Height, 15)
+                new_tbFilter_width = toolpanel_width - self.LEFT_MARGIN - self.RIGHT_MARGIN
+                tbFilter.setPosSize(rect.X, rect.Y , new_tbFilter_width, rect.Height, self.POS_ALL)
                 
-            btImportExport = self.toolpanel.getControl("btImportExport")
-            if btImportExport:
-                rect = btImportExport.getPosSize()
-                x = toolpanel_width - 75 - 6
-                btImportExport.setPosSize(x, rect.Y , rect.Width, rect.Height, 15)
+            btImport = self.toolpanel.getControl("btImport")
+            if btImport:
+                rect = btImport.getPosSize()
+                new_btImport_x_pos = toolpanel_width - self.BUTTON_WIDTH - self.LEFT_MARGIN
+                btImport.setPosSize(new_btImport_x_pos, rect.Y , rect.Width, rect.Height, self.POS_ALL)
 
         except Exception as e:
             print("Resize error:", e)
@@ -149,3 +182,4 @@ class WindowResizeListener(unohelper.Base, XWindowListener):
     def windowHidden(self, event): pass
     def windowMoved(self, event): pass
     def windowShown(self, event): pass
+    def disposing(self, event): pass
