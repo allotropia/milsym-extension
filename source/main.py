@@ -20,6 +20,7 @@ from symbol_dialog import open_symbol_dialog
 from utils import insertSvgGraphic, getExtensionBasePath
 from smart.controller import Controller
 from smart.diagram.data_of_diagram import DataOfDiagram
+from sidebar import SidebarFactory
 
 from com.sun.star.awt import Size, Point
 from com.sun.star.beans import NamedValue, PropertyValue
@@ -127,3 +128,8 @@ g_ImplementationHelper.addImplementation(
     MainJob,  # UNO object class
     "com.collabora.milsymbol.do",  # implementation name (customize for yourself)
     ("com.sun.star.task.Job",), )  # implemented services (only 1)
+
+g_ImplementationHelper.addImplementation(
+    SidebarFactory,
+    "com.collabora.milsymbol.TacticalSymbolsFactory",
+    ("com.sun.star.ui.UIElementFactory",), )

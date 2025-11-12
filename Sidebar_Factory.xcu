@@ -18,7 +18,7 @@
                     <value/>
                 </prop>
                 <prop oor:name="FactoryImplementation">
-                    <value>com.collabora.milsymbol.sidebar.TacticalSymbolsFactory</value>
+                    <value>com.collabora.milsymbol.TacticalSymbolsFactory</value>
                 </prop>
             </node>
             
