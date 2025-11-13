@@ -41,7 +41,7 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
     BUTTON_WIDTH = 60
     BUTTON_HEIGHT = 30
     TEXTBOX_HEIGHT = 28
-    VERTICAL_SPACING = 3
+    VERTICAL_SPACING = 6
     LEFT_MARGIN = TOP_MARGIN = RIGHT_MARGIN = BOTTOM_MARGIN = 6
 
     def __init__(self, ctx, xParentWindow, url):
@@ -154,7 +154,7 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
                 rect = treeCtrl.getPosSize()
                 new_treeCtrl_width = toolpanel_width - self.LEFT_MARGIN - self.RIGHT_MARGIN
                 new_treeCtrl_height = toolpanel_height - self.TOP_MARGIN - self.BUTTON_HEIGHT - self.VERTICAL_SPACING \
-                                      - self.TEXTBOX_HEIGHT - (self.VERTICAL_SPACING * 2) - self.BOTTOM_MARGIN
+                                      - self.TEXTBOX_HEIGHT - self.VERTICAL_SPACING - self.BOTTOM_MARGIN
                 treeCtrl.setPosSize(rect.X, rect.Y , new_treeCtrl_width, new_treeCtrl_height, self.POS_ALL)
                 
             tbFilter = self.toolpanel.getControl("tbFilter")
