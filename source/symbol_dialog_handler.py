@@ -23,6 +23,7 @@ if base_dir not in sys.path:
 from data import symbols_data
 from data import country_data
 from utils import insertSvgGraphic, insertGraphicAttributes, getExtensionBasePath
+from translator import Translator
 
 class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
@@ -37,6 +38,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         self.hex_color_value = None
         self.final_svg_data = None
         self.final_svg_args = None
+        self.translator = Translator(self.ctx)
 
         self.factory = self.ctx.getServiceManager().createInstanceWithContext("com.sun.star.script.provider.MasterScriptProviderFactory", self.ctx)
         self.provider = self.factory.createScriptProvider(model)
@@ -117,7 +119,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         return current_symbol
 
     def fill_listbox(self, dialog, control_name, items, selected_index):
-        labels = [item["label"] for item in items]
+        labels = [self.translator.translate(item["label"]) for item in items]
 
         listbox = dialog.getControl(control_name)
         listbox.removeItems(0, listbox.getItemCount())
@@ -263,7 +265,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
             mainIcon_index = next(
                (i for i, item in enumerate(labels)
-                if isinstance(item, dict) and item.get("label") == selected_value),
+                if isinstance(item, dict) and self.translator.translate(item.get("label")) == selected_value),
                None
             )
 
@@ -293,7 +295,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
                 for data in symbols_data.SYMBOL_DETAILS.values():
                     for icon in data.get("MainIcon", []):
-                        label = icon.get("label", "")
+                        label = self.translator.translate(icon.get("label", ""))
                         label_to_search = label.split("–")[0].strip()
                         word_match = any(w.lower().startswith(search) for w in label_to_search.split())
                         prefix_match = label_to_search.lower().startswith(search)
@@ -326,7 +328,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
             self.mainIcon_value = next(
                 (item.get("value") for item in labels
-                 if isinstance(item, dict) and item.get("label") == selected_value),
+                 if isinstance(item, dict) and self.translator.translate(item.get("label")) == selected_value),
                 None
             )
 
