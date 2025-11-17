@@ -55,6 +55,8 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
         self.ResourceURL = url
         self.toolpanel = None
         self.root_node = None
+        self.tree_control = None
+        self.favorites_dir_path= None
         self.mutable_tree_data_model = None
 
         self.sidebar_tree = SidebarTree(ctx)
@@ -62,7 +64,6 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
         self.desktop = self.ctx.getServiceManager().createInstanceWithContext("com.sun.star.frame.Desktop", self.ctx)
 
         self.set_favorites_dir(ctx)
-        self.favorites_dir_path = self.get_favorites_dir_path(ctx)
 
         self._resizeListener = WindowResizeListener(self.onResize)
         self.xParentWindow.addWindowListener(self._resizeListener)
@@ -71,6 +72,7 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
     def getRealInterface(self):
         if self.toolpanel is None:
             self.toolpanel = self.getOrCreatePanelRootWindow()
+            self.init_favorites_sidebar()
         return self
 
     # XToolPanel
@@ -135,7 +137,7 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
             names = ("Name",)
             values = ("myTree",)
             treeCtrl = self.createControl(self.ctx, "com.sun.star.awt.tree.TreeControl", "com.sun.star.awt.tree.TreeControlModel", x, y, width, height, names, values)
-            self.init_favorites_sidebar(treeCtrl)
+            self.tree_control = treeCtrl
 
             container.addControl("btNew", btNew)
             container.addControl("btImport", btImport)
@@ -168,8 +170,8 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
         return favorites_dir_path
 
     def set_favorites_dir(self, ctx):
-        favorites_dir_path = self.get_favorites_dir_path(ctx)
-        os.makedirs(favorites_dir_path, exist_ok=True)
+        self.favorites_dir_path = self.get_favorites_dir_path(ctx)
+        os.makedirs(self.favorites_dir_path, exist_ok=True)
 
     def set_tree_svg_data(self, svg_data):
         self.sidebar_tree.set_svg_data(svg_data)
@@ -180,8 +182,8 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
     def update_tree(self):
         self.sidebar_tree.update(self.root_node, self.mutable_tree_data_model)
 
-    def init_favorites_sidebar(self, tree_control):
-        self.tree_model = tree_control.getModel()
+    def init_favorites_sidebar(self):
+        self.tree_model = self.tree_control.getModel()
         smgr = self.ctx.ServiceManager
         self.mutable_tree_data_model = smgr.createInstanceWithContext("com.sun.star.awt.tree.MutableTreeDataModel", self.ctx)
 
@@ -191,7 +193,6 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
         self.tree_model.setPropertyValue("ShowsHandles", False)
         self.tree_model.setPropertyValue("ShowsRootHandles", False)
         self.tree_model.setPropertyValue("Editable", True)
-        self.tree_model.setPropertyValue("DataModel", self.mutable_tree_data_model)
 
         self.root_node = self.mutable_tree_data_model.createNode("Favorites", True)
         self.mutable_tree_data_model.setRoot(self.root_node)
