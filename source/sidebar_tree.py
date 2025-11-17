@@ -47,7 +47,7 @@ class SidebarTree():
 
         return systemPathToFileUrl(symbol_svg_path)
 
-    def refresh_tree(self, root_node, tree_data_model):
+    def update(self, root_node, tree_data_model):
         try:
             existing_category_node = None
             for i in range(root_node.getChildCount()):

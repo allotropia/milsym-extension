@@ -179,6 +179,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             elif self.sidebar_panel is not None:
                 self.sidebar_panel.set_tree_category_name(self.tree_category_name)
                 self.sidebar_panel.set_tree_svg_data(self.sidebar_symbol_svg_data)
+                self.sidebar_panel.update_tree()
             else: # document
                 insertSvgGraphic(
                     self.ctx, self.model,

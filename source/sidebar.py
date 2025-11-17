@@ -177,6 +177,9 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
     def set_tree_category_name(self, category_name):
         self.sidebar_tree.set_category_name(category_name)
 
+    def update_tree(self):
+        self.sidebar_tree.update(self.root_node, self.mutable_tree_data_model)
+
     def init_favorites_sidebar(self, tree_control):
         self.tree_model = tree_control.getModel()
         smgr = self.ctx.ServiceManager
@@ -262,7 +265,6 @@ class NewButtonListener(unohelper.Base, XActionListener):
     def actionPerformed(self, event):
         model = self.sidebar_panel.desktop.getCurrentComponent()
         open_symbol_dialog(self.ctx, model, None, self.sidebar_panel)
-        self.sidebar_panel.sidebar_tree.refresh_tree(self.sidebar_panel.root_node, self.sidebar_panel.mutable_tree_data_model)
 
     def disposing(self, event):
         pass
