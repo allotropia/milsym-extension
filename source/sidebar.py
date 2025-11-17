@@ -6,10 +6,16 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import os
+import uno
 import unohelper
+from sidebar_tree import SidebarTree
+from symbol_dialog import open_symbol_dialog
+from unohelper import systemPathToFileUrl, fileUrlToSystemPath
 from com.sun.star.ui import XUIElement, XUIElementFactory
 from com.sun.star.ui import XToolPanel, XSidebarPanel, LayoutSize
-from com.sun.star.awt import XWindowPeer, XWindowListener
+from com.sun.star.awt import XWindowPeer, XWindowListener, XActionListener
+from com.sun.star.awt.tree import XMutableTreeDataModel, XMutableTreeNode, XTreeControl, XTreeNode
 
 class SidebarFactory(unohelper.Base, XUIElementFactory):
     def __init__(self, ctx):
@@ -27,7 +33,6 @@ class SidebarFactory(unohelper.Base, XUIElementFactory):
             xUIElement.getRealInterface()
             panelWin = xUIElement.Window
             panelWin.Visible = True
-            
             return xUIElement    
         except Exception as e:
             print("Sidebar factory error:", e)
@@ -49,6 +54,15 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
         self.xParentWindow = xParentWindow
         self.ResourceURL = url
         self.toolpanel = None
+        self.root_node = None
+        self.mutable_tree_data_model = None
+
+        self.sidebar_tree = SidebarTree(ctx)
+
+        self.desktop = self.ctx.getServiceManager().createInstanceWithContext("com.sun.star.frame.Desktop", self.ctx)
+
+        self.set_favorites_dir(ctx)
+        self.favorites_dir_path = self.get_favorites_dir_path(ctx)
 
         self._resizeListener = WindowResizeListener(self.onResize)
         self.xParentWindow.addWindowListener(self._resizeListener)
@@ -92,6 +106,8 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
             names = ("Name", "Label")
             values = ("btNew", "New")
             btNew = self.createControl(self.ctx, "com.sun.star.awt.UnoControlButton", "com.sun.star.awt.UnoControlButtonModel", x, y, width, height, names, values)
+            listener = NewButtonListener(self.ctx, self)
+            btNew.addActionListener(listener)
 
             # Import/Export button
             x = 0  # X position will be set later in onResize()
@@ -119,6 +135,7 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
             names = ("Name",)
             values = ("myTree",)
             treeCtrl = self.createControl(self.ctx, "com.sun.star.awt.tree.TreeControl", "com.sun.star.awt.tree.TreeControlModel", x, y, width, height, names, values)
+            self.init_favorites_sidebar(treeCtrl)
 
             container.addControl("btNew", btNew)
             container.addControl("btImport", btImport)
@@ -126,10 +143,9 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
             container.addControl("treeCtrl", treeCtrl)
 
             return container
-
         except Exception as e:
             print("Panel window error:", e)
-        
+
     def createControl(self, ctx, ctrlType, ctrlTypeModel, x, y, width, height, names, values):
         try:
             sm = ctx.ServiceManager
@@ -139,10 +155,64 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
             ctrl.setModel(ctrl_model)
             ctrl.setPosSize(x, y, width, height, 15)
             return ctrl
-        
         except Exception as e:
             print("Control error:", e)
-    
+
+    def get_favorites_dir_path(self, ctx):
+        ps = ctx.getByName("/singletons/com.sun.star.util.thePathSettings")
+        user_config = ps.UserConfig
+        user_profile_path = os.path.dirname(user_config)
+        favorites_path_URL = os.path.join(user_profile_path, "milsymbol_favorites")
+        favorites_dir_path = fileUrlToSystemPath(favorites_path_URL)
+        self.sidebar_tree.set_favorites_dir_path(favorites_dir_path)
+        return favorites_dir_path
+
+    def set_favorites_dir(self, ctx):
+        favorites_dir_path = self.get_favorites_dir_path(ctx)
+        os.makedirs(favorites_dir_path, exist_ok=True)
+
+    def set_tree_svg_data(self, svg_data):
+        self.sidebar_tree.set_svg_data(svg_data)
+
+    def set_tree_category_name(self, category_name):
+        self.sidebar_tree.set_category_name(category_name)
+
+    def init_favorites_sidebar(self, tree_control):
+        self.tree_model = tree_control.getModel()
+        smgr = self.ctx.ServiceManager
+        self.mutable_tree_data_model = smgr.createInstanceWithContext("com.sun.star.awt.tree.MutableTreeDataModel", self.ctx)
+
+        SELECTION_TYPE_SINGLE = 1
+        self.tree_model.setPropertyValue("SelectionType", SELECTION_TYPE_SINGLE)
+        self.tree_model.setPropertyValue("RootDisplayed", False)
+        self.tree_model.setPropertyValue("ShowsHandles", False)
+        self.tree_model.setPropertyValue("ShowsRootHandles", False)
+        self.tree_model.setPropertyValue("Editable", True)
+        self.tree_model.setPropertyValue("DataModel", self.mutable_tree_data_model)
+
+        self.root_node = self.mutable_tree_data_model.createNode("Favorites", True)
+        self.mutable_tree_data_model.setRoot(self.root_node)
+
+        for category_name in os.listdir(self.favorites_dir_path):
+            category_path = os.path.join(self.favorites_dir_path, category_name)
+
+            category_node = self.mutable_tree_data_model.createNode(category_name, True)
+            self.root_node.appendChild(category_node)
+
+            for file_name in os.listdir(category_path):
+                if file_name.lower().endswith(".svg"):
+                    file_path = os.path.join(category_path, file_name)
+                    file_url = systemPathToFileUrl(file_path)
+
+                    symbol_node = self.mutable_tree_data_model.createNode(
+                        os.path.splitext(file_name)[0],
+                        False
+                    )
+                    symbol_node.setNodeGraphicURL(file_url)
+                    category_node.appendChild(symbol_node)
+
+        self.tree_model.setPropertyValue("DataModel", self.mutable_tree_data_model)
+
     def onResize(self, event):    
         try:
             toolpanel_size = event.Source.getPosSize()
@@ -183,3 +253,16 @@ class WindowResizeListener(unohelper.Base, XWindowListener):
     def windowMoved(self, event): pass
     def windowShown(self, event): pass
     def disposing(self, event): pass
+
+class NewButtonListener(unohelper.Base, XActionListener):
+    def __init__(self, ctx, sidebar_panel):
+        self.ctx = ctx
+        self.sidebar_panel = sidebar_panel
+
+    def actionPerformed(self, event):
+        model = self.sidebar_panel.desktop.getCurrentComponent()
+        open_symbol_dialog(self.ctx, model, None, self.sidebar_panel)
+        self.sidebar_panel.sidebar_tree.refresh_tree(self.sidebar_panel.root_node, self.sidebar_panel.mutable_tree_data_model)
+
+    def disposing(self, event):
+        pass

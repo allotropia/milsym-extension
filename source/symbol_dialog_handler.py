@@ -27,19 +27,21 @@ from translator import Translator
 
 class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
-    def __init__(self, ctx, model, controller, dialog):
+    def __init__(self, ctx, model, controller, dialog, sidebar_panel):
         self.ctx = ctx
         self.model = model
         self.controller = controller
         self.dialog = dialog
+        self.sidebar_panel = sidebar_panel
         self.sidc_options = {}
         self.listbox_values = {}
         self.disable_callHandler = False
         self.hex_color_value = None
         self.final_svg_data = None
         self.final_svg_args = None
+        self.sidebar_symbol_svg_data = None
+        self.tree_category_name = None
         self.translator = Translator(self.ctx)
-
         self.factory = self.ctx.getServiceManager().createInstanceWithContext("com.sun.star.script.provider.MasterScriptProviderFactory", self.ctx)
         self.provider = self.factory.createScriptProvider(model)
         self.script = self.provider.getScript(
@@ -116,6 +118,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         symbol_meta = symbols_data.SYMBOLS[selected_index]
         symbol_id = symbol_meta["id"]
         current_symbol = symbols_data.SYMBOL_DETAILS[symbol_id]
+        self.tree_category_name=self.translator.translate(symbol_meta["label"])
         return current_symbol
 
     def fill_listbox(self, dialog, control_name, items, selected_index):
@@ -173,7 +176,10 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
                     self.final_svg_data)
                 insertGraphicAttributes(shape,
                                         self.final_svg_args)
-            else:
+            elif self.sidebar_panel is not None:
+                self.sidebar_panel.set_tree_category_name(self.tree_category_name)
+                self.sidebar_panel.set_tree_svg_data(self.sidebar_symbol_svg_data)
+            else: # document
                 insertSvgGraphic(
                     self.ctx, self.model,
                     self.final_svg_data,
@@ -475,6 +481,11 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
         try:
             result = self.script.invoke(args, (), ())
+
+            if self.sidebar_panel is not None:
+                args[1] = NamedValue("size", 20.0)
+                self.sidebar_symbol_svg_data  = str(self.script.invoke(args, (), ())[0])
+
             # Assuming the result contains SVG data
             if result and len(result) > 0:
                 svg_data = str(result[0])

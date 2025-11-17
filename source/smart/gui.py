@@ -40,7 +40,7 @@ class Gui:
         ctx = self._x_context
         model = self._x_frame.getController().getModel()
         controller = self.get_controller()
-        open_symbol_dialog(ctx, model, controller)
+        open_symbol_dialog(ctx, model, controller, None)
 
     def set_visible_control_dialog(self, visible: bool):
         """Set visibility of control dialog"""

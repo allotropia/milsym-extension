@@ -47,7 +47,7 @@ class MainJob(unohelper.Base, XJobExecutor):
         self.model = desktop.getCurrentComponent()
 
         if args == "symbolDialog":
-            open_symbol_dialog(self.ctx, self.model, None)
+            open_symbol_dialog(self.ctx, self.model, None, None)
         if args == "testSymbol":
             self.insertSymbol(self.model, "sfgpewrh--mt")
         if args == "orgChart":
