@@ -63,6 +63,11 @@ def parse_svg_dimensions(svg_data):
 
 
 def insertSvgGraphic(ctx, model, svg_data, params):
+    is_writer = model.supportsService("com.sun.star.text.TextDocument")
+    is_calc = model.supportsService("com.sun.star.sheet.SpreadsheetDocument")
+    is_draw_impress = model.supportsService("com.sun.star.presentation.PresentationDocument") or \
+            model.supportsService("com.sun.star.drawing.DrawingDocument")
+
     try:
         pipe = ctx.ServiceManager.createInstanceWithContext(
             "com.sun.star.io.Pipe", ctx)
@@ -73,7 +78,12 @@ def insertSvgGraphic(ctx, model, svg_data, params):
             "com.sun.star.graphic.GraphicProvider", ctx)
         media_properties = (PropertyValue("InputStream", 0, pipe, 0),)
         graphic = graphic_provider.queryGraphic(media_properties)
-        shape = model.createInstance("com.sun.star.drawing.GraphicObjectShape")
+
+        # For Writer, create a TextGraphicObject which behaves better (keeps aspect ratio, etc.)
+        if is_writer:
+            shape = model.createInstance("com.sun.star.text.TextGraphicObject")
+        else:
+            shape = model.createInstance("com.sun.star.drawing.GraphicObjectShape")
         shape.setPropertyValue("Graphic", graphic)
 
         size = parse_svg_dimensions(svg_data)
@@ -81,22 +91,16 @@ def insertSvgGraphic(ctx, model, svg_data, params):
 
         # set MilSym-specific user defined attributes
         insertGraphicAttributes(shape, params)
-        # TODO: Set default anchoring for text documents
-        try:
-            shape.setPropertyValue("AnchorType", AT_PARAGRAPH)
-        except:
-            pass  # Not all document types support anchoring
-
 
         # Writer
-        if model.supportsService("com.sun.star.text.TextDocument"):
+        if is_writer:
             controller = model.getCurrentController()
             view_cursor_supplier = controller
             cursor = view_cursor_supplier.getViewCursor()
             text = cursor.getText()
             text.insertTextContent(cursor, shape, True)
-        # Calc
-        elif model.supportsService("com.sun.star.sheet.SpreadsheetDocument"):
+        # Calc - for spreadsheets, we'll use the shape directly since frames are not well supported
+        elif is_calc:
             controller = model.getCurrentController()
             active_sheet = controller.getActiveSheet()
             draw_page = active_sheet.getDrawPage()
@@ -113,9 +117,8 @@ def insertSvgGraphic(ctx, model, svg_data, params):
                 default_pos.X = 1000
                 default_pos.Y = 1000
                 shape.setPosition(default_pos)
-        # Impress/Draw
-        elif (model.supportsService("com.sun.star.presentation.PresentationDocument") or
-              model.supportsService("com.sun.star.drawing.DrawingDocument")):
+        # Impress/Draw - for presentations and drawings, we'll use the shape directly
+        elif is_draw_impress:
             controller = model.getCurrentController()
             current_page = controller.getCurrentPage()
             current_page.add(shape)
