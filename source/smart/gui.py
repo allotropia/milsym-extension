@@ -27,8 +27,6 @@ class Gui:
         self._x_context = x_context
         self._x_frame = x_frame
         self._x_control_dialog = None
-        self._x_control_dialog_window = None
-        self._x_control_dialog_top_window = None
         self._is_visible_control_dialog = False
         self._o_listener = None
 
@@ -51,18 +49,18 @@ class Gui:
              self.get_controller().get_last_diagram_id() != -1) and
             (self.get_controller().get_last_diagram_type() != self.get_controller().get_diagram_type() or
              self.get_controller().get_last_diagram_id() != new_diagram_id)):
-            if self._x_control_dialog_window is not None:
-                self._x_control_dialog_window.setVisible(False)
+            if self._x_control_dialog is not None:
+                self._x_control_dialog.setVisible(False)
             self.create_control_dialog()
 
-        if self._x_control_dialog_window is None:
+        if self._x_control_dialog is None:
             self.create_control_dialog()
 
-        if self._x_control_dialog_window is not None:
-            self._x_control_dialog_window.setVisible(visible)
+        if self._x_control_dialog is not None:
+            self._x_control_dialog.setVisible(visible)
             if visible:
                 self._is_visible_control_dialog = True
-                self._x_control_dialog_window.setFocus()
+                self._x_control_dialog.setFocus()
             else:
                 self._is_visible_control_dialog = False
 
@@ -79,26 +77,20 @@ class Gui:
             self._x_control_dialog = dialog_provider.createDialogWithHandler(s_dialog_url, self._o_listener)
 
             if self._x_control_dialog is not None:
-                self._x_control_dialog_window = self._x_control_dialog
-                self._x_control_dialog_top_window = self._x_control_dialog
-                self._x_control_dialog_top_window.addTopWindowListener(self._o_listener)
+                self._x_control_dialog.addTopWindowListener(self._o_listener)
 
         except Exception as ex:
             print(f"Error creating control dialog: {ex}")
 
     def close_and_dispose_control_dialog(self):
         """Close and dispose control dialog"""
-        if self._x_control_dialog_top_window is not None:
-            self._x_control_dialog_top_window.removeTopWindowListener(self._o_listener)
-
-        if self._x_control_dialog_window is not None:
-            self._x_control_dialog_window.setVisible(False)
-            x_comp = self._x_control_dialog_window
+        if self._x_control_dialog is not None:
+            self._x_control_dialog.removeTopWindowListener(self._o_listener)
+            self._x_control_dialog.setVisible(False)
+            x_comp = self._x_control_dialog
             if x_comp is not None:
                 x_comp.dispose()
 
-        self._x_control_dialog_top_window = None
-        self._x_control_dialog_window = None
         self._x_control_dialog = None
 
     def is_visible_control_dialog(self):
@@ -107,13 +99,13 @@ class Gui:
 
     def enable_control_dialog_window(self, enable: bool):
         """Enable or disable control dialog window"""
-        if self._x_control_dialog_window is not None:
-            self._x_control_dialog_window.setEnable(enable)
+        if self._x_control_dialog is not None:
+            self._x_control_dialog.setEnable(enable)
 
     def set_focus_control_dialog(self):
         """Set focus to control dialog"""
-        if self._x_control_dialog_window is not None:
-            self._x_control_dialog_window.setFocus()
+        if self._x_control_dialog is not None:
+            self._x_control_dialog.setFocus()
 
     def enable_and_set_focus_control_dialog(self):
         """Enable and set focus to control dialog"""
@@ -122,7 +114,7 @@ class Gui:
 
     def get_control_dialog_window(self):
         """Get control dialog window"""
-        return self._x_control_dialog_window
+        return self._x_control_dialog
 
     def show_message_box(self, s_title: str, s_message: str):
         """Show message box dialog"""
@@ -264,7 +256,7 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
     # XTopWindowListener methods
     def windowClosing(self, event):
         """Handle window closing event"""
-        if event.Source == self.get_gui()._x_control_dialog_top_window:
+        if event.Source == self.get_gui()._x_control_dialog:
             self.get_gui().set_visible_control_dialog(False)
 
     def windowOpened(self, event):
