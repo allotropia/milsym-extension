@@ -69,15 +69,7 @@ def insertSvgGraphic(ctx, model, svg_data, params):
             model.supportsService("com.sun.star.drawing.DrawingDocument")
 
     try:
-        pipe = ctx.ServiceManager.createInstanceWithContext(
-            "com.sun.star.io.Pipe", ctx)
-        pipe.writeBytes(uno.ByteSequence(svg_data.encode('utf-8')))
-        pipe.flush()
-        pipe.closeOutput()
-        graphic_provider = ctx.ServiceManager.createInstanceWithContext(
-            "com.sun.star.graphic.GraphicProvider", ctx)
-        media_properties = (PropertyValue("InputStream", 0, pipe, 0),)
-        graphic = graphic_provider.queryGraphic(media_properties)
+        graphic = create_graphic_from_svg(ctx, svg_data)
 
         # For Writer, create a TextGraphicObject which behaves better (keeps aspect ratio, etc.)
         if is_writer:
@@ -144,6 +136,35 @@ def insertGraphicAttributes(shape, params):
 
     # seems we're getting a copy above; set it explicitely
     shape.setPropertyValue("UserDefinedAttributes", attributeHash)
+
+
+def create_graphic_from_svg(ctx, svg_data):
+    """Create XGraphic from SVG data"""
+    try:
+        if not svg_data:
+            return None
+
+        # Create a pipe to stream the SVG data
+        pipe = ctx.ServiceManager.createInstanceWithContext(
+            "com.sun.star.io.Pipe", ctx)
+        pipe.writeBytes(uno.ByteSequence(svg_data.encode('utf-8')))
+        pipe.flush()
+        pipe.closeOutput()
+
+        # Create graphic provider
+        graphic_provider = ctx.ServiceManager.createInstanceWithContext(
+            "com.sun.star.graphic.GraphicProvider", ctx)
+
+        # Create media properties for the SVG data
+        media_properties = (PropertyValue("InputStream", 0, pipe, 0),)
+
+        # Query the graphic from the provider
+        graphic = graphic_provider.queryGraphic(media_properties)
+        return graphic
+
+    except Exception as e:
+        print(f"Error creating graphic from SVG: {e}")
+        return None
 
 
 def getExtensionBasePath(ctx, extensionName="com.collabora.milsymbol"):

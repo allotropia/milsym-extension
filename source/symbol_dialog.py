@@ -27,6 +27,5 @@ def open_symbol_dialog(ctx, model, controller, sidebar_panel):
         handler.dialog = dialog
         handler.init_dialog_controls()
         dialog.execute()
-        handler.remove_temp_preview_svg()
     except Exception as e:
         print(f"Error opening symbol dialog: {e}")

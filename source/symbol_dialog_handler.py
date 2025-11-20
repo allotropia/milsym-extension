@@ -22,7 +22,7 @@ if base_dir not in sys.path:
 
 from data import symbols_data
 from data import country_data
-from utils import insertSvgGraphic, insertGraphicAttributes, getExtensionBasePath
+from utils import insertSvgGraphic, insertGraphicAttributes, getExtensionBasePath, create_graphic_from_svg
 from translator import Translator
 
 class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
@@ -422,11 +422,15 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
         dialog.getControl(button_id).getModel().State = state
 
+
+
     def updatePreview(self):
-        file_url = self.insertSymbolToPreview()
-        imgPreview = self.dialog.getModel().getByName("imgPreview")
-        imgPreview.ImageURL = ""
-        imgPreview.ImageURL = file_url
+        svg_data = self.insertSymbolToPreview()
+        if svg_data:
+            graphic = create_graphic_from_svg(self.ctx, svg_data)
+            if graphic:
+                imgPreview = self.dialog.getModel().getByName("imgPreview")
+                imgPreview.Graphic = graphic
 
     def create_sidc(self):
         sidc = [
@@ -478,8 +482,6 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             if value:
                 args.append(NamedValue(key, value))
 
-        temp_svg_path = os.path.join(tempfile.gettempdir(), "preview.svg")
-
         try:
             result = self.script.invoke(args, (), ())
 
@@ -492,22 +494,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
                 svg_data = str(result[0])
                 self.final_svg_data = svg_data
                 self.final_svg_args = args
-                with open(temp_svg_path, 'w', encoding='utf-8') as preview_file:
-                    preview_file.write(svg_data)
-                svg_url = systemPathToFileUrl(temp_svg_path)
-                return svg_url
+                return svg_data
         except Exception as e:
             print(f"Error executing script: {e}")
             return
-
-    def remove_temp_preview_svg(self):
-        temp_svg_path = os.path.join(tempfile.gettempdir(), "preview.svg")
-
-        try:
-            if os.path.exists(temp_svg_path):
-                os.remove(temp_svg_path)
-                print(f"Temporary SVG deleted: {temp_svg_path}")
-            else:
-                print("No temporary SVG file found to delete.")
-        except Exception as e:
-            print(f"Error deleting temporary SVG: {e}")
