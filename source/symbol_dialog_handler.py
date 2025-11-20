@@ -14,6 +14,7 @@ import tempfile
 from unohelper import systemPathToFileUrl
 from com.sun.star.awt import XDialogEventHandler
 from com.sun.star.awt import Size, Point
+from com.sun.star.awt.ImageScaleMode import ISOTROPIC
 from com.sun.star.beans import NamedValue, PropertyValue
 
 base_dir = os.path.dirname(__file__)
@@ -428,9 +429,11 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         svg_data = self.insertSymbolToPreview()
         if svg_data:
             graphic = create_graphic_from_svg(self.ctx, svg_data)
-            if graphic:
-                imgPreview = self.dialog.getModel().getByName("imgPreview")
-                imgPreview.Graphic = graphic
+
+            imgPreview = self.dialog.getModel().getByName("imgPreview")
+            imgPreview.ScaleImage = True
+            imgPreview.ScaleMode = ISOTROPIC
+            imgPreview.Graphic = graphic
 
     def create_sidc(self):
         sidc = [
