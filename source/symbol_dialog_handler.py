@@ -10,12 +10,9 @@ import os
 import sys
 import uno
 import unohelper
-import tempfile
-from unohelper import systemPathToFileUrl
 from com.sun.star.awt import XDialogEventHandler
-from com.sun.star.awt import Size, Point
 from com.sun.star.awt.ImageScaleMode import ISOTROPIC
-from com.sun.star.beans import NamedValue, PropertyValue
+from com.sun.star.beans import NamedValue
 
 base_dir = os.path.dirname(__file__)
 if base_dir not in sys.path:
