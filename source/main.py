@@ -171,8 +171,6 @@ class MainJob(unohelper.Base, XJobExecutor):
         data.add(1, "")  # Level 1
         data.add(1, "")  # Level 1
 
-        data.print_data()
-
         # Create the diagram (this calls stub methods)
         controller.create_diagram(data)
 
