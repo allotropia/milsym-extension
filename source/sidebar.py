@@ -285,6 +285,7 @@ class TreeMouseListener(unohelper.Base, XMouseListener, XMouseMotionListener):
         self.tree = tree_control
         self.sidebar_panel = sidebar_panel
 
+        self.model = tree_control.getModel()
         self.drop_allowed = False
         self.svg_data = None
 
@@ -304,6 +305,12 @@ class TreeMouseListener(unohelper.Base, XMouseListener, XMouseMotionListener):
                 svg_url = node.getNodeGraphicURL()
                 file_path = fileUrlToSystemPath(svg_url)
                 self.svg_data = self.svg_data_from_url(file_path)
+
+            if event.ClickCount == 2 and node:
+                    self.model.setPropertyValue("Editable", True)
+                    self.tree.startEditingAtNode(node)
+                    self.model.setPropertyValue("Editable", False)
+
         except Exception as e:
             print("Mouse pressed error:", e)
 
