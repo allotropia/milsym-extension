@@ -21,7 +21,7 @@ from com.sun.star.text.TextContentAnchorType import AT_PARAGRAPH
 from com.sun.star.xml import AttributeData
 
 
-def parse_svg_dimensions(svg_data):
+def parse_svg_dimensions(svg_data, scale_factor=1):
     """Parse SVG dimensions and return width and height in 1/100mm units.
 
     Args:
@@ -57,12 +57,12 @@ def parse_svg_dimensions(svg_data):
         print(f"Warning: Could not parse SVG dimensions, using defaults: {e}")
 
     shape_size = Size()
-    shape_size.Height = height
-    shape_size.Width = width
+    shape_size.Height = height * scale_factor
+    shape_size.Width = width * scale_factor
     return shape_size
 
 
-def insertSvgGraphic(ctx, model, svg_data, params):
+def insertSvgGraphic(ctx, model, svg_data, params, scale_factor=1):
     is_writer = model.supportsService("com.sun.star.text.TextDocument")
     is_calc = model.supportsService("com.sun.star.sheet.SpreadsheetDocument")
     is_draw_impress = model.supportsService("com.sun.star.presentation.PresentationDocument") or \
@@ -78,7 +78,7 @@ def insertSvgGraphic(ctx, model, svg_data, params):
             shape = model.createInstance("com.sun.star.drawing.GraphicObjectShape")
         shape.setPropertyValue("Graphic", graphic)
 
-        size = parse_svg_dimensions(svg_data)
+        size = parse_svg_dimensions(svg_data, scale_factor)
         shape.setSize(size)
 
         # set MilSym-specific user defined attributes

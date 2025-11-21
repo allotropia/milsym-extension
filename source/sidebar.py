@@ -9,13 +9,17 @@
 import os
 import uno
 import unohelper
+
 from sidebar_tree import SidebarTree
 from symbol_dialog import open_symbol_dialog
+from utils import insertSvgGraphic
+
 from unohelper import systemPathToFileUrl, fileUrlToSystemPath
-from com.sun.star.ui import XUIElement, XUIElementFactory
-from com.sun.star.ui import XToolPanel, XSidebarPanel, LayoutSize
-from com.sun.star.awt import XWindowPeer, XWindowListener, XActionListener
+from com.sun.star.ui import XUIElement, XUIElementFactory, XToolPanel, XSidebarPanel, LayoutSize
+from com.sun.star.awt import XWindowPeer, XWindowListener, XActionListener, XMouseListener, XMouseMotionListener
 from com.sun.star.awt.tree import XMutableTreeDataModel, XMutableTreeNode, XTreeControl, XTreeNode
+from com.sun.star.awt import Size, SystemPointer
+from com.sun.star.beans import PropertyValue
 
 class SidebarFactory(unohelper.Base, XUIElementFactory):
     def __init__(self, ctx):
@@ -137,6 +141,11 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
             names = ("Name",)
             values = ("myTree",)
             treeCtrl = self.createControl(self.ctx, "com.sun.star.awt.tree.TreeControl", "com.sun.star.awt.tree.TreeControlModel", x, y, width, height, names, values)
+
+            drag_handler = TreeMouseListener(self.ctx, treeCtrl, self)
+            treeCtrl.addMouseListener(drag_handler)
+            treeCtrl.addMouseMotionListener(drag_handler)
+
             self.tree_control = treeCtrl
 
             container.addControl("btNew", btNew)
@@ -192,7 +201,7 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
         self.tree_model.setPropertyValue("RootDisplayed", False)
         self.tree_model.setPropertyValue("ShowsHandles", False)
         self.tree_model.setPropertyValue("ShowsRootHandles", False)
-        self.tree_model.setPropertyValue("Editable", True)
+        self.tree_model.setPropertyValue("Editable", False)
 
         self.root_node = self.mutable_tree_data_model.createNode("Favorites", True)
         self.mutable_tree_data_model.setRoot(self.root_node)
@@ -269,3 +278,69 @@ class NewButtonListener(unohelper.Base, XActionListener):
 
     def disposing(self, event):
         pass
+
+class TreeMouseListener(unohelper.Base, XMouseListener, XMouseMotionListener):
+    def __init__(self, ctx, tree_control, sidebar_panel):
+        self.ctx = ctx
+        self.tree = tree_control
+        self.sidebar_panel = sidebar_panel
+
+        self.drop_allowed = False
+        self.svg_data = None
+
+        self.pointer = self.ctx.getServiceManager().createInstanceWithContext(
+            "com.sun.star.awt.Pointer", self.ctx)
+
+    def svg_data_from_url(self, file_path):
+        with open(file_path, 'r', encoding='utf-8') as f:
+            svg_data = f.read()
+        return svg_data
+
+    def mousePressed(self, event):
+        try:
+            x, y = event.X, event.Y
+            node = self.tree.getNodeForLocation(x, y)
+            if node and node.getChildCount() == 0 and not self.drop_allowed:
+                svg_url = node.getNodeGraphicURL()
+                file_path = fileUrlToSystemPath(svg_url)
+                self.svg_data = self.svg_data_from_url(file_path)
+        except Exception as e:
+            print("Mouse pressed error:", e)
+
+    def mouseMoved(self, event):
+        try:
+            # change the mouse pointer to provide visual feedback during DnD
+            if self.pointer.getType() != SystemPointer.ARROW:
+                self.pointer.setType(SystemPointer.ARROW)
+                self.tree.getPeer().setPointer(self.pointer)
+        except Exception as e:
+            print("Mouse moved error:", e)
+
+    def mouseDragged(self, event):
+        try:
+            # check if the mouse is in the allowed drop area
+            # event.X and event.Y are relative to the TreeControl
+            # the values here (-30, -80) represent thresholds
+            # that determine how far the mouse has moved away from the TreeControl
+            if event.X <= -30 and event.Y > -80:
+                self.drop_allowed = True
+            else:
+                self.drop_allowed = False
+
+            # change the mouse pointer to provide visual feedback during DnD
+            if self.pointer.getType() != SystemPointer.MOVEDATA:
+                self.pointer.setType(SystemPointer.MOVEDATA)
+                self.tree.getPeer().setPointer(self.pointer)
+        except Exception as e:
+            print("Mouse dragged error:", e)
+
+    def mouseReleased(self, event):
+        try:
+            if self.drop_allowed and self.svg_data:
+                model = self.sidebar_panel.desktop.getCurrentComponent()
+                # TODO: add actual values as needed
+                params = [""]
+                insertSvgGraphic(self.ctx, model, self.svg_data, params, 3)
+                self.drop_allowed = False
+        except Exception as e:
+            print("Mouse released error:", e)
