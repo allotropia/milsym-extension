@@ -288,6 +288,7 @@ class TreeMouseListener(unohelper.Base, XMouseListener, XMouseMotionListener):
         self.model = tree_control.getModel()
         self.drop_allowed = False
         self.svg_data = None
+        self.node = None
 
         self.pointer = self.ctx.getServiceManager().createInstanceWithContext(
             "com.sun.star.awt.Pointer", self.ctx)
@@ -302,6 +303,7 @@ class TreeMouseListener(unohelper.Base, XMouseListener, XMouseMotionListener):
             x, y = event.X, event.Y
             node = self.tree.getNodeForLocation(x, y)
             if node and node.getChildCount() == 0 and not self.drop_allowed:
+                self.node = node
                 svg_url = node.getNodeGraphicURL()
                 file_path = fileUrlToSystemPath(svg_url)
                 self.svg_data = self.svg_data_from_url(file_path)
@@ -329,15 +331,16 @@ class TreeMouseListener(unohelper.Base, XMouseListener, XMouseMotionListener):
             # event.X and event.Y are relative to the TreeControl
             # the values here (-30, -80) represent thresholds
             # that determine how far the mouse has moved away from the TreeControl
-            if event.X <= -30 and event.Y > -80:
-                self.drop_allowed = True
-            else:
-                self.drop_allowed = False
+            if self.node:
+                if event.X <= -30 and event.Y > -80:
+                    self.drop_allowed = True
+                else:
+                    self.drop_allowed = False
 
-            # change the mouse pointer to provide visual feedback during DnD
-            if self.pointer.getType() != SystemPointer.MOVEDATA:
-                self.pointer.setType(SystemPointer.MOVEDATA)
-                self.tree.getPeer().setPointer(self.pointer)
+                # change the mouse pointer to provide visual feedback during DnD
+                if self.pointer.getType() != SystemPointer.MOVEDATA:
+                    self.pointer.setType(SystemPointer.MOVEDATA)
+                    self.tree.getPeer().setPointer(self.pointer)
         except Exception as e:
             print("Mouse dragged error:", e)
 
@@ -349,5 +352,6 @@ class TreeMouseListener(unohelper.Base, XMouseListener, XMouseMotionListener):
                 params = [""]
                 insertSvgGraphic(self.ctx, model, self.svg_data, params, 3)
                 self.drop_allowed = False
+                self.node = None
         except Exception as e:
             print("Mouse released error:", e)
