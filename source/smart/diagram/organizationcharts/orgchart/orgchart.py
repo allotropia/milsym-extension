@@ -205,17 +205,17 @@ class OrgChart(OrganizationChart):
             OrgChartTree.LAST_HOR_LEVEL = 2
             self.set_hor_level_of_control_shape(x_base_shape, 2)
 
-            # Calculate dimensions
+            # Use fixed dimensions - don't scale shapes to fit available space
             if n > 1:
-                hor_unit = self._draw_area_width // ((n - 1) * self._shape_width + (n - 2) * self._hor_space)
-                hor_space = hor_unit * self._hor_space
-                shape_width = hor_unit * self._shape_width
-                ver_unit = self._draw_area_height // (2 * self._shape_height + self._ver_space)
-                ver_space = ver_unit * self._ver_space
-                shape_height = ver_unit * self._shape_height
+                # Use fixed shape dimensions instead of scaling
+                shape_width = self._shape_width * 1000  # Convert to appropriate units
+                shape_height = self._shape_height * 1000  # Convert to appropriate units
+                hor_space = self._hor_space * 1000  # Convert to appropriate units
+                ver_space = self._ver_space * 1000  # Convert to appropriate units
             else:
-                shape_width = self._draw_area_width
-                shape_height = self._draw_area_height
+                # For single shape, still use fixed dimensions
+                shape_width = self._shape_width * 1000
+                shape_height = self._shape_height * 1000
                 hor_space = 0
                 ver_space = 0
 

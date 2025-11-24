@@ -211,24 +211,14 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
 
         OrgChartTreeItem._hor_space = OrgChartTreeItem._ver_space = 0
 
-        if OrgChartTreeItem._max_pos > 0:
-            org_chart = self.get_diagram_tree().get_org_chart()
-            hor_unit = int(base_shape_width / (
-                OrgChartTreeItem._max_pos * (org_chart.get_shape_width() + org_chart.get_hor_space()) +
-                org_chart.get_shape_width()
-            ))
-            OrgChartTreeItem._shape_width = hor_unit * org_chart.get_shape_width()
-            OrgChartTreeItem._hor_space = hor_unit * org_chart.get_hor_space()
+        # Use fixed dimensions instead of scaling to fit available space
+        org_chart = self.get_diagram_tree().get_org_chart()
 
-        if OrganizationChartTreeItem._max_level > 0:
-            org_chart = self.get_diagram_tree().get_org_chart()
-            ver_unit = base_shape_height // (
-                (OrganizationChartTreeItem._max_level - hidden_element_num) *
-                (org_chart.get_shape_height() + org_chart.get_ver_space()) +
-                org_chart.get_shape_height()
-            )
-            OrgChartTreeItem._shape_height = ver_unit * org_chart.get_shape_height()
-            OrgChartTreeItem._ver_space = ver_unit * org_chart.get_ver_space()
+        # Set fixed shape dimensions (convert to appropriate units)
+        OrgChartTreeItem._shape_width = org_chart.get_shape_width() * 1000
+        OrgChartTreeItem._shape_height = org_chart.get_shape_height() * 1000
+        OrgChartTreeItem._hor_space = org_chart.get_hor_space() * 1000
+        OrgChartTreeItem._ver_space = org_chart.get_ver_space() * 1000
 
         control_shape_pos = self.get_diagram_tree().get_control_shape_pos()
         OrgChartTreeItem._group_pos_x = control_shape_pos.X if control_shape_pos else 0
@@ -237,19 +227,37 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
     def set_pos_of_rect(self):
         """Set position of rectangle"""
         x_coord = OrgChartTreeItem._group_pos_x + int((OrgChartTreeItem._shape_width + OrgChartTreeItem._hor_space) * self.get_pos())
-        y_coord = OrgChartTreeItem._group_pos_y + (OrgChartTreeItem._shape_height + OrgChartTreeItem._ver_space) * self.get_level()
+        last_hor_level = getattr(self._diagram_tree, 'LAST_HOR_LEVEL', 2)
+
+        # Use smaller vertical spacing for levels beyond horizontal threshold (vertical stacking)
+        if self._level > last_hor_level:
+            # For vertically stacked levels, use much smaller vertical spacing
+            vertical_spacing = OrgChartTreeItem._ver_space // 4  # Reduce to 1/4 of normal spacing
+            # Calculate y position with reduced spacing for vertical levels
+            base_y = OrgChartTreeItem._group_pos_y + (OrgChartTreeItem._shape_height + OrgChartTreeItem._ver_space) * last_hor_level
+            vertical_offset = (OrgChartTreeItem._shape_height + vertical_spacing) * (self.get_level() - last_hor_level)
+            y_coord = base_y + vertical_offset
+        else:
+            # Normal horizontal level spacing
+            y_coord = OrgChartTreeItem._group_pos_y + (OrgChartTreeItem._shape_height + OrgChartTreeItem._ver_space) * self.get_level()
 
         if self.get_diagram_tree().get_org_chart().is_hidden_root_element_prop():
             if self == self.get_diagram_tree().get_root_item():
                 y_coord = OrgChartTreeItem._group_pos_y - 10
             else:
-                y_coord = OrgChartTreeItem._group_pos_y + (OrgChartTreeItem._shape_height + OrgChartTreeItem._ver_space) * (self.get_level() - 1)
+                if self.get_level() > last_hor_level:
+                    # Apply same reduced spacing logic for hidden root
+                    vertical_spacing = OrgChartTreeItem._ver_space // 4
+                    base_y = OrgChartTreeItem._group_pos_y + (OrgChartTreeItem._shape_height + OrgChartTreeItem._ver_space) * (last_hor_level - 1)
+                    vertical_offset = (OrgChartTreeItem._shape_height + vertical_spacing) * (self.get_level() - last_hor_level)
+                    y_coord = base_y + vertical_offset
+                else:
+                    y_coord = OrgChartTreeItem._group_pos_y + (OrgChartTreeItem._shape_height + OrgChartTreeItem._ver_space) * (self.get_level() - 1)
 
         # Calculate width based on graphic aspect ratio while keeping fixed height
         fixed_height = OrgChartTreeItem._shape_height
         calculated_width = self._calculate_width_for_aspect_ratio(fixed_height)
 
-        last_hor_level = getattr(self._diagram_tree, 'LAST_HOR_LEVEL', 2)
         if self._level > last_hor_level:
             self.set_position(Point(X=int(x_coord + calculated_width * 0.1), Y=y_coord))
             self.set_size(Size(Width=int(calculated_width * 0.9), Height=fixed_height))
