@@ -178,9 +178,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
                 insertGraphicAttributes(shape,
                                         self.final_svg_args)
             elif self.sidebar_panel is not None:
-                self.sidebar_panel.set_tree_category_name(self.tree_category_name)
-                self.sidebar_panel.set_tree_svg_data(self.sidebar_symbol_svg_data)
-                self.sidebar_panel.update_tree()
+                self.sidebar_panel.insert_symbol_node(self.tree_category_name, self.sidebar_symbol_svg_data, self.final_svg_args)
             else: # document
                 insertSvgGraphic(
                     self.ctx, self.model,

@@ -8,18 +8,17 @@
 
 import os
 import uno
+import json
 import unohelper
 
-from sidebar_tree import SidebarTree
+from sidebar_tree import SidebarTree, TreeKeyListener, TreeMouseListener
 from symbol_dialog import open_symbol_dialog
 from utils import insertSvgGraphic
 
 from unohelper import systemPathToFileUrl, fileUrlToSystemPath
-from com.sun.star.ui import XUIElement, XUIElementFactory, XToolPanel, XSidebarPanel, LayoutSize
-from com.sun.star.awt import XWindowPeer, XWindowListener, XActionListener, XMouseListener, XMouseMotionListener
-from com.sun.star.awt.tree import XMutableTreeDataModel, XMutableTreeNode, XTreeControl, XTreeNode
-from com.sun.star.awt import Size, SystemPointer
 from com.sun.star.beans import PropertyValue
+from com.sun.star.ui import XUIElement, XUIElementFactory, XToolPanel, XSidebarPanel, LayoutSize
+from com.sun.star.awt import XWindowPeer, XWindowListener, XActionListener, Size
 
 class SidebarFactory(unohelper.Base, XUIElementFactory):
     def __init__(self, ctx):
@@ -59,15 +58,15 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
         self.ResourceURL = url
         self.toolpanel = None
         self.root_node = None
-        self.tree_control = None
-        self.favorites_dir_path= None
+        self.tree_model = None
         self.mutable_tree_data_model = None
+        self.selected_node = None
 
         self.sidebar_tree = SidebarTree(ctx)
 
-        self.desktop = self.ctx.getServiceManager().createInstanceWithContext("com.sun.star.frame.Desktop", self.ctx)
+        self.favorites_dir_path = self.get_favorites_dir_path(ctx)
 
-        self.set_favorites_dir(ctx)
+        self.desktop = self.ctx.getServiceManager().createInstanceWithContext("com.sun.star.frame.Desktop", self.ctx)
 
         self._resizeListener = WindowResizeListener(self.onResize)
         self.xParentWindow.addWindowListener(self._resizeListener)
@@ -141,12 +140,14 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
             names = ("Name",)
             values = ("myTree",)
             treeCtrl = self.createControl(self.ctx, "com.sun.star.awt.tree.TreeControl", "com.sun.star.awt.tree.TreeControlModel", x, y, width, height, names, values)
+            self.tree_model = treeCtrl.getModel()
 
-            drag_handler = TreeMouseListener(self.ctx, treeCtrl, self)
+            drag_handler = TreeMouseListener(self.ctx, treeCtrl, self, self.favorites_dir_path)
             treeCtrl.addMouseListener(drag_handler)
             treeCtrl.addMouseMotionListener(drag_handler)
 
-            self.tree_control = treeCtrl
+            key_listener =  TreeKeyListener(self, self.favorites_dir_path)
+            treeCtrl.addKeyListener(key_listener)
 
             container.addControl("btNew", btNew)
             container.addControl("btImport", btImport)
@@ -169,38 +170,59 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
         except Exception as e:
             print("Control error:", e)
 
+    def insert_symbol_node(self, category_name, svg_data, svg_args):
+        self.sidebar_tree.create_node(self.root_node, self.mutable_tree_data_model,
+                                      category_name, svg_data, svg_args)
+
     def get_favorites_dir_path(self, ctx):
         ps = ctx.getByName("/singletons/com.sun.star.util.thePathSettings")
         user_config = ps.UserConfig
         user_profile_path = os.path.dirname(user_config)
+
         favorites_path_URL = os.path.join(user_profile_path, "milsymbol_favorites")
         favorites_dir_path = fileUrlToSystemPath(favorites_path_URL)
+
+        os.makedirs(favorites_dir_path, exist_ok=True)
+
         self.sidebar_tree.set_favorites_dir_path(favorites_dir_path)
+
         return favorites_dir_path
 
-    def set_favorites_dir(self, ctx):
-        self.favorites_dir_path = self.get_favorites_dir_path(ctx)
-        os.makedirs(self.favorites_dir_path, exist_ok=True)
+    def import_json_data(self, file_name, category_path):
+        symbol_params = []
+        symbol_name = os.path.splitext(file_name)[0]
+        json_path = os.path.join(category_path, symbol_name + ".json")
+        if os.path.exists(json_path):
+            try:
+                with open(json_path, "r", encoding="utf-8") as f:
+                    json_data = json.load(f)
 
-    def set_tree_svg_data(self, svg_data):
-        self.sidebar_tree.set_svg_data(svg_data)
+                if json_data:
+                    sidc_value = json_data[0]
+                    symbol_params.append(str(sidc_value))
 
-    def set_tree_category_name(self, category_name):
-        self.sidebar_tree.set_category_name(category_name)
+                    for item in json_data[1:]:
+                        if isinstance(item, dict):
+                            for key, value in item.items():
+                                nv = uno.createUnoStruct("com.sun.star.beans.NamedValue")
+                                nv.Name = key
+                                nv.Value = value
+                                symbol_params.append(nv)
 
-    def update_tree(self):
-        self.sidebar_tree.update(self.root_node, self.mutable_tree_data_model)
+            except Exception as e:
+                print("JSON read error:", e)
+
+        return symbol_params
 
     def init_favorites_sidebar(self):
-        self.tree_model = self.tree_control.getModel()
         smgr = self.ctx.ServiceManager
         self.mutable_tree_data_model = smgr.createInstanceWithContext("com.sun.star.awt.tree.MutableTreeDataModel", self.ctx)
 
         SELECTION_TYPE_SINGLE = 1
         self.tree_model.setPropertyValue("SelectionType", SELECTION_TYPE_SINGLE)
-        self.tree_model.setPropertyValue("RootDisplayed", False)
-        self.tree_model.setPropertyValue("ShowsHandles", False)
-        self.tree_model.setPropertyValue("ShowsRootHandles", False)
+        self.tree_model.setPropertyValue("RootDisplayed", True)
+        self.tree_model.setPropertyValue("ShowsHandles", True)
+        self.tree_model.setPropertyValue("ShowsRootHandles", True)
         self.tree_model.setPropertyValue("Editable", False)
 
         self.root_node = self.mutable_tree_data_model.createNode("Favorites", True)
@@ -221,12 +243,14 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
                         os.path.splitext(file_name)[0],
                         False
                     )
+                    symbol_params = self.import_json_data(file_name, category_path)
+                    symbol_node.DataValue = symbol_params
                     symbol_node.setNodeGraphicURL(file_url)
                     category_node.appendChild(symbol_node)
 
         self.tree_model.setPropertyValue("DataModel", self.mutable_tree_data_model)
 
-    def onResize(self, event):    
+    def onResize(self, event):
         try:
             toolpanel_size = event.Source.getPosSize()
             toolpanel_width = toolpanel_size.Width
@@ -278,80 +302,3 @@ class NewButtonListener(unohelper.Base, XActionListener):
 
     def disposing(self, event):
         pass
-
-class TreeMouseListener(unohelper.Base, XMouseListener, XMouseMotionListener):
-    def __init__(self, ctx, tree_control, sidebar_panel):
-        self.ctx = ctx
-        self.tree = tree_control
-        self.sidebar_panel = sidebar_panel
-
-        self.model = tree_control.getModel()
-        self.drop_allowed = False
-        self.svg_data = None
-        self.node = None
-
-        self.pointer = self.ctx.getServiceManager().createInstanceWithContext(
-            "com.sun.star.awt.Pointer", self.ctx)
-
-    def svg_data_from_url(self, file_path):
-        with open(file_path, 'r', encoding='utf-8') as f:
-            svg_data = f.read()
-        return svg_data
-
-    def mousePressed(self, event):
-        try:
-            x, y = event.X, event.Y
-            node = self.tree.getNodeForLocation(x, y)
-            if node and node.getChildCount() == 0 and not self.drop_allowed:
-                self.node = node
-                svg_url = node.getNodeGraphicURL()
-                file_path = fileUrlToSystemPath(svg_url)
-                self.svg_data = self.svg_data_from_url(file_path)
-
-            if event.ClickCount == 2 and node:
-                    self.model.setPropertyValue("Editable", True)
-                    self.tree.startEditingAtNode(node)
-                    self.model.setPropertyValue("Editable", False)
-
-        except Exception as e:
-            print("Mouse pressed error:", e)
-
-    def mouseMoved(self, event):
-        try:
-            # change the mouse pointer to provide visual feedback during DnD
-            if self.pointer.getType() != SystemPointer.ARROW:
-                self.pointer.setType(SystemPointer.ARROW)
-                self.tree.getPeer().setPointer(self.pointer)
-        except Exception as e:
-            print("Mouse moved error:", e)
-
-    def mouseDragged(self, event):
-        try:
-            # check if the mouse is in the allowed drop area
-            # event.X and event.Y are relative to the TreeControl
-            # the values here (-30, -80) represent thresholds
-            # that determine how far the mouse has moved away from the TreeControl
-            if self.node:
-                if event.X <= -30 and event.Y > -80:
-                    self.drop_allowed = True
-                else:
-                    self.drop_allowed = False
-
-                # change the mouse pointer to provide visual feedback during DnD
-                if self.pointer.getType() != SystemPointer.MOVEDATA:
-                    self.pointer.setType(SystemPointer.MOVEDATA)
-                    self.tree.getPeer().setPointer(self.pointer)
-        except Exception as e:
-            print("Mouse dragged error:", e)
-
-    def mouseReleased(self, event):
-        try:
-            if self.drop_allowed and self.svg_data:
-                model = self.sidebar_panel.desktop.getCurrentComponent()
-                # TODO: add actual values as needed
-                params = [""]
-                insertSvgGraphic(self.ctx, model, self.svg_data, params, 3)
-                self.drop_allowed = False
-                self.node = None
-        except Exception as e:
-            print("Mouse released error:", e)
