@@ -327,9 +327,7 @@ class Controller(unohelper.Base, XSelectionChangeListener):
         """Handle selection change events - XSelectionChangeListener implementation"""
         selected_shape = self.get_selected_shape()
 
-        if selected_shape is None:
-            self.disappear_control_dialog()
-        else:
+        if selected_shape:
             # Get shape name
             selected_shape_name = ""
             try:
