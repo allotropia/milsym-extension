@@ -22,7 +22,11 @@ class SidebarTree():
 
     def __init__(self, ctx):
         self.ctx = ctx
+        self.tree_control = None
         self.favorites_dir_path = None
+
+    def set_tree_control(self, tree_ctrl):
+        self.tree_control = tree_ctrl
 
     def set_favorites_dir_path(self, favorites_dir_path):
         self.favorites_dir_path = favorites_dir_path
@@ -83,6 +87,7 @@ class SidebarTree():
             symbol_child.DataValue = svg_args
 
             existing_category_node.appendChild(symbol_child)
+            self.tree_control.expandNode(existing_category_node)
         except Exception as e:
             print("Error creating symbol node:", e)
 

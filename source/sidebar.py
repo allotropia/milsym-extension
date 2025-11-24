@@ -58,7 +58,7 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
         self.ResourceURL = url
         self.toolpanel = None
         self.root_node = None
-        self.tree_model = None
+        self.tree_control = None
         self.mutable_tree_data_model = None
         self.selected_node = None
 
@@ -140,7 +140,8 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
             names = ("Name",)
             values = ("myTree",)
             treeCtrl = self.createControl(self.ctx, "com.sun.star.awt.tree.TreeControl", "com.sun.star.awt.tree.TreeControlModel", x, y, width, height, names, values)
-            self.tree_model = treeCtrl.getModel()
+            self.tree_control = treeCtrl
+            self.sidebar_tree.set_tree_control(treeCtrl)
 
             drag_handler = TreeMouseListener(self.ctx, treeCtrl, self, self.favorites_dir_path)
             treeCtrl.addMouseListener(drag_handler)
@@ -218,12 +219,15 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
         smgr = self.ctx.ServiceManager
         self.mutable_tree_data_model = smgr.createInstanceWithContext("com.sun.star.awt.tree.MutableTreeDataModel", self.ctx)
 
+        tree_ctrl = self.tree_control
+        tree_model = tree_ctrl.getModel()
+
         SELECTION_TYPE_SINGLE = 1
-        self.tree_model.setPropertyValue("SelectionType", SELECTION_TYPE_SINGLE)
-        self.tree_model.setPropertyValue("RootDisplayed", True)
-        self.tree_model.setPropertyValue("ShowsHandles", True)
-        self.tree_model.setPropertyValue("ShowsRootHandles", True)
-        self.tree_model.setPropertyValue("Editable", False)
+        tree_model.setPropertyValue("SelectionType", SELECTION_TYPE_SINGLE)
+        tree_model.setPropertyValue("RootDisplayed", True)
+        tree_model.setPropertyValue("ShowsHandles", True)
+        tree_model.setPropertyValue("ShowsRootHandles", True)
+        tree_model.setPropertyValue("Editable", False)
 
         self.root_node = self.mutable_tree_data_model.createNode("Favorites", True)
         self.mutable_tree_data_model.setRoot(self.root_node)
@@ -248,7 +252,12 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
                     symbol_node.setNodeGraphicURL(file_url)
                     category_node.appendChild(symbol_node)
 
-        self.tree_model.setPropertyValue("DataModel", self.mutable_tree_data_model)
+        tree_model.setPropertyValue("DataModel", self.mutable_tree_data_model)
+
+        tree_ctrl.expandNode(self.root_node)
+        for i in range(self.root_node.getChildCount()):
+            category_node = self.root_node.getChildAt(i)
+            tree_ctrl.expandNode(category_node)
 
     def onResize(self, event):
         try:
