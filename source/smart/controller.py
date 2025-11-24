@@ -338,6 +338,12 @@ class Controller(unohelper.Base, XSelectionChangeListener):
             except Exception:
                 selected_shape_name = ""
 
+            if selected_shape.supportsService("com.sun.star.drawing.GroupShape"):
+                try:
+                    selected_shape.enterGroup()
+                except Exception:
+                    print("Error entering group shape")
+
             # Listen for clicks on diagrams
             if self.is_smart_diagram_shape(selected_shape_name):
                 new_diagram_name = selected_shape_name.split("-", 1)[0]
