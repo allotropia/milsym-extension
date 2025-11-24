@@ -22,13 +22,8 @@ from smart.controller import Controller
 from smart.diagram.data_of_diagram import DataOfDiagram
 from sidebar import SidebarFactory
 
-from com.sun.star.awt import Size, Point
-from com.sun.star.beans import NamedValue, PropertyValue
+from com.sun.star.beans import NamedValue
 from com.sun.star.task import XJobExecutor, XJob
-
-
-
-
 
 class ControllerManager:
     """Manages Controller instances for different frames"""
@@ -171,7 +166,7 @@ class MainJob(unohelper.Base, XJobExecutor):
         data.add(1, "")  # Level 1
         data.add(1, "")  # Level 1
 
-        # Create the diagram (this calls stub methods)
+        # Create the diagram
         controller.create_diagram(data)
 
     def insertSymbol(self, model, code):
