@@ -232,6 +232,7 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
             return True
         elif methodName == "OnEdit":
             self.dialog.execute_properties_dialog()
+            self.get_controller().get_diagram().refresh_diagram()
             return True
         else:
             return False
