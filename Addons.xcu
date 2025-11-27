@@ -22,18 +22,6 @@
               <value>_self</value>
             </prop>
           </node>
-          <node oor:name="M2" oor:op="replace">
-            <prop oor:name="Title">
-              <value xml:lang="en-US">Insert Test Symbol</value>
-              <value xml:lang="de-DE">Test-Symbol einfügen</value>
-            </prop>
-            <prop oor:name="URL">
-              <value>service:com.collabora.milsymbol.do?testSymbol</value>
-            </prop>
-            <prop oor:name="Target" oor:type="xs:string">
-              <value>_self</value>
-            </prop>
-          </node>
           <node oor:name="M3" oor:op="replace">
             <prop oor:name="Title">
               <value xml:lang="en-US">Insert Orbat</value>

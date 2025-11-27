@@ -148,8 +148,6 @@ class MainJob(unohelper.Base, XJobExecutor):
 
         if args == "symbolDialog":
             open_symbol_dialog(self.ctx, self.model, None, None)
-        if args == "testSymbol":
-            self.insertSymbol(self.model, "sfgpewrh--mt")
         if args == "orgChart":
             self.onOrgChart()
 
@@ -169,36 +167,7 @@ class MainJob(unohelper.Base, XJobExecutor):
         # Create the diagram
         controller.create_diagram(data)
 
-    def insertSymbol(self, model, code):
-        factory = self.ctx.getServiceManager().createInstanceWithContext(
-            "com.sun.star.script.provider.MasterScriptProviderFactory", self.ctx)
-        provider = factory.createScriptProvider(model)
-        script = provider.getScript(
-            "vnd.sun.star.script:milsymbol.milsymbol.js?language=JavaScript&location=user:uno_packages/" +
-            getExtensionBasePath(self.ctx))
 
-        args = (
-            code,
-            NamedValue("size", 35.0),
-            NamedValue("quantity", 200.0),
-            NamedValue("staffComments", "FOR REINFORCEMENTS"),
-            NamedValue("additionalInformation", "ADDED SUPPORT FOR JJ"),
-            NamedValue("direction", (750.0 * 360.0) / 6400.0),
-            NamedValue("type", "MACHINE GUN"),
-            NamedValue("dtg", "30140000ZSEP97"),
-            NamedValue("location", "0900000.0E570306.0N")
-        )
-
-        try:
-            result = script.invoke(args, (), ())
-            # Assuming the result contains SVG data
-            if result and len(result) > 0:
-                insertSvgGraphic(self.ctx, model,
-                                 str(result[0]),args)
-
-        except Exception as e:
-            print(f"Error executing script: {e}")
-            return
 
     def initialize_controllers_for_open_documents(self):
         """Initialize controllers for all currently open documents that contain smart diagrams"""
