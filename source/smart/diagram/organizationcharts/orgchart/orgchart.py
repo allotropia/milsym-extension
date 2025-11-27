@@ -31,8 +31,8 @@ class OrgChart(OrganizationChart):
         self._group_height = 6
         self._shape_width = 4
         self._hor_space = 1
-        self._shape_height = 4
-        self._ver_space = 3
+        self._shape_height = 2
+        self._ver_space = 1
 
     def init_diagram_tree(self, diagram_tree):
         """Initialize diagram tree"""
