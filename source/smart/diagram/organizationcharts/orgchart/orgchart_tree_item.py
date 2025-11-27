@@ -254,29 +254,42 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
                 else:
                     y_coord = OrgChartTreeItem._group_pos_y + (OrgChartTreeItem._shape_height + OrgChartTreeItem._ver_space) * (self.get_level() - 1)
 
-        # Calculate width based on graphic aspect ratio while keeping fixed height
-        fixed_height = OrgChartTreeItem._shape_height
-        calculated_width = self._calculate_width_for_aspect_ratio(fixed_height)
+        # Calculate size based on graphic aspect ratio while fitting within default bounds
+        calculated_width, calculated_height = self._calculate_size_for_aspect_ratio()
 
         if self._level > last_hor_level:
             self.set_position(Point(X=int(x_coord + calculated_width * 0.1), Y=y_coord))
-            self.set_size(Size(Width=int(calculated_width * 0.9), Height=fixed_height))
+            self.set_size(Size(Width=int(calculated_width * 0.9), Height=calculated_height))
         else:
             self.set_position(Point(X=x_coord, Y=y_coord))
-            self.set_size(Size(Width=calculated_width, Height=fixed_height))
+            self.set_size(Size(Width=calculated_width, Height=calculated_height))
 
-    def _calculate_width_for_aspect_ratio(self, target_height):
-        """Calculate width that maintains the graphic's aspect ratio for given height"""
+    def _calculate_size_for_aspect_ratio(self):
+        """Calculate size that maintains the graphic's aspect ratio while fitting within default bounds"""
+        default_width = OrgChartTreeItem._shape_width
+        default_height = OrgChartTreeItem._shape_height
+
         try:
             if self._x_rectangle_shape.Graphic:
                 # Get the original graphic size
                 graphic_size = self._x_rectangle_shape.Graphic.SizePixel
-                if graphic_size.Height > 0:
-                    # Calculate width maintaining aspect ratio
+                if graphic_size.Height > 0 and graphic_size.Width > 0:
+                    # Calculate aspect ratio
                     aspect_ratio = graphic_size.Width / graphic_size.Height
-                    return int(target_height * aspect_ratio)
+
+                    # Calculate dimensions that fit within default bounds
+                    width_from_height = int(default_height * aspect_ratio)
+                    height_from_width = int(default_width / aspect_ratio)
+
+                    # Choose the scaling that fits within both width and height constraints
+                    if width_from_height <= default_width:
+                        # Height is the limiting factor
+                        return width_from_height, default_height
+                    else:
+                        # Width is the limiting factor
+                        return default_width, height_from_width
         except Exception as ex:
             print(f"Could not get graphic aspect ratio: {ex}")
 
-        # Fallback to original width if we can't get aspect ratio
-        return OrgChartTreeItem._shape_width
+        # Fallback to default dimensions if we can't get aspect ratio
+        return default_width, default_height
