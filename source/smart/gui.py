@@ -61,6 +61,9 @@ class Gui:
             if visible:
                 self._is_visible_control_dialog = True
                 self._x_control_dialog.setFocus()
+                # Refresh tree when dialog becomes visible
+                if self._o_listener:
+                    self._o_listener.refresh_tree()
             else:
                 self._is_visible_control_dialog = False
 
@@ -196,6 +199,8 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
 
     def __init__(self, dialog):
         self.dialog = dialog
+        self.tree_control = None
+        self._populate_tree_on_show = True
 
     def callHandlerMethod(self, dialog, eventObject, methodName):
         if methodName == "OnAdd":
@@ -208,9 +213,13 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
                     else:
                         self.get_controller().get_diagram().add_shape()
                         self.get_controller().get_diagram().refresh_diagram()
+                        # Refresh tree after adding shape
+                        self.refresh_tree()
                 else:
                     self.get_controller().get_diagram().add_shape()
                     self.get_controller().get_diagram().refresh_diagram()
+                    # Refresh tree after adding shape
+                    self.refresh_tree()
                 self.get_controller().add_selection_listener()
                 self.get_controller().set_text_field_of_control_dialog()
             return True
@@ -224,15 +233,21 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
                     else:
                         self.get_controller().get_diagram().remove_shape()
                         self.get_controller().get_diagram().refresh_diagram()
+                        # Refresh tree after removing shape
+                        self.refresh_tree()
                 else:
                     self.get_controller().get_diagram().remove_shape()
                     self.get_controller().get_diagram().refresh_diagram()
+                    # Refresh tree after removing shape
+                    self.refresh_tree()
                 self.get_controller().add_selection_listener()
                 self.get_controller().set_text_field_of_control_dialog()
             return True
         elif methodName == "OnEdit":
             self.dialog.execute_properties_dialog()
             self.get_controller().get_diagram().refresh_diagram()
+            # Refresh tree after editing (properties might affect display)
+            self.refresh_tree()
             return True
         else:
             return False
@@ -262,7 +277,13 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
 
     def windowOpened(self, event):
         """Handle window opened event"""
-        pass
+        if event.Source == self.get_gui()._x_control_dialog:
+            # Initialize tree control when dialog opens
+            self._init_tree_control()
+            # Populate tree with current diagram structure
+            if self._populate_tree_on_show:
+                self.populate_tree()
+                self._populate_tree_on_show = False
 
     def windowClosed(self, event):
         """Handle window closed event"""
@@ -283,3 +304,213 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
     def windowDeactivated(self, event):
         """Handle window deactivated event"""
         pass
+
+    def _init_tree_control(self):
+        """Initialize the tree control"""
+        try:
+            dialog = self.get_gui()._x_control_dialog
+            if dialog is not None:
+                # Get the tree control from the dialog
+                self.tree_control = dialog.getControl("OrbatTree")
+                if self.tree_control is not None:
+                    print("Tree control initialized successfully")
+                else:
+                    print("Warning: Could not find OrbatTree control in dialog")
+        except Exception as e:
+            print(f"Error initializing tree control: {e}")
+
+    def populate_tree(self):
+        """Populate tree with current diagram structure"""
+        try:
+            if self.tree_control is None:
+                print("Tree control not available")
+                return
+
+            # Get the current diagram
+            controller = self.get_controller()
+            diagram = controller.get_diagram()
+
+            if diagram is None:
+                print("No diagram available")
+                return
+
+            # Get or create the tree data model
+            ctx = self.get_gui()._x_context
+            service_manager = ctx.getServiceManager()
+
+            # Create a new tree data model
+            try:
+                data_model = service_manager.createInstanceWithContext(
+                    "com.sun.star.awt.tree.MutableTreeDataModel", ctx)
+
+                if data_model is None:
+                    print("Could not create tree data model")
+                    return
+
+                # Create root node
+                root_node = data_model.createNode("Diagram Structure", True)
+                data_model.setRoot(root_node)
+
+                # Set the data model to the tree control
+                tree_model = self.tree_control.getModel()
+                tree_model.setPropertyValue("DataModel", data_model)
+
+            except Exception as e:
+                print(f"Error creating tree data model: {e}")
+                return
+
+            # Get diagram tree structure
+            diagram_tree = None
+            if hasattr(diagram, 'get_diagram_tree'):
+                diagram_tree = diagram.get_diagram_tree()
+            elif hasattr(diagram, '_diagram_tree'):
+                diagram_tree = diagram._diagram_tree
+
+            if diagram_tree is not None and hasattr(diagram_tree, 'get_root_item'):
+                root_item = diagram_tree.get_root_item()
+                if root_item is not None:
+                    # Update root node display name
+                    root_name = self._get_tree_node_display_name(root_item, 1)
+                    if not root_name or root_name == "Item 1":
+                        root_name = "Root"
+                    root_node.setDisplayValue(root_name)
+
+                    # Populate children of root item
+                    self._populate_tree_children(data_model, root_node, root_item)
+                else:
+                    print("No root item found in diagram tree")
+            else:
+                print("No diagram tree available or invalid structure")
+
+            # Expand the tree to show structure
+            if hasattr(self.tree_control, 'expandNode') and root_node:
+                try:
+                    self.tree_control.expandNode(root_node)
+                except:
+                    pass
+
+        except Exception as e:
+            print(f"Error populating tree: {e}")
+
+    def _populate_tree_children(self, data_model, parent_node, tree_item):
+        """Populate children of a tree node from organization chart tree items"""
+        try:
+            if tree_item is None:
+                return
+
+            # Add children
+            child_count = 0
+            if hasattr(tree_item, 'get_first_child') and tree_item.get_first_child() is not None:
+                child_item = tree_item.get_first_child()
+                child_num = 1
+                while child_item is not None:
+                    child_name = self._get_tree_node_display_name(child_item, child_num)
+                    self._populate_tree_node(data_model, parent_node, child_item, child_name)
+
+                    # Move to next sibling
+                    child_item = child_item.get_first_sibling() if hasattr(child_item, 'get_first_sibling') else None
+                    child_num += 1
+                    child_count += 1
+
+        except Exception as e:
+            print(f"Error populating tree children: {e}")
+
+    def _populate_tree_node(self, data_model, parent_node, tree_item, display_name):
+        """Recursively populate tree nodes from organization chart tree items"""
+        try:
+            if tree_item is None:
+                return
+
+            # Create node for this tree item
+            node = data_model.createNode(display_name, False)  # Start with no children
+            parent_node.appendChild(node)
+
+            # Add children
+            child_count = 0
+            if hasattr(tree_item, 'get_first_child') and tree_item.get_first_child() is not None:
+                child_item = tree_item.get_first_child()
+                child_num = 1
+                while child_item is not None:
+                    child_name = self._get_tree_node_display_name(child_item, child_num)
+                    self._populate_tree_node(data_model, node, child_item, child_name)
+
+                    # Move to next sibling
+                    child_item = child_item.get_first_sibling() if hasattr(child_item, 'get_first_sibling') else None
+                    child_num += 1
+                    child_count += 1
+
+            # Update node to show it has children if any were added
+            if child_count > 0:
+                node.setHasChildrenOnDemand(True)
+
+        except Exception as e:
+            print(f"Error populating tree node: {e}")
+
+    def refresh_tree(self):
+        """Refresh the tree structure"""
+        try:
+            if self.tree_control is not None:
+                self.populate_tree()
+        except Exception as e:
+            print(f"Error refreshing tree: {e}")
+
+    def _get_tree_node_display_name(self, tree_item, item_number):
+        """Get a meaningful display name for a tree node"""
+        try:
+            # Try to get shape information
+            if hasattr(tree_item, 'get_rectangle_shape'):
+                shape = tree_item.get_rectangle_shape()
+                if shape is not None:
+                    shape_name = ""
+
+                    # Try to get shape name
+                    try:
+                        if hasattr(shape, 'getName'):
+                            shape_name = shape.getName()
+                    except:
+                        pass
+
+                    # Try to get shape text/string content
+                    shape_text = ""
+                    try:
+                        if hasattr(shape, 'getString'):
+                            shape_text = shape.getString()
+                        elif hasattr(shape, 'getText'):
+                            text_obj = shape.getText()
+                            if text_obj and hasattr(text_obj, 'getString'):
+                                shape_text = text_obj.getString()
+                    except:
+                        pass
+
+                    # Try to get level information
+                    level_info = ""
+                    try:
+                        if hasattr(tree_item, 'get_level'):
+                            level = tree_item.get_level()
+                            level_info = f" (L{level})"
+                    except:
+                        pass
+
+                    # Build display name
+                    if shape_text and shape_text.strip():
+                        return f"{shape_text.strip()}{level_info}"
+                    elif shape_name and shape_name.strip():
+                        return f"Shape: {shape_name}{level_info}"
+                    else:
+                        return f"Item {item_number}{level_info}"
+
+            return f"Node {item_number}"
+
+        except Exception as e:
+            print(f"Error getting tree node display name: {e}")
+            return f"Item {item_number}"
+
+    def handle_tree_selection(self, selected_node):
+        """Handle tree node selection"""
+        try:
+            if selected_node is not None and hasattr(selected_node, 'getDisplayValue'):
+                node_name = selected_node.getDisplayValue()
+                print(f"Tree node selected: {node_name}")
+
+        except Exception as e:
+            print(f"Error handling tree selection: {e}")
