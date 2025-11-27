@@ -21,7 +21,7 @@ from .orgchart_tree_item import OrgChartTreeItem
 class OrgChartTree(OrganizationChartTree):
     """Organization chart tree implementation"""
 
-    LAST_HOR_LEVEL = 2
+    LAST_HOR_LEVEL = 1
 
     def __init__(self, organigram, control_shape_or_tree=None, root_item_shape=None):
         """

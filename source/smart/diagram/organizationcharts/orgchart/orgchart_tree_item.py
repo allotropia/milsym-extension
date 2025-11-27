@@ -227,7 +227,7 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
     def set_pos_of_rect(self):
         """Set position of rectangle"""
         x_coord = OrgChartTreeItem._group_pos_x + int((OrgChartTreeItem._shape_width + OrgChartTreeItem._hor_space) * self.get_pos())
-        last_hor_level = getattr(self._diagram_tree, 'LAST_HOR_LEVEL', 2)
+        last_hor_level = getattr(self._diagram_tree, 'LAST_HOR_LEVEL', 1)
 
         # Use smaller vertical spacing for levels beyond horizontal threshold (vertical stacking)
         if self._level > last_hor_level:

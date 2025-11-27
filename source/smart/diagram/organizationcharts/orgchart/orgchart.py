@@ -202,8 +202,8 @@ class OrgChart(OrganizationChart):
             self.set_control_shape_props(x_base_shape)
             self.set_color_mode_and_style_of_control_shape(x_base_shape)
 
-            OrgChartTree.LAST_HOR_LEVEL = 2
-            self.set_hor_level_of_control_shape(x_base_shape, 2)
+            OrgChartTree.LAST_HOR_LEVEL = 1
+            self.set_hor_level_of_control_shape(x_base_shape, 1)
 
             # Use fixed dimensions - don't scale shapes to fit available space
             if n > 1:
