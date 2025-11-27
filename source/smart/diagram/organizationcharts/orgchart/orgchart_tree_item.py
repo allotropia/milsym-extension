@@ -265,9 +265,9 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
             self.set_size(Size(Width=calculated_width, Height=calculated_height))
 
     def _calculate_size_for_aspect_ratio(self):
-        """Calculate size that maintains the graphic's aspect ratio while fitting within bounds"""
-        max_width = OrgChartTreeItem._shape_width
-        max_height = 2000  # Maximum height for shapes
+        """Calculate size with fixed height and proportional width"""
+        default_width = OrgChartTreeItem._shape_width
+        fixed_height = 2000  # Fixed height for all shapes
 
         try:
             if self._x_rectangle_shape.Graphic:
@@ -277,19 +277,13 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
                     # Calculate aspect ratio
                     aspect_ratio = graphic_size.Width / graphic_size.Height
 
-                    # Calculate dimensions that maintain aspect ratio within bounds
-                    width_from_height = int(max_height * aspect_ratio)
-                    height_from_width = int(max_width / aspect_ratio)
-                    
-                    # Choose scaling that fits within both constraints while maintaining aspect ratio
-                    if width_from_height <= max_width:
-                        # Height constraint allows us to use max_height
-                        return width_from_height, max_height
-                    else:
-                        # Width constraint requires us to scale down proportionally
-                        return max_width, height_from_width
+                    # Calculate width based on fixed height and aspect ratio - no width limit
+                    calculated_width = int(fixed_height * aspect_ratio)
+
+                    # Return calculated width and fixed height
+                    return calculated_width, fixed_height
         except Exception as ex:
             print(f"Could not get graphic aspect ratio: {ex}")
 
-        # Fallback to max dimensions
-        return max_width, max_height
+        # Fallback to default width and fixed height
+        return default_width, fixed_height
