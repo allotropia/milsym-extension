@@ -265,9 +265,9 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
             self.set_size(Size(Width=calculated_width, Height=calculated_height))
 
     def _calculate_size_for_aspect_ratio(self):
-        """Calculate size that maintains the graphic's aspect ratio while fitting within default bounds"""
-        default_width = OrgChartTreeItem._shape_width
-        default_height = OrgChartTreeItem._shape_height
+        """Calculate size that maintains the graphic's aspect ratio while fitting within bounds"""
+        max_width = OrgChartTreeItem._shape_width
+        max_height = 2000  # Maximum height for shapes
 
         try:
             if self._x_rectangle_shape.Graphic:
@@ -277,19 +277,19 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
                     # Calculate aspect ratio
                     aspect_ratio = graphic_size.Width / graphic_size.Height
 
-                    # Calculate dimensions that fit within default bounds
-                    width_from_height = int(default_height * aspect_ratio)
-                    height_from_width = int(default_width / aspect_ratio)
-
-                    # Choose the scaling that fits within both width and height constraints
-                    if width_from_height <= default_width:
-                        # Height is the limiting factor
-                        return width_from_height, default_height
+                    # Calculate dimensions that maintain aspect ratio within bounds
+                    width_from_height = int(max_height * aspect_ratio)
+                    height_from_width = int(max_width / aspect_ratio)
+                    
+                    # Choose scaling that fits within both constraints while maintaining aspect ratio
+                    if width_from_height <= max_width:
+                        # Height constraint allows us to use max_height
+                        return width_from_height, max_height
                     else:
-                        # Width is the limiting factor
-                        return default_width, height_from_width
+                        # Width constraint requires us to scale down proportionally
+                        return max_width, height_from_width
         except Exception as ex:
             print(f"Could not get graphic aspect ratio: {ex}")
 
-        # Fallback to default dimensions if we can't get aspect ratio
-        return default_width, default_height
+        # Fallback to max dimensions
+        return max_width, max_height
