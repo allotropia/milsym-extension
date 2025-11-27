@@ -36,7 +36,6 @@ class OrgChart(OrganizationChart):
 
     def init_diagram_tree(self, diagram_tree):
         """Initialize diagram tree"""
-        #breakpoint()
         super().init_diagram()
         self._diagram_tree = OrgChartTree(self, diagram_tree)
 
