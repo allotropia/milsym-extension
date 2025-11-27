@@ -455,7 +455,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
         args = [
             sidc_code,
-            NamedValue("size", 60.0),
+            NamedValue("size", 150.0),
             NamedValue("stack", self.stack_option),
             NamedValue("reinforced", self.reinforced_reduced_option),
             NamedValue("signature", self.signature_option),
