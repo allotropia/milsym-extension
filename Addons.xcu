@@ -12,8 +12,8 @@
         <node oor:name="Submenu">
           <node oor:name="M1" oor:op="replace">
             <prop oor:name="Title">
-              <value xml:lang="en-US">Symbol Dialog</value>
-              <value xml:lang="de-DE">Symbol-Dialog öffnen...</value>
+              <value xml:lang="en-US">Insert Symbol</value>
+              <value xml:lang="de-DE">Symbol einfügen...</value>
             </prop>
             <prop oor:name="URL">
               <value>service:com.collabora.milsymbol.do?symbolDialog</value>
