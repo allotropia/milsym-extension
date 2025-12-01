@@ -44,15 +44,15 @@ BUTTONS = {
         "btReinforcedReduced":      "(±)"
     },
     "STACK": {
-        "btStack1": 0,
-        "btStack2": 1,
-        "btStack3": 2,
-        "btStack4": 3,
-        "btStack5": 4,
-        "btStack6": 5
+        "btStack1": "0",
+        "btStack2": "1",
+        "btStack3": "2",
+        "btStack4": "3",
+        "btStack5": "4",
+        "btStack6": "5"
     },
     "COLOR": {
-        "btNoFill": "false",
+        "btNoFill": "NoFill",
         "btLight":  "Light",
         "btMedium": "Medium",
         "btDark":   "Dark",

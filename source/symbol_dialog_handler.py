@@ -13,6 +13,8 @@ import unohelper
 from com.sun.star.awt import XDialogEventHandler
 from com.sun.star.awt.ImageScaleMode import ISOTROPIC
 from com.sun.star.beans import NamedValue
+from xml.etree.ElementPath import prepare_self
+import time
 
 base_dir = os.path.dirname(__file__)
 if base_dir not in sys.path:
@@ -25,7 +27,7 @@ from translator import Translator
 
 class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
-    def __init__(self, ctx, model, controller, dialog, sidebar_panel):
+    def __init__(self, ctx, model, controller, dialog, sidebar_panel, selected_shape):
         self.ctx = ctx
         self.model = model
         self.controller = controller
@@ -34,11 +36,13 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         self.sidc_options = {}
         self.listbox_values = {}
         self.disable_callHandler = False
-        self.hex_color_value = None
+        self.color = None
+        self.hex_color = None
         self.final_svg_data = None
         self.final_svg_args = None
         self.sidebar_symbol_svg_data = None
         self.tree_category_name = None
+        self.selected_shape = selected_shape
         self.translator = Translator(self.ctx)
         self.factory = self.ctx.getServiceManager().createInstanceWithContext("com.sun.star.script.provider.MasterScriptProviderFactory", self.ctx)
         self.provider = self.factory.createScriptProvider(model)
@@ -47,43 +51,47 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             getExtensionBasePath(self.ctx))
 
     def init_dialog_controls(self):
-        self.init_listbox(self.dialog)
         self.init_textboxes()
-
         self.dialog.Model.Step = 1
 
-        self.dialog.getControl("btReality").getModel().State = 1
-        self.dialog.getControl("btFriend").getModel().State = 1
-        self.dialog.getControl("btPresent").getModel().State = 1
-        self.dialog.getControl("btNotApplicableReinReduc").getModel().State = 1
-        self.dialog.getControl("btStack1").getModel().State = 1
-        self.dialog.getControl("btLight").getModel().State = 1
-        self.dialog.getControl("btTarget").getModel().State = 1
-        self.dialog.getControl("btNotApplicableSignature").getModel().State = 1
+        has_selected_shape = False
+        if self.selected_shape:
+            has_selected_shape = self.init_selected_shape_params(self.dialog, self.selected_shape)
 
-        self.version_value = symbols_data.VERSION
-        self.context_value = symbols_data.BUTTONS["CONTEXT"]["btReality"]
-        self.affiliation_value = symbols_data.BUTTONS["AFFILIATION"]["btFriend"]
-        self.status_value = symbols_data.BUTTONS["STATUS"]["btPresent"]
-        self.reinforced_reduced_option = symbols_data.BUTTONS["REINFORCED_REDUCED"]["btNotApplicableReinReduc"]
-        self.stack_option = symbols_data.BUTTONS["STACK"]["btStack1"]
-        self.color_mode_option = symbols_data.BUTTONS["COLOR"]["btLight"]
-        self.signature_option = symbols_data.BUTTONS["SIGNATURE"]["btNotApplicableSignature"]
-        self.engagement_option = symbols_data.BUTTONS["ENGAGEMENT"]["btTarget"]
+        if not has_selected_shape:
+            self.init_listbox(self.dialog)
 
-        self.updatePreview()
+            self.dialog.getControl("btReality").getModel().State = 1
+            self.dialog.getControl("btFriend").getModel().State = 1
+            self.dialog.getControl("btPresent").getModel().State = 1
+            self.dialog.getControl("btNotApplicableReinReduc").getModel().State = 1
+            self.dialog.getControl("btStack1").getModel().State = 1
+            self.dialog.getControl("btLight").getModel().State = 1
+            self.dialog.getControl("btTarget").getModel().State = 1
+            self.dialog.getControl("btNotApplicableSignature").getModel().State = 1
 
-    def init_listbox(self, dialog):
-        selected_index = 4 # Land unit
+            self.version = symbols_data.VERSION
+            self.context = symbols_data.BUTTONS["CONTEXT"]["btReality"]
+            self.affiliation= symbols_data.BUTTONS["AFFILIATION"]["btFriend"]
+            self.status = symbols_data.BUTTONS["STATUS"]["btPresent"]
+            self.reinforced = symbols_data.BUTTONS["REINFORCED_REDUCED"]["btNotApplicableReinReduc"]
+            self.stack = symbols_data.BUTTONS["STACK"]["btStack1"]
+            self.color = symbols_data.BUTTONS["COLOR"]["btLight"]
+            self.signature = symbols_data.BUTTONS["SIGNATURE"]["btNotApplicableSignature"]
+            self.engagement = symbols_data.BUTTONS["ENGAGEMENT"]["btTarget"]
+
+            self.updatePreview()
+
+    def init_listbox(self, dialog, selected_index = 4):
         self.populate_symbol_listboxes(dialog, selected_index)
 
         self.listbox_map = {
-            "ltbMainIcon":        "mainIcon_value",
-            "ltbFirstIcon":       "firstIcon_value",
-            "ltbSecondIcon":      "secondIcon_value",
-            "ltbHeadTaskDummy":   "headquartersTaskforceDummy_value",
-            "ltbEchelonMobility": "echelonMobility_value",
-            "ltbCountry":         "country_code_value"
+            "ltbMainIcon":        "mainIcon",
+            "ltbFirstIcon":       "firstIcon",
+            "ltbSecondIcon":      "secondIcon",
+            "ltbHeadTaskDummy":   "headquartersTaskforceDummy",
+            "ltbEchelonMobility": "echelonMobility",
+            "ltbCountry":         "country"
         }
 
     def init_textboxes(self):
@@ -111,6 +119,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             "tbType":               "type",
             "tbDirection":          "direction"
         }
+        self.reverse_textbox_map = {value: key for key, value in self.textbox_map.items()}
 
     def get_current_symbol(self, selected_index):
         symbol_meta = symbols_data.SYMBOLS[selected_index]
@@ -137,7 +146,13 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         if getattr(self, "disable_callHandler", False):
             return
 
-        if methodName.startswith("ltb"): # listboxes
+        if methodName == "btCustom":
+            hex_color = self.pick_custom_color()
+            if hex_color:
+                self.hex_color = hex_color
+                self.button_handler(dialog, methodName)
+            return True
+        elif methodName.startswith("ltb"): # listboxes
             self.listbox_handler(dialog, eventObject, methodName)
             return True
         elif methodName.startswith("tb"): # textboxes
@@ -180,7 +195,8 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
                 insertSvgGraphic(
                     self.ctx, self.model,
                     self.final_svg_data,
-                    self.final_svg_args)
+                    self.final_svg_args,
+                    self.selected_shape)
             dialog.endExecute()
             return True
         elif methodName == "dialog_btCancel":
@@ -217,13 +233,13 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
     def populate_symbol_listboxes(self, dialog, selected_index):
         current_symbol = self.get_current_symbol(selected_index)
 
-        self.symbolSet_value =                  self.fill_listbox(dialog, "ltbSymbolSet",       symbols_data.SYMBOLS, selected_index)
-        self.mainIcon_value =                   self.fill_listbox(dialog, "ltbMainIcon",        current_symbol["MainIcon"], 0)
-        self.firstIcon_value =                  self.fill_listbox(dialog, "ltbFirstIcon",       current_symbol["FirstIconModifier"], 0)
-        self.secondIcon_value =                 self.fill_listbox(dialog, "ltbSecondIcon",      current_symbol["SecondIconModifier"], 0)
-        self.echelonMobility_value =            self.fill_listbox(dialog, "ltbEchelonMobility", current_symbol["EchelonMobility"], 0)
-        self.headquartersTaskforceDummy_value = self.fill_listbox(dialog, "ltbHeadTaskDummy",   current_symbol["HeadquartersTaskforceDummy"], 0)
-        self.country_code_value =               self.fill_listbox(dialog, "ltbCountry",         country_data.COUNTRY_CODES, 0)
+        self.symbolSet =                  self.fill_listbox(dialog, "ltbSymbolSet",       symbols_data.SYMBOLS, selected_index)
+        self.mainIcon =                   self.fill_listbox(dialog, "ltbMainIcon",        current_symbol["MainIcon"], 0)
+        self.firstIcon =                  self.fill_listbox(dialog, "ltbFirstIcon",       current_symbol["FirstIconModifier"], 0)
+        self.secondIcon =                 self.fill_listbox(dialog, "ltbSecondIcon",      current_symbol["SecondIconModifier"], 0)
+        self.echelonMobility =            self.fill_listbox(dialog, "ltbEchelonMobility", current_symbol["EchelonMobility"], 0)
+        self.headquartersTaskforceDummy = self.fill_listbox(dialog, "ltbHeadTaskDummy",   current_symbol["HeadquartersTaskforceDummy"], 0)
+        self.country =                    self.fill_listbox(dialog, "ltbCountry",         country_data.COUNTRY_CODES, 0)
 
     def pick_custom_color(self, init_color=2938211):
         smgr = self.ctx.getServiceManager()
@@ -239,8 +255,8 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         result = color_picker.execute()
         if result == 1:
             props = color_picker.getPropertyValues()
-            color_value = props[0].Value
-            return self.color_to_hex(color_value)
+            color = props[0].Value
+            return self.color_to_hex(color)
         return None
 
     def color_to_hex(self, color_val):
@@ -251,10 +267,10 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
     def textbox_handler(self, dialog, methodName):
         options_name = self.textbox_map.get(methodName)
-        text_value = dialog.getControl(methodName).Text
+        text = dialog.getControl(methodName).Text
 
-        if text_value:
-            self.sidc_options[options_name] = " " + text_value
+        if text:
+            self.sidc_options[options_name] = " " + text
         else:
             self.sidc_options.pop(options_name, None) # remove
 
@@ -329,17 +345,17 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         for symbolSet, groups in symbols_data.SYMBOL_DETAILS.items():
             labels = groups.get("MainIcon", [])
 
-            self.mainIcon_value = next(
+            self.mainIcon = next(
                 (item.get("value") for item in labels
                  if isinstance(item, dict) and self.translator.translate(item.get("label")) == selected_value),
                 None
             )
 
-            if self.mainIcon_value is not None:
+            if self.mainIcon is not None:
                 symbolSet_name = symbolSet
                 break
 
-        self.symbolSet_value = next(
+        self.symbolSet = next(
             (item.get("value") for item in symbols_data.SYMBOLS
              if item.get("id") == symbolSet_name),
             None
@@ -368,7 +384,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         dialog.getControl("ltbSearch").setVisible(False)
         dialog.getControl("tlbPreview").setFocus()
 
-    def button_handler(self, dialog, active_button_id):
+    def button_handler(self, dialog, active_button_id, updatePreview = True):
         group_name = None
         group_buttons = None
 
@@ -382,43 +398,37 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             return False
 
         for button_id in group_buttons:
-            self.update_button(dialog, button_id, active_button_id, group_name)
+            self.update_button(dialog, button_id, active_button_id, group_name, updatePreview)
         return True
 
-    def update_button(self, dialog, button_id, active_button_id, group_name):
+    def update_button(self, dialog, button_id, active_button_id, group_name, updatePreview):
         state = 0
         if button_id == active_button_id:
             state = 1
-
             group_buttons= symbols_data.BUTTONS.get(group_name)
             value = group_buttons.get(button_id)
 
             if group_name == "CONTEXT":
-                self.context_value = value
+                self.context = value
             elif group_name == "AFFILIATION":
-                self.affiliation_value = value
+                self.affiliation = value
             elif group_name == "STATUS":
-                self.status_value = value
+                self.status = value
             elif group_name == "REINFORCED_REDUCED":
-                self.reinforced_reduced_option = value
+                self.reinforced = value
             elif group_name == "STACK":
-                self.stack_option = value
+                self.stack = value
             elif group_name == "COLOR":
-                self.color_mode_option = value
-                if value == "Custom":
-                    hex_color = self.pick_custom_color()
-                    if hex_color:
-                        self.hex_color_value = hex_color
+                self.color = value
             elif group_name == "SIGNATURE":
-                self.signature_option = value
+                self.signature = value
             elif group_name == "ENGAGEMENT":
-                self.engagement_option = value
+                self.engagement = value
 
-            self.updatePreview()
+            if updatePreview:
+                self.updatePreview()
 
         dialog.getControl(button_id).getModel().State = state
-
-
 
     def updatePreview(self):
         svg_data = self.insertSymbolToPreview()
@@ -432,18 +442,18 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
     def create_sidc(self):
         sidc = [
-            self.version_value,
-            self.context_value,
-            self.affiliation_value,
-            self.symbolSet_value,
-            self.status_value,
-            self.headquartersTaskforceDummy_value,
-            self.echelonMobility_value,
-            self.mainIcon_value,
-            self.firstIcon_value[-2:],
-            self.secondIcon_value[-2:],
-            self.firstIcon_value[0],
-            self.secondIcon_value[0],
+            self.version,
+            self.context,
+            self.affiliation,
+            self.symbolSet,
+            self.status,
+            self.headquartersTaskforceDummy,
+            self.echelonMobility,
+            self.mainIcon,
+            self.firstIcon[-2:],
+            self.secondIcon[-2:],
+            self.firstIcon[0],
+            self.secondIcon[0],
             "00000",
             "000" # Country flag
         ]
@@ -456,25 +466,24 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         args = [
             sidc_code,
             NamedValue("size", 150.0),
-            NamedValue("stack", self.stack_option),
-            NamedValue("reinforced", self.reinforced_reduced_option),
-            NamedValue("signature", self.signature_option),
-            NamedValue("engagementType", self.engagement_option)
+            NamedValue("stack", self.stack),
+            NamedValue("reinforced", self.reinforced),
+            NamedValue("signature", self.signature),
+            NamedValue("engagementType", self.engagement)
         ]
 
-        if self.country_code_value:
+        if self.country:
             args.extend([
-                NamedValue("country", self.country_code_value),
+                NamedValue("country", self.country),
                 NamedValue("country_flag", "true")
             ])
 
-        if self.color_mode_option and self.color_mode_option != "false":
-            if self.color_mode_option == "Custom":
-                args.append(NamedValue("fillColor", self.hex_color_value))
-            else:
-                args.append(NamedValue("colorMode", self.color_mode_option))
-        else:
+        if self.color == "Custom":
+            args.append(NamedValue("fillColor", self.hex_color))
+        elif self.color== "NoFill":
             args.append(NamedValue("fill", "false"))
+        else:
+            args.append(NamedValue("colorMode", self.color))
 
         for key, value in self.sidc_options.items():
             if value:
@@ -496,3 +505,133 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         except Exception as e:
             print(f"Error executing script: {e}")
             return
+
+    def get_textbox_name(self, name):
+        return name[6:][0].lower() + name[6:][1:]
+
+    def init_selected_shape_params(self, dialog, shape):
+        attrs, listbox_attrs = self.get_shape_user_attrs(shape)
+
+        if not attrs:
+            return False
+
+        for element, value in attrs.items():
+            name = self.get_textbox_name(element)
+            textbox = self.reverse_textbox_map.get(name)
+            if textbox:
+                self.sidc_options[name] = " " + value
+                self.disable_callHandler = True
+                self.dialog.getControl(textbox).Text = value
+                self.disable_callHandler = False
+            else:
+                if element   == "MilSymStack":          self.stack      = value
+                elif element == "MilSymReinforced":     self.reinforced = value
+                elif element == "MilSymColorMode":      self.color      = value
+                elif element == "MilSymSignature":      self.signature  = value
+                elif element == "MilSymEngagementType": self.engagement = value
+                elif element == "MilSymFillColor":      self.hex_color  = value
+
+        if not self.color:
+            if self.hex_color:
+                self.color = "Custom"
+            else:
+                self.color = "NoFill"
+
+        self.update_listboxes(dialog, listbox_attrs)
+        self.update_buttons_state(dialog)
+
+        self.updatePreview()
+
+        return True
+
+    def update_listboxes(self, dialog, listbox_attrs):
+        symbolSet_item = next(
+            (item for item in symbols_data.SYMBOLS
+             if item["value"] == self.symbolSet),None)
+
+        index = symbols_data.SYMBOLS.index(symbolSet_item)
+        self.init_listbox(self.dialog, index)
+
+        for attr, value in listbox_attrs.items():
+            setattr(self, attr, value)
+
+        symbol_id = self.translator.translate(symbolSet_item["id"])
+        current_symbol = symbols_data.SYMBOL_DETAILS[symbol_id]
+
+        mainIcon_item = next(
+            (item for item in current_symbol["MainIcon"]
+             if item["value"] == self.mainIcon), None)
+        self.set_selected_shapes_listbox_item(dialog, mainIcon_item, "ltbMainIcon")
+
+        firstIcon_item = next(
+            (item for item in current_symbol["FirstIconModifier"]
+             if item["value"] == self.firstIcon), None)
+        self.set_selected_shapes_listbox_item(dialog, firstIcon_item, "ltbFirstIcon")
+
+        secondIcon_item = next(
+            (item for item in current_symbol["SecondIconModifier"]
+             if item["value"] == self.secondIcon), None)
+        self.set_selected_shapes_listbox_item(dialog, secondIcon_item, "ltbSecondIcon")
+
+        echelonMobility_item = next(
+            (item for item in current_symbol["EchelonMobility"]
+             if item["value"] == self.echelonMobility), None)
+        self.set_selected_shapes_listbox_item(dialog, echelonMobility_item, "ltbEchelonMobility")
+
+        headquartersTaskforceDummy_item = next(
+            (item for item in current_symbol["HeadquartersTaskforceDummy"]
+             if item["value"] == self.headquartersTaskforceDummy), None)
+        self.set_selected_shapes_listbox_item(dialog, headquartersTaskforceDummy_item, "ltbHeadTaskDummy")
+
+    def set_selected_shapes_listbox_item(self, dialog, item, listbox_control):
+        if item:
+            target_label = self.translator.translate(item["label"])
+            listbox = dialog.getControl(listbox_control)
+            labels = listbox.getItems()
+            if target_label in labels:
+                index = labels.index(target_label)
+                self.disable_callHandler = True
+                listbox.selectItemPos(index, True)
+                self.disable_callHandler = False
+
+    def update_buttons_state(self, dialog):
+        self.set_button_state(dialog, self.stack,       "STACK")
+        self.set_button_state(dialog, self.reinforced,  "REINFORCED_REDUCED")
+        self.set_button_state(dialog, self.signature,   "SIGNATURE")
+        self.set_button_state(dialog, self.engagement,  "ENGAGEMENT")
+        self.set_button_state(dialog, self.color,       "COLOR")
+        self.set_button_state(dialog, self.context,     "CONTEXT")
+        self.set_button_state(dialog, self.affiliation, "AFFILIATION")
+        self.set_button_state(dialog, self.status,      "STATUS")
+
+    def set_button_state(self, dialog, option, group_button):
+        group_buttons = symbols_data.BUTTONS.get(group_button, {})
+        for key, val in group_buttons.items():
+            if val == option:
+                self.button_handler(dialog, key, False)
+                break
+
+    def get_shape_user_attrs(self, shape):
+        user_attrs = shape.getPropertyValue("UserDefinedAttributes")
+        attrs = {}
+        listbox_attrs = {}
+
+        if hasattr(user_attrs, "getElementNames"):
+            for element in user_attrs.getElementNames():
+                value = user_attrs[element].Value
+                if element == "MilSymCode":
+                    self.version = value[0:2]
+                    self.context= value[2]
+                    self.affiliation = value[3]
+                    self.symbolSet = value[4:6]
+                    self.status = value[6]
+                    listbox_attrs["headquartersTaskforceDummy"] = value[7]
+                    listbox_attrs["echelonMobility"] = value[8:10]
+                    listbox_attrs["mainIcon"] = value[10:16]
+                    listbox_attrs["firstIcon"] = value[16:18]
+                    listbox_attrs["secondIcon"] = value[18:20]
+                    # others value[20:]
+                else:
+                    attrs[element] = value
+
+        return attrs, listbox_attrs

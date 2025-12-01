@@ -212,7 +212,7 @@ class TreeMouseListener(unohelper.Base, XMouseListener, XMouseMotionListener):
             if node and self.drop_allowed and self.svg_data:
                 model = self.sidebar_panel.desktop.getCurrentComponent()
                 params = node.DataValue
-                insertSvgGraphic(self.ctx, model, self.svg_data, params, 3)
+                insertSvgGraphic(self.ctx, model, self.svg_data, params, None, 3)
                 self.drop_allowed = False
 
             if (event.Buttons == MouseButton.RIGHT and node and node.getChildCount() == 0):
@@ -250,7 +250,7 @@ class PopupMenuHandler(unohelper.Base, XMenuListener):
         menu_id = event.MenuId
         if menu_id == 1: # Edit
             model = self.sidebar_panel.desktop.getCurrentComponent()
-            open_symbol_dialog(self.ctx, model, None, self.sidebar_panel)
+            open_symbol_dialog(self.ctx, model, None, self.sidebar_panel, None)
         elif menu_id == 2: # Delete
             self.key_listener.delete_selected_node()
 

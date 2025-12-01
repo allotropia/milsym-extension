@@ -24,6 +24,62 @@ from sidebar import SidebarFactory
 
 from com.sun.star.beans import NamedValue
 from com.sun.star.task import XJobExecutor, XJob
+from com.sun.star.view import XSelectionChangeListener
+from com.sun.star.util import XCloseListener
+
+
+class DocumentCloseListener(unohelper.Base, XCloseListener):
+    def __init__(self, model):
+        self.model = model
+
+    def notifyClosing(self, event):
+        ListenerRegistry.instance().unregister(self.model)
+
+    def queryClosing(self, event, getsOwnership):
+        return True
+
+
+class ListenerRegistry:
+    _instance = None
+
+    def __init__(self):
+        self._map = {}
+        self._registered = set()
+        self.selected_shape = None
+
+    @classmethod
+    def instance(cls):
+        if cls._instance is None:
+            cls._instance = ListenerRegistry()
+        return cls._instance
+
+    def has(self, xcontroller):
+        return xcontroller in self._registered
+
+    def register(self, model, xcontroller, listener):
+        self._registered.add(xcontroller)
+        self._map[model] = (xcontroller, listener)
+
+    def unregister(self, model):
+        if model in self._map:
+            xcontroller, listener = self._map[model]
+            try:
+                xcontroller.removeSelectionChangeListener(listener)
+                print("Removed selection listener from controller")
+            except Exception as e:
+                print("Failed removing listener:", e)
+
+            del self._map[model]
+
+    def update_selected_shape(self, selection):
+        self.selected_shape = selection
+
+    def get_selected_shape(self):
+        return self.selected_shape
+
+    def clear_selected_shape(self):
+        self.selected_shape = None
+
 
 class ControllerManager:
     """Manages Controller instances for different frames"""
@@ -95,7 +151,7 @@ class ControllerManager:
         return False
 
 
-class StartupJob(unohelper.Base, XJob):
+class StartupJob(unohelper.Base, XJob, XSelectionChangeListener):
     """Job that runs on document events to initialize controllers"""
 
     def __init__(self, ctx):
@@ -104,6 +160,25 @@ class StartupJob(unohelper.Base, XJob):
     def execute(self, args):
         """Execute method called by LibreOffice Job framework"""
         self.initialize_controllers()
+
+    def selectionChanged(self, event):
+        try:
+            ListenerRegistry.instance().clear_selected_shape()
+            selection = event.Source.getSelection()
+            if selection is None:
+                return
+
+            if selection.supportsService("com.sun.star.text.TextGraphicObject"):
+                shape = selection
+                if shape.UserDefinedAttributes:
+                    ListenerRegistry.instance().update_selected_shape(shape)
+            elif selection.supportsService("com.sun.star.drawing.Shapes"):
+                shape = selection.getByIndex(0)
+                if shape.UserDefinedAttributes:
+                    ListenerRegistry.instance().update_selected_shape(shape)
+
+        except Exception as e:
+            print(f"Error document selection listener: {e}")
 
     def initialize_controllers(self):
         """Initialize controllers for documents with smart diagrams"""
@@ -117,6 +192,16 @@ class StartupJob(unohelper.Base, XJob):
             if frames.getCount() > 0:
                 for i in range(frames.getCount()):
                     frame = frames.getByIndex(i)
+
+                    xcontroller = frame.getController()
+                    if xcontroller:
+                        registry = ListenerRegistry.instance()
+                        if not registry.has(xcontroller):
+                            model = xcontroller.getModel()
+                            xcontroller.addSelectionChangeListener(self)
+                            ListenerRegistry.instance().register(model, xcontroller, self)
+                            model.addCloseListener(DocumentCloseListener(model))
+
                     try:
                         controller_manager.get_or_create_controller(self.ctx, frame)
                     except Exception as e:
@@ -147,7 +232,8 @@ class MainJob(unohelper.Base, XJobExecutor):
         self.model = desktop.getCurrentComponent()
 
         if args == "symbolDialog":
-            open_symbol_dialog(self.ctx, self.model, None, None)
+            selected_shape = ListenerRegistry.instance().get_selected_shape()
+            open_symbol_dialog(self.ctx, self.model, None, None, selected_shape)
         if args == "orgChart":
             self.onOrgChart()
 
@@ -166,8 +252,6 @@ class MainJob(unohelper.Base, XJobExecutor):
 
         # Create the diagram
         controller.create_diagram(data)
-
-
 
     def initialize_controllers_for_open_documents(self):
         """Initialize controllers for all currently open documents that contain smart diagrams"""

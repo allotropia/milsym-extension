@@ -161,6 +161,9 @@ class Diagram(ABC):
         # not needed
         pass
 
+    def get_last_shape(self):
+        return self.get_controller().get_selected_shape()
+
     # set SVG data from symbol dialog
     def set_svg_data(self, svg_data):
         x_selected_shapes = self.get_controller().get_selected_shapes()

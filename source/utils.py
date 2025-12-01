@@ -10,6 +10,7 @@ import sys
 import os
 import uno
 import xml.etree.ElementTree as ET
+from pickle import NONE
 
 base_dir = os.path.dirname(__file__)
 if base_dir not in sys.path:
@@ -62,7 +63,7 @@ def parse_svg_dimensions(svg_data, scale_factor=1):
     return shape_size
 
 
-def insertSvgGraphic(ctx, model, svg_data, params, scale_factor=1):
+def insertSvgGraphic(ctx, model, svg_data, params, selected_shape, scale_factor=1):
     is_writer = model.supportsService("com.sun.star.text.TextDocument")
     is_calc = model.supportsService("com.sun.star.sheet.SpreadsheetDocument")
     is_draw_impress = model.supportsService("com.sun.star.presentation.PresentationDocument") or \
@@ -72,13 +73,17 @@ def insertSvgGraphic(ctx, model, svg_data, params, scale_factor=1):
         graphic = create_graphic_from_svg(ctx, svg_data)
 
         # For Writer, create a TextGraphicObject which behaves better (keeps aspect ratio, etc.)
-        if is_writer:
-            shape = model.createInstance("com.sun.star.text.TextGraphicObject")
+        if selected_shape is None:
+            if is_writer:
+                shape = model.createInstance("com.sun.star.text.TextGraphicObject")
+            else:
+                shape = model.createInstance("com.sun.star.drawing.GraphicObjectShape")
+            size = parse_svg_dimensions(svg_data, scale_factor)
         else:
-            shape = model.createInstance("com.sun.star.drawing.GraphicObjectShape")
-        shape.setPropertyValue("Graphic", graphic)
+            shape = selected_shape
+            size = selected_shape.getSize()
 
-        size = parse_svg_dimensions(svg_data, scale_factor)
+        shape.setPropertyValue("Graphic", graphic)
         shape.setSize(size)
 
         # set MilSym-specific user defined attributes
@@ -96,24 +101,29 @@ def insertSvgGraphic(ctx, model, svg_data, params, scale_factor=1):
             controller = model.getCurrentController()
             active_sheet = controller.getActiveSheet()
             draw_page = active_sheet.getDrawPage()
+            pos = shape.getPosition()
             draw_page.add(shape)
+            shape.setPosition(pos)
 
-            try:
-                # Try to position at current selection
-                current_selection = model.getCurrentSelection()
-                cell_position = current_selection.getPropertyValue("Position")
-                shape.setPosition(cell_position)
-            except:
-                # Default position if we can't get cell position
-                default_pos = Point()
-                default_pos.X = 1000
-                default_pos.Y = 1000
-                shape.setPosition(default_pos)
+            if selected_shape is None:
+                try:
+                    # Try to position at current selection
+                    current_selection = model.getCurrentSelection()
+                    cell_position = current_selection.getPropertyValue("Position")
+                    shape.setPosition(cell_position)
+                except:
+                    # Default position if we can't get cell position
+                    default_pos = Point()
+                    default_pos.X = 1000
+                    default_pos.Y = 1000
+                    shape.setPosition(default_pos)
         # Impress/Draw - for presentations and drawings, we'll use the shape directly
         elif is_draw_impress:
             controller = model.getCurrentController()
             current_page = controller.getCurrentPage()
+            pos = shape.getPosition()
             current_page.add(shape)
+            shape.setPosition(pos)
         else:
             print("Unsupported document type for graphic insertion")
     except Exception as e:
@@ -123,6 +133,12 @@ def insertSvgGraphic(ctx, model, svg_data, params, scale_factor=1):
 def insertGraphicAttributes(shape, params):
     attributeHash = shape.UserDefinedAttributes
     userAttrs = AttributeData()
+
+    #shape can contain only one color mode at a time
+    #removes the previous color mode
+    for attr in ("MilSymColorMode", "MilSymFillColor", "MilSymFill"):
+        if attr in attributeHash.getElementNames():
+            attributeHash.removeByName(attr)
 
     # first tuple is unnamed 'milsym code' entry. special handling.
     userAttrs.Type = "CDATA"
