@@ -19,6 +19,7 @@ from symbol_dialog import open_symbol_dialog
 from com.sun.star.awt import XDialogEventHandler, XTopWindowListener
 from com.sun.star.awt import WindowDescriptor, WindowAttribute
 from com.sun.star.awt.WindowClass import MODALTOP
+from com.sun.star.view.SelectionType import SINGLE as SELECTION_TYPE_SINGLE
 
 class Gui:
     def __init__(self, controller, x_context, x_frame):
@@ -356,6 +357,11 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
                 # Set the data model to the tree control
                 tree_model = self.tree_control.getModel()
                 tree_model.setPropertyValue("DataModel", data_model)
+                tree_model.setPropertyValue("SelectionType", SELECTION_TYPE_SINGLE)
+                tree_model.setPropertyValue("RootDisplayed", True)
+                tree_model.setPropertyValue("ShowsHandles", True)
+                tree_model.setPropertyValue("ShowsRootHandles", True)
+                tree_model.setPropertyValue("Editable", False)
 
             except Exception as e:
                 print(f"Error creating tree data model: {e}")
