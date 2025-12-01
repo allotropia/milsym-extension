@@ -229,6 +229,14 @@ class TreeMouseListener(unohelper.Base, XMouseListener, XMouseMotionListener):
         except Exception as e:
             print("Mouse released error:", e)
 
+    def mouseEntered(self, event):
+        """Handle mouse entered events"""
+        pass
+
+    def mouseExited(self, event):
+        """Handle mouse exited events"""
+        pass
+
     def _create_popup_menu(self):
         sm = self.ctx.getServiceManager()
         popup = sm.createInstance("com.sun.star.awt.PopupMenu")
