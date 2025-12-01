@@ -16,8 +16,8 @@ if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
 
 from symbol_dialog import open_symbol_dialog
-from com.sun.star.awt import XDialogEventHandler, XTopWindowListener
-from com.sun.star.awt import WindowDescriptor, WindowAttribute
+from com.sun.star.awt import XDialogEventHandler, XTopWindowListener, XMouseListener
+from com.sun.star.awt import WindowDescriptor, WindowAttribute, MouseButton
 from com.sun.star.awt.WindowClass import MODALTOP
 from com.sun.star.view.SelectionType import SINGLE as SELECTION_TYPE_SINGLE
 
@@ -363,6 +363,10 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
                 tree_model.setPropertyValue("ShowsRootHandles", True)
                 tree_model.setPropertyValue("Editable", False)
 
+                # Add mouse listener for tree click handling
+                tree_mouse_handler = TreeMouseHandler(self)
+                self.tree_control.addMouseListener(tree_mouse_handler)
+
             except Exception as e:
                 print(f"Error creating tree data model: {e}")
                 return
@@ -433,6 +437,11 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
             node = data_model.createNode(display_name, False)  # Start with no children
             parent_node.appendChild(node)
 
+            # Store reference to tree item in a class attribute for later selection
+            if not hasattr(self, '_node_to_tree_item_map'):
+                self._node_to_tree_item_map = {}
+            self._node_to_tree_item_map[display_name] = tree_item
+
             # Add children
             child_count = 0
             if hasattr(tree_item, 'get_first_child') and tree_item.get_first_child() is not None:
@@ -458,6 +467,9 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
         """Refresh the tree structure"""
         try:
             if self.tree_control is not None:
+                # Clear the node mapping before repopulating
+                if hasattr(self, '_node_to_tree_item_map'):
+                    self._node_to_tree_item_map.clear()
                 self.populate_tree()
         except Exception as e:
             print(f"Error refreshing tree: {e}")
@@ -518,7 +530,66 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
         try:
             if selected_node is not None and hasattr(selected_node, 'getDisplayValue'):
                 node_name = selected_node.getDisplayValue()
-                print(f"Tree node selected: {node_name}")
+
+                # Get the tree item associated with this node
+                if hasattr(self, '_node_to_tree_item_map'):
+                    tree_item = self._node_to_tree_item_map.get(node_name)
+                    if tree_item and hasattr(tree_item, 'get_rectangle_shape'):
+                        shape = tree_item.get_rectangle_shape()
+                        if shape:
+                            # Select the shape in the document
+                            controller = self.get_controller()
+                            if hasattr(controller, 'set_selected_shape'):
+                                controller.set_selected_shape(shape)
+                            elif hasattr(controller, '_x_controller'):
+                                # Try to select through document controller
+                                try:
+                                    controller._x_controller.select(shape)
+                                except:
+                                    print("Could not select shape through controller")
+                            print(f"Selected shape for node: {node_name}")
+                    else:
+                        print(f"No tree item found for node: {node_name}")
 
         except Exception as e:
             print(f"Error handling tree selection: {e}")
+
+
+class TreeMouseHandler(unohelper.Base, XMouseListener):
+    """Handle mouse events on tree control for click selection"""
+
+    def __init__(self, dialog_handler):
+        self.dialog_handler = dialog_handler
+
+    def mousePressed(self, event):
+        """Handle mouse pressed events"""
+        pass
+
+    def mouseReleased(self, event):
+        """Handle mouse released events - detect single-clicks for shape selection"""
+        try:
+            if event.Buttons == MouseButton.LEFT and event.ClickCount == 1:
+                # Single-click detected, get selected node and select shape
+                tree_control = self.dialog_handler.tree_control
+                if tree_control:
+                    try:
+                        selected_node = tree_control.getNodeForLocation(event.X, event.Y)
+                        if selected_node:
+                            self.dialog_handler.handle_tree_selection(selected_node)
+
+                    except Exception as inner_e:
+                        print(f"Error getting selected node: {inner_e}")
+        except Exception as e:
+            print(f"Error handling tree single-click: {e}")
+
+    def mouseEntered(self, event):
+        """Handle mouse entered events"""
+        pass
+
+    def mouseExited(self, event):
+        """Handle mouse exited events"""
+        pass
+
+    def disposing(self, event):
+        """Handle disposing events"""
+        pass
