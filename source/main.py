@@ -38,6 +38,9 @@ class DocumentCloseListener(unohelper.Base, XCloseListener):
     def queryClosing(self, event, getsOwnership):
         return True
 
+    def disposing(self, event):
+        pass
+
 
 class ListenerRegistry:
     _instance = None
