@@ -19,6 +19,7 @@ from unohelper import systemPathToFileUrl, fileUrlToSystemPath
 from com.sun.star.beans import PropertyValue
 from com.sun.star.ui import XUIElement, XUIElementFactory, XToolPanel, XSidebarPanel, LayoutSize
 from com.sun.star.awt import XWindowPeer, XWindowListener, XActionListener, Size
+from com.sun.star.view.SelectionType import SINGLE
 
 class SidebarFactory(unohelper.Base, XUIElementFactory):
     def __init__(self, ctx):
@@ -36,7 +37,7 @@ class SidebarFactory(unohelper.Base, XUIElementFactory):
             xUIElement.getRealInterface()
             panelWin = xUIElement.Window
             panelWin.Visible = True
-            return xUIElement    
+            return xUIElement
         except Exception as e:
             print("Sidebar factory error:", e)
 
@@ -85,7 +86,7 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
     @property
     def Window(self):
         return self.toolpanel
-    
+
     # XSidebarPanel
     def getHeightForWidth(self, width):
         return LayoutSize(0, -1, 0)
@@ -97,7 +98,7 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
         try:
             sm = self.ctx.ServiceManager
             toolkit = sm.createInstanceWithContext("com.sun.star.awt.Toolkit", self.ctx)
-            
+
             container = sm.createInstanceWithContext("com.sun.star.awt.UnoControlContainer", self.ctx)
             container_model = sm.createInstanceWithContext("com.sun.star.awt.UnoControlContainerModel", self.ctx)
             container.setModel(container_model)
@@ -222,8 +223,7 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
         tree_ctrl = self.tree_control
         tree_model = tree_ctrl.getModel()
 
-        SELECTION_TYPE_SINGLE = 1
-        tree_model.setPropertyValue("SelectionType", SELECTION_TYPE_SINGLE)
+        tree_model.setPropertyValue("SelectionType", SINGLE)
         tree_model.setPropertyValue("RootDisplayed", True)
         tree_model.setPropertyValue("ShowsHandles", True)
         tree_model.setPropertyValue("ShowsRootHandles", True)
@@ -264,7 +264,7 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
             toolpanel_size = event.Source.getPosSize()
             toolpanel_width = toolpanel_size.Width
             toolpanel_height = toolpanel_size.Height
-            
+
             treeCtrl = self.toolpanel.getControl("treeCtrl")
             if treeCtrl:
                 rect = treeCtrl.getPosSize()
@@ -272,13 +272,13 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
                 new_treeCtrl_height = toolpanel_height - self.TOP_MARGIN - self.BUTTON_HEIGHT - self.VERTICAL_SPACING \
                                       - self.TEXTBOX_HEIGHT - self.VERTICAL_SPACING - self.BOTTOM_MARGIN
                 treeCtrl.setPosSize(rect.X, rect.Y , new_treeCtrl_width, new_treeCtrl_height, self.POS_ALL)
-                
+
             tbFilter = self.toolpanel.getControl("tbFilter")
             if tbFilter:
                 rect = tbFilter.getPosSize()
                 new_tbFilter_width = toolpanel_width - self.LEFT_MARGIN - self.RIGHT_MARGIN
                 tbFilter.setPosSize(rect.X, rect.Y , new_tbFilter_width, rect.Height, self.POS_ALL)
-                
+
             btImport = self.toolpanel.getControl("btImport")
             if btImport:
                 rect = btImport.getPosSize()
