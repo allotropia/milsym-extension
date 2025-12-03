@@ -316,10 +316,9 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
                 for data in symbols_data.SYMBOL_DETAILS.values():
                     for icon in data.get("MainIcon", []):
                         label = self.translator.translate(icon.get("label", ""))
-                        label_to_search = label.split("–")[0].strip()
-                        word_match = any(w.lower().startswith(search) for w in label_to_search.split())
-                        prefix_match = label_to_search.lower().startswith(search)
-                        if word_match or prefix_match:
+                        label_to_search = label.split("-")[0].strip()
+                        label_lower = label_to_search.lower()
+                        if search in label_lower:
                             matches.append(label)
 
                 search_listbox = dialog.getControl("ltbSearch")
