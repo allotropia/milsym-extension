@@ -39,9 +39,9 @@ BUTTONS = {
     },
     "REINFORCED_REDUCED": {
         "btNotApplicableReinReduc": "",
-        "btReinforced":             "(+)",
-        "btReduced":                "(-)",
-        "btReinforcedReduced":      "(±)"
+        "btReinforced":             "plus",
+        "btReduced":                "minus",
+        "btReinforcedReduced":      "plus_minus"
     },
     "STACK": {
         "btStack1": "0",

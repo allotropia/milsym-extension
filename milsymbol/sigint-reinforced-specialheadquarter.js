@@ -32,7 +32,7 @@ export default function sigintReinforced(ms) {
     if (this.options.reinforced != undefined && this.options.reinforced != "") {
       let draw = {};
       switch (this.options.reinforced) {
-        case "(+)":
+        case "plus":
           draw = Object.assign({}, pathsReinforced.plus);
           draw.d =
             `M${bbox_org.x2 + spaceTextIcon + stack},${100 - 1.5 * fontSize} ` +
@@ -40,7 +40,7 @@ export default function sigintReinforced(ms) {
           draw.fill = frameColor;
           drawArray2.push(draw);
           break;
-        case "(-)":
+        case "minus":
           draw = Object.assign({}, pathsReinforced.minus);
           draw.d =
             `M${bbox_org.x2 + spaceTextIcon + stack},${100 - 1.5 * fontSize} ` +
@@ -48,7 +48,7 @@ export default function sigintReinforced(ms) {
           draw.fill = frameColor;
           drawArray2.push(draw);
           break;
-        case "(±)":
+        case "plus_minus":
           draw = Object.assign({}, pathsReinforced.plus_minus);
           draw.d =
             `M${bbox_org.x2 + spaceTextIcon + stack},${100 - 1.5 * fontSize} ` +
