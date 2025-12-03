@@ -40,8 +40,7 @@ class Gui:
         model = self._x_frame.getController().getModel()
         controller = self.get_controller()
         selected_shape = controller.get_diagram().get_last_shape()
-        print("Controller GUI_________________", selected_shape)
-        open_symbol_dialog(ctx, model, controller, None, selected_shape)
+        open_symbol_dialog(ctx, model, controller, None, selected_shape, None)
 
     def set_visible_control_dialog(self, visible: bool):
         """Set visibility of control dialog"""

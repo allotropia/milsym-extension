@@ -24,7 +24,7 @@ class SidebarTree():
         self.ctx = ctx
         self.tree_control = None
         self.favorites_dir_path = None
-
+    
     def set_tree_control(self, tree_ctrl):
         self.tree_control = tree_ctrl
 
@@ -59,6 +59,9 @@ class SidebarTree():
 
     def create_node(self, root_node, tree_data_model, category_name, svg_data, svg_args):
         try:
+            if svg_data is None:
+                return
+
             existing_category_node = None
             for i in range(root_node.getChildCount()):
                 child = root_node.getChildAt(i)
@@ -257,8 +260,9 @@ class PopupMenuHandler(unohelper.Base, XMenuListener):
     def itemSelected(self, event):
         menu_id = event.MenuId
         if menu_id == 1: # Edit
+            node_value = self.sidebar_panel.selected_node.DataValue
             model = self.sidebar_panel.desktop.getCurrentComponent()
-            open_symbol_dialog(self.ctx, model, None, self.sidebar_panel, None)
+            open_symbol_dialog(self.ctx, model, None, self.sidebar_panel, None, node_value)
         elif menu_id == 2: # Delete
             self.key_listener.delete_selected_node()
 

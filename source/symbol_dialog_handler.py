@@ -27,7 +27,7 @@ from translator import Translator
 
 class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
-    def __init__(self, ctx, model, controller, dialog, sidebar_panel, selected_shape):
+    def __init__(self, ctx, model, controller, dialog, sidebar_panel, selected_shape, selected_node_value):
         self.ctx = ctx
         self.model = model
         self.controller = controller
@@ -42,6 +42,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         self.final_svg_args = None
         self.sidebar_symbol_svg_data = None
         self.tree_category_name = None
+        self.selected_node_value = selected_node_value
         self.selected_shape = selected_shape
         self.translator = Translator(self.ctx)
         self.factory = self.ctx.getServiceManager().createInstanceWithContext("com.sun.star.script.provider.MasterScriptProviderFactory", self.ctx)
@@ -54,11 +55,11 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         self.init_textboxes()
         self.dialog.Model.Step = 1
 
-        has_selected_shape = False
-        if self.selected_shape:
-            has_selected_shape = self.init_selected_shape_params(self.dialog, self.selected_shape)
+        has_selected_item = False
+        if self.selected_shape or self.selected_node_value:
+            has_selected_item = self.init_selected_shape_params(self.dialog, self.selected_shape, self.selected_node_value)
 
-        if not has_selected_shape:
+        if not has_selected_item:
             self.init_listbox(self.dialog)
 
             self.dialog.getControl("btReality").getModel().State = 1
@@ -431,7 +432,12 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         dialog.getControl(button_id).getModel().State = state
 
     def updatePreview(self):
-        svg_data = self.insertSymbolToPreview()
+        svg_data = None
+        if self.selected_node_value is not None:
+            svg_data = self.get_tree_node_svg_data()
+        else:
+            svg_data = self.insertSymbolToPreview()
+
         if svg_data:
             graphic = create_graphic_from_svg(self.ctx, svg_data)
 
@@ -459,6 +465,14 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         ]
         self.sidc = ''.join(sidc)
         return self.sidc
+
+    def get_tree_node_svg_data(self):
+        args = list(self.selected_node_value)
+        args[1] = NamedValue("size", 150.0)
+        result = self.script.invoke(args, (), ())
+        svg_data = str(result[0]) if result else None
+        self.selected_node_value = None
+        return svg_data
 
     def insertSymbolToPreview(self):
         sidc_code = self.create_sidc()
@@ -509,8 +523,8 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
     def get_textbox_name(self, name):
         return name[6:][0].lower() + name[6:][1:]
 
-    def init_selected_shape_params(self, dialog, shape):
-        attrs, listbox_attrs = self.get_shape_user_attrs(shape)
+    def init_selected_shape_params(self, dialog, shape, tree_node_value):
+        attrs, listbox_attrs = self.get_attrs(shape, tree_node_value)
 
         if not attrs:
             return False
@@ -611,27 +625,37 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
                 self.button_handler(dialog, key, False)
                 break
 
-    def get_shape_user_attrs(self, shape):
-        user_attrs = shape.getPropertyValue("UserDefinedAttributes")
+    def get_attrs(self, shape, tree_node_value):
         attrs = {}
         listbox_attrs = {}
+        other_attrs = {}
 
-        if hasattr(user_attrs, "getElementNames"):
-            for element in user_attrs.getElementNames():
-                value = user_attrs[element].Value
-                if element == "MilSymCode":
-                    self.version = value[0:2]
-                    self.context= value[2]
-                    self.affiliation = value[3]
-                    self.symbolSet = value[4:6]
-                    self.status = value[6]
-                    listbox_attrs["headquartersTaskforceDummy"] = value[7]
-                    listbox_attrs["echelonMobility"] = value[8:10]
-                    listbox_attrs["mainIcon"] = value[10:16]
-                    listbox_attrs["firstIcon"] = value[16:18]
-                    listbox_attrs["secondIcon"] = value[18:20]
-                    # others value[20:]
-                else:
-                    attrs[element] = value
+        if shape is not None:
+            user_attrs = shape.getPropertyValue("UserDefinedAttributes")
+            if hasattr(user_attrs, "getElementNames"):
+                for element in user_attrs.getElementNames():
+                    attr = user_attrs.getByName(element)  # AttributeData objektum
+                    other_attrs[element] = str(attr.Value)  # <-- EZ A LÉNYEG
+        else:
+            other_attrs["MilSymCode"] = str(tree_node_value[0])
+            for entry in tree_node_value[1:]:
+                element = "MilSym" + entry.Name[0].upper() + entry.Name[1:]
+                other_attrs[element] = str(entry.Value)
+
+        for element, value in other_attrs.items():
+            if element == "MilSymCode":
+                self.version = value[0:2]
+                self.context= value[2]
+                self.affiliation = value[3]
+                self.symbolSet = value[4:6]
+                self.status = value[6]
+                listbox_attrs["headquartersTaskforceDummy"] = value[7]
+                listbox_attrs["echelonMobility"] = value[8:10]
+                listbox_attrs["mainIcon"] = value[10:16]
+                listbox_attrs["firstIcon"] = value[16:18]
+                listbox_attrs["secondIcon"] = value[18:20]
+                # others value[20:]
+            else:
+                attrs[element] = value
 
         return attrs, listbox_attrs

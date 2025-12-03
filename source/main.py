@@ -236,7 +236,7 @@ class MainJob(unohelper.Base, XJobExecutor):
 
         if args == "symbolDialog":
             selected_shape = ListenerRegistry.instance().get_selected_shape()
-            open_symbol_dialog(self.ctx, self.model, None, None, selected_shape)
+            open_symbol_dialog(self.ctx, self.model, None, None, selected_shape, None)
         if args == "orgChart":
             self.onOrgChart()
 

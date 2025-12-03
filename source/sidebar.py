@@ -307,7 +307,7 @@ class NewButtonListener(unohelper.Base, XActionListener):
 
     def actionPerformed(self, event):
         model = self.sidebar_panel.desktop.getCurrentComponent()
-        open_symbol_dialog(self.ctx, model, None, self.sidebar_panel)
+        open_symbol_dialog(self.ctx, model, None, self.sidebar_panel, None, None)
 
     def disposing(self, event):
         pass
