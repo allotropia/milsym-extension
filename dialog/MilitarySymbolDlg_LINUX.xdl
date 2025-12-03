@@ -156,7 +156,7 @@
    <script:event script:event-name="on-textchange" script:macro-name="vnd.sun.star.UNO:tbUnitNameUniqDesign" script:language="UNO"/>
    <script:event script:event-name="on-mousedown" script:macro-name="vnd.sun.star.UNO:click_tbUnitNameUniqDesign" script:language="UNO"/>
   </dlg:textfield>
-  <dlg:text dlg:style-id="1" dlg:id="lbHigherFormation" dlg:tab-index="45" dlg:left="270" dlg:top="199" dlg:width="110" dlg:height="12" dlg:page="1" dlg:help-text="&amp;132.MilSymDlg.lbHigherFormation.HelpText" dlg:value="&amp;133.MilSymDlg.lbHigherFormation.Label" dlg:valign="center"/>
+  <dlg:text dlg:style-id="1" dlg:id="lbHigherFormation" dlg:tab-index="45" dlg:left="270" dlg:top="196" dlg:width="110" dlg:height="17" dlg:page="1" dlg:help-text="&amp;132.MilSymDlg.lbHigherFormation.HelpText" dlg:value="&amp;133.MilSymDlg.lbHigherFormation.Label" dlg:valign="center" dlg:multiline="true"/>
   <dlg:textfield dlg:id="tbHigherFormation" dlg:tab-index="49" dlg:left="385" dlg:top="199" dlg:width="130" dlg:height="12" dlg:page="1" dlg:help-text="&amp;134.MilSymDlg.tbHigherFormation.HelpText" dlg:value="&amp;135.MilSymDlg.tbHigherFormation.Text">
    <script:event script:event-name="on-textchange" script:macro-name="vnd.sun.star.UNO:tbHigherFormation" script:language="UNO"/>
    <script:event script:event-name="on-mousedown" script:macro-name="vnd.sun.star.UNO:click_tbHigherFormation" script:language="UNO"/>
