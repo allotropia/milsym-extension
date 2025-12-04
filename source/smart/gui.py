@@ -314,9 +314,7 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
             if dialog is not None:
                 # Get the tree control from the dialog
                 self.tree_control = dialog.getControl("OrbatTree")
-                if self.tree_control is not None:
-                    print("Tree control initialized successfully")
-                else:
+                if self.tree_control is None:
                     print("Warning: Could not find OrbatTree control in dialog")
         except Exception as e:
             print(f"Error initializing tree control: {e}")
@@ -370,13 +368,7 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
                 print(f"Error creating tree data model: {e}")
                 return
 
-            # Get diagram tree structure
-            diagram_tree = None
-            if hasattr(diagram, 'get_diagram_tree'):
-                diagram_tree = diagram.get_diagram_tree()
-            elif hasattr(diagram, '_diagram_tree'):
-                diagram_tree = diagram._diagram_tree
-
+            diagram_tree = diagram.get_diagram_tree()
             if diagram_tree is not None and hasattr(diagram_tree, 'get_root_item'):
                 root_item = diagram_tree.get_root_item()
                 if root_item is not None:
@@ -394,11 +386,10 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
                 print("No diagram tree available or invalid structure")
 
             # Expand the tree to show structure
-            if hasattr(self.tree_control, 'expandNode') and root_node:
-                try:
-                    self.tree_control.expandNode(root_node)
-                except:
-                    pass
+            try:
+                self.tree_control.expandNode(root_node)
+            except:
+                pass
 
         except Exception as e:
             print(f"Error populating tree: {e}")
