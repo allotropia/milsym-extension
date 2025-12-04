@@ -353,7 +353,7 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
                 # Try to get proper root name if diagram tree is available
                 try:
                     temp_diagram_tree = diagram.get_diagram_tree()
-                    if temp_diagram_tree and hasattr(temp_diagram_tree, 'get_root_item'):
+                    if temp_diagram_tree:
                         temp_root_item = temp_diagram_tree.get_root_item()
                         if temp_root_item:
                             root_node_name = self._get_tree_node_display_name(temp_root_item, 1)
@@ -384,15 +384,14 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
                 return
 
             diagram_tree = diagram.get_diagram_tree()
-            if diagram_tree is not None and hasattr(diagram_tree, 'get_root_item'):
+            if diagram_tree is not None:
                 root_item = diagram_tree.get_root_item()
                 if root_item is not None:
                     # Get the root name (should match what we used during creation)
                     root_name = self._get_tree_node_display_name(root_item, 1)
 
                     # Store root item in mapping for selection
-                    if not hasattr(self, '_node_to_tree_item_map'):
-                        self._node_to_tree_item_map = {}
+                    self._node_to_tree_item_map = {}
                     self._node_to_tree_item_map.clear()
                     self._node_to_tree_item_map[root_name] = root_item                    # Populate children of root item
                     self._populate_tree_children(data_model, root_node, root_item)
@@ -418,7 +417,7 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
 
             # Add children
             child_count = 0
-            if hasattr(tree_item, 'get_first_child') and tree_item.get_first_child() is not None:
+            if tree_item.get_first_child() is not None:
                 child_item = tree_item.get_first_child()
                 child_num = 1
                 while child_item is not None:
@@ -426,7 +425,7 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
                     self._populate_tree_node(data_model, parent_node, child_item, child_name)
 
                     # Move to next sibling
-                    child_item = child_item.get_first_sibling() if hasattr(child_item, 'get_first_sibling') else None
+                    child_item = child_item.get_first_sibling()
                     child_num += 1
                     child_count += 1
 
@@ -450,7 +449,7 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
 
             # Add children
             child_count = 0
-            if hasattr(tree_item, 'get_first_child') and tree_item.get_first_child() is not None:
+            if tree_item.get_first_child() is not None:
                 child_item = tree_item.get_first_child()
                 child_num = 1
                 while child_item is not None:
@@ -458,7 +457,7 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
                     self._populate_tree_node(data_model, node, child_item, child_name)
 
                     # Move to next sibling
-                    child_item = child_item.get_first_sibling() if hasattr(child_item, 'get_first_sibling') else None
+                    child_item = child_item.get_first_sibling()
                     child_num += 1
                     child_count += 1
 
@@ -474,8 +473,7 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
         try:
             if self.tree_control is not None:
                 # Clear the node mapping before repopulating
-                if hasattr(self, '_node_to_tree_item_map'):
-                    self._node_to_tree_item_map.clear()
+                self._node_to_tree_item_map.clear()
                 self.populate_tree()
         except Exception as e:
             print(f"Error refreshing tree: {e}")
@@ -484,46 +482,43 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
         """Get a meaningful display name for a tree node"""
         try:
             # Try to get shape information
-            if hasattr(tree_item, 'get_rectangle_shape'):
-                shape = tree_item.get_rectangle_shape()
-                if shape is not None:
-                    shape_name = ""
+            shape = tree_item.get_rectangle_shape()
+            if shape is not None:
+                shape_name = ""
 
-                    # Try to get shape name
+                # Try to get shape name
+                try:
+                    shape_name = shape.getName()
+                except:
+                    pass
+
+                # Try to get shape text/string content
+                shape_text = ""
+                try:
+                    shape_text = shape.getString()
+                except:
                     try:
-                        if hasattr(shape, 'getName'):
-                            shape_name = shape.getName()
+                        text_obj = shape.getText()
+                        if text_obj:
+                            shape_text = text_obj.getString()
                     except:
                         pass
 
-                    # Try to get shape text/string content
-                    shape_text = ""
-                    try:
-                        if hasattr(shape, 'getString'):
-                            shape_text = shape.getString()
-                        elif hasattr(shape, 'getText'):
-                            text_obj = shape.getText()
-                            if text_obj and hasattr(text_obj, 'getString'):
-                                shape_text = text_obj.getString()
-                    except:
-                        pass
+                # Try to get level information
+                level_info = ""
+                try:
+                    level = tree_item.get_level()
+                    level_info = f" (L{level})"
+                except:
+                    pass
 
-                    # Try to get level information
-                    level_info = ""
-                    try:
-                        if hasattr(tree_item, 'get_level'):
-                            level = tree_item.get_level()
-                            level_info = f" (L{level})"
-                    except:
-                        pass
-
-                    # Build display name
-                    if shape_text and shape_text.strip():
-                        return f"{shape_text.strip()}{level_info}"
-                    elif shape_name and shape_name.strip():
-                        return f"Shape: {shape_name}{level_info}"
-                    else:
-                        return f"Item {item_number}{level_info}"
+                # Build display name
+                if shape_text and shape_text.strip():
+                    return f"{shape_text.strip()}{level_info}"
+                elif shape_name and shape_name.strip():
+                    return f"Shape: {shape_name}{level_info}"
+                else:
+                    return f"Item {item_number}{level_info}"
 
             return f"Node {item_number}"
 
@@ -534,28 +529,23 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
     def handle_tree_selection(self, selected_node):
         """Handle tree node selection"""
         try:
-            if selected_node is not None and hasattr(selected_node, 'getDisplayValue'):
+            if selected_node is not None:
                 node_name = selected_node.getDisplayValue()
 
                 # Get the tree item associated with this node
-                if hasattr(self, '_node_to_tree_item_map'):
-                    tree_item = self._node_to_tree_item_map.get(node_name)
-                    if tree_item and hasattr(tree_item, 'get_rectangle_shape'):
-                        shape = tree_item.get_rectangle_shape()
-                        if shape:
-                            # Select the shape in the document
-                            controller = self.get_controller()
-                            if hasattr(controller, 'set_selected_shape'):
-                                controller.set_selected_shape(shape)
-                            elif hasattr(controller, '_x_controller'):
-                                # Try to select through document controller
-                                try:
-                                    controller._x_controller.select(shape)
-                                except:
-                                    print("Could not select shape through controller")
-                            print(f"Selected shape for node: {node_name}")
-                    else:
-                        print(f"No tree item found for node: {node_name}")
+                tree_item = self._node_to_tree_item_map.get(node_name)
+                if tree_item:
+                    shape = tree_item.get_rectangle_shape()
+                    if shape:
+                        # Select the shape in the document
+                        controller = self.get_controller()
+                        try:
+                            controller.set_selected_shape(shape)
+                        except:
+                            try:
+                                controller._x_controller.select(shape)
+                            except:
+                                print("Could not select shape through controller")
 
         except Exception as e:
             print(f"Error handling tree selection: {e}")
