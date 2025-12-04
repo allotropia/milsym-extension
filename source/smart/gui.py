@@ -20,6 +20,7 @@ from com.sun.star.awt import XDialogEventHandler, XTopWindowListener, XMouseList
 from com.sun.star.awt import WindowDescriptor, WindowAttribute, MouseButton
 from com.sun.star.awt.WindowClass import MODALTOP
 from com.sun.star.view.SelectionType import SINGLE as SELECTION_TYPE_SINGLE
+from com.sun.star.view import XSelectionChangeListener
 
 class Gui:
     def __init__(self, controller, x_context, x_frame):
@@ -364,6 +365,9 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
                 tree_mouse_handler = TreeMouseHandler(self)
                 self.tree_control.addMouseListener(tree_mouse_handler)
 
+                # Set up selection listener for bidirectional selection
+                self._setup_selection_listener()
+
             except Exception as e:
                 print(f"Error creating tree data model: {e}")
                 return
@@ -544,6 +548,80 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
         except Exception as e:
             print(f"Error handling tree selection: {e}")
 
+    def _setup_selection_listener(self):
+        """Set up selection change listener for shape-to-tree selection"""
+        try:
+            controller = self.get_controller()
+            # Create and add selection listener
+            selection_listener = TreeSelectionListener(self)
+            controller._x_controller.addSelectionChangeListener(selection_listener)
+            # Store reference to prevent garbage collection
+            self._selection_listener = selection_listener
+        except Exception as e:
+            print(f"Error setting up selection listener: {e}")
+
+    def select_tree_node_for_shape(self, shape):
+        """Select the tree node corresponding to the given shape"""
+        try:
+            if not self.tree_control:
+                return
+
+            # Find the tree item that matches this shape
+            matching_node_name = None
+            for node_name, tree_item in self._node_to_tree_item_map.items():
+                if tree_item.get_rectangle_shape() == shape:
+                    matching_node_name = node_name
+                    break
+
+            if matching_node_name:
+                # Find and select the corresponding tree node
+                self._select_tree_node_by_name(matching_node_name)
+
+        except Exception as e:
+            print(f"Error selecting tree node for shape: {e}")
+
+    def _select_tree_node_by_name(self, node_name):
+        """Select a tree node by its display name"""
+        try:
+            if not self.tree_control:
+                return
+
+            # Get the tree model and find the node
+            tree_model = self.tree_control.getModel()
+            data_model = tree_model.getPropertyValue("DataModel")
+
+            if data_model:
+                root_node = data_model.getRoot()
+                target_node = self._find_node_by_name(root_node, node_name)
+
+                if target_node:
+                    # Select the node in the tree
+                    try:
+                        selection = self.tree_control.getSelection()
+                        selection.select(target_node)
+                    except:
+                        self.tree_control.select(target_node)
+
+        except Exception as e:
+            print(f"Error selecting tree node by name: {e}")
+
+    def _find_node_by_name(self, node, target_name):
+        """Recursively find a tree node by its display name"""
+        try:
+            if node.getDisplayValue() == target_name:
+                return node
+
+            # Search children
+            for i in range(node.getChildCount()):
+                child = node.getChildAt(i)
+                result = self._find_node_by_name(child, target_name)
+                if result:
+                    return result
+
+            return None
+        except Exception as e:
+            return None
+
 
 class TreeMouseHandler(unohelper.Base, XMouseListener):
     """Handle mouse events on tree control for click selection"""
@@ -579,6 +657,32 @@ class TreeMouseHandler(unohelper.Base, XMouseListener):
     def mouseExited(self, event):
         """Handle mouse exited events"""
         pass
+
+    def disposing(self, event):
+        """Handle disposing events"""
+        pass
+
+
+class TreeSelectionListener(unohelper.Base, XSelectionChangeListener):
+    """Listen for shape selection changes to update tree selection"""
+
+    def __init__(self, dialog_handler):
+        self.dialog_handler = dialog_handler
+
+    def selectionChanged(self, event):
+        """Handle selection change events from the document"""
+        try:
+            # Get the selected shapes
+            selection = event.Source.getSelection()
+            if selection and selection.getCount() > 0:
+                # Get the first selected shape
+                selected_shape = selection.getByIndex(0)
+                if selected_shape:
+                    # Update tree selection to match
+                    self.dialog_handler.select_tree_node_for_shape(selected_shape)
+        except Exception as e:
+            # Silently ignore selection errors to avoid spam
+            pass
 
     def disposing(self, event):
         """Handle disposing events"""
