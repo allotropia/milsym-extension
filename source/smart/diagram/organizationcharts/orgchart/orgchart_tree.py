@@ -166,21 +166,36 @@ class OrgChartTree(OrganizationChartTree):
         self._root_item.display()
 
     def refresh_connector_props(self):
-        """Refresh connector properties"""
+        """Refresh connector properties when tree structure has changed"""
         for x_conn_shape in self._connector_list:
-            x_shape = self.get_end_shape_of_connector(x_conn_shape)
-            tree_item = self.get_tree_item(x_shape)
+            current_end_shape = self.get_end_shape_of_connector(x_conn_shape)
 
-            if tree_item:
-                level = tree_item.get_level()
-                start_pos = 2  # Bottom connection point
+            if not current_end_shape:
+                continue
 
-                if level <= OrgChartTree.LAST_HOR_LEVEL:
-                    end_pos = 0  # Top connection point
-                else:
-                    end_pos = 3  # Left connection point
+            # Get the tree item for the end shape (child)
+            child_tree_item = self.get_tree_item(current_end_shape)
+            print(f"Processing connector for child shape: {child_tree_item}")
+            if not child_tree_item:
+                continue
 
-                self.get_org_chart().set_connector_shape_props(x_conn_shape, start_pos, end_pos)
+            # Get the correct parent from the tree structure
+            parent_tree_item = child_tree_item.get_dad() if hasattr(child_tree_item, 'get_dad') else None
+            if not parent_tree_item:
+                continue
+
+            expected_start_shape = parent_tree_item.get_rectangle_shape() if hasattr(parent_tree_item, 'get_rectangle_shape') else None
+
+            level = child_tree_item.get_level()
+            start_pos = 2  # Bottom connection point
+
+            print(f"Updating connector: level {level}, start shape matches expected parent. LASTHORLEVEL={OrgChartTree.LAST_HOR_LEVEL}")
+            if level <= OrgChartTree.LAST_HOR_LEVEL:
+                end_pos = 0  # Top connection point
+            else:
+                end_pos = 3  # Left connection point
+
+            self.get_org_chart().set_connector_shape_props(x_conn_shape, expected_start_shape, start_pos, current_end_shape, end_pos)
 
     def get_end_glue_point_index(self, x_conn_shape) -> int:
         """Get end glue point index of connector"""

@@ -490,6 +490,125 @@ class OrganizationChart(Diagram):
         item.set_first_child(None)
         item.set_first_sibling(None)
 
+    def move_tree_item(self, source_tree_item, target_tree_item, drop_position):
+        """Move a tree item to a new position in the hierarchy"""
+        try:
+            if source_tree_item is None or target_tree_item is None:
+                print("Invalid source or target tree items")
+                return False
+
+            # Don't allow moving an item to itself or to one of its descendants
+            if source_tree_item == target_tree_item or self._is_descendant(source_tree_item, target_tree_item):
+                print("Cannot move item to itself or its descendant")
+                return False
+
+            # Don't allow moving the root item
+            if source_tree_item == self.get_diagram_tree().get_root_item():
+                print("Cannot move root item")
+                return False
+
+            # Remove source item from its current position
+            self._remove_item_from_tree(source_tree_item)
+
+            # Insert source item at new position relative to target
+            if drop_position == "sibling":
+                # Insert as sibling of target (after target)
+                self._insert_as_sibling_after(source_tree_item, target_tree_item)
+            elif drop_position == "child":
+                # Insert as child of target
+                self._insert_as_child(source_tree_item, target_tree_item)
+            else:
+                # Default to sibling position
+                self._insert_as_sibling_after(source_tree_item, target_tree_item)
+
+            # Update the layout since the tree structure has changed
+            self._update_tree_layout()
+
+            return True
+
+        except Exception as e:
+            print(f"Error moving tree item: {e}")
+            return False
+
+    def _is_descendant(self, ancestor, potential_descendant):
+        """Check if potential_descendant is a descendant of ancestor"""
+        try:
+            current = potential_descendant.get_dad()
+            while current is not None:
+                if current == ancestor:
+                    return True
+                current = current.get_dad()
+            return False
+        except Exception as e:
+            print(f"Error checking descendant relationship: {e}")
+            return False
+
+    def _remove_item_from_tree(self, item):
+        """Remove an item from its current position in the tree"""
+        try:
+            dad = item.get_dad()
+            if dad is None:
+                return  # Cannot remove root
+
+            # Find if this is the first child of its parent
+            if dad.get_first_child() == item:
+                # This item is the first child, replace with its sibling
+                dad.set_first_child(item.get_first_sibling())
+            else:
+                # Find the previous sibling
+                current = dad.get_first_child()
+                while current is not None and current.get_first_sibling() != item:
+                    current = current.get_first_sibling()
+
+                if current is not None:
+                    # Set the previous sibling's next sibling to this item's next sibling
+                    current.set_first_sibling(item.get_first_sibling())
+
+            # Clear the item's sibling reference
+            item.set_first_sibling(None)
+            item.set_dad(None)
+
+        except Exception as e:
+            print(f"Error removing item from tree: {e}")
+
+    def _insert_as_sibling_after(self, item, target):
+        """Insert item as sibling after target"""
+        try:
+            target_dad = target.get_dad()
+            if target_dad is None:
+                return  # Cannot insert sibling of root
+
+            # Set item's parent
+            item.set_dad(target_dad)
+
+            # Insert item after target in sibling chain
+            item.set_first_sibling(target.get_first_sibling())
+            target.set_first_sibling(item)
+
+        except Exception as e:
+            print(f"Error inserting as sibling: {e}")
+
+    def _insert_as_child(self, item, target):
+        """Insert item as child of target"""
+        try:
+            # Set item's parent
+            item.set_dad(target)
+
+            # Insert as first child or in sibling chain
+            if target.get_first_child() is None:
+                # No existing children, make this the first child
+                target.set_first_child(item)
+                item.set_first_sibling(None)
+            else:
+                # Add to end of sibling chain
+                last_child = target.get_last_child()
+                if last_child is not None:
+                    last_child.set_first_sibling(item)
+                item.set_first_sibling(None)
+
+        except Exception as e:
+            print(f"Error inserting as child: {e}")
+
     def show_property_dialog(self):
         """Show property dialog and apply changes"""
         self.get_gui().enable_control_dialog_window(False)
@@ -499,6 +618,18 @@ class OrganizationChart(Diagram):
             pass
 
         self.get_gui().enable_and_set_focus_control_dialog()
+
+    def _update_tree_layout(self):
+        """Update the tree layout after structure changes"""
+        try:
+            diagram_tree = self.get_diagram_tree()
+            # Refresh layout
+            diagram_tree.refresh()
+            # Refresh connectors
+            diagram_tree.refresh_connector_props()
+
+        except Exception as e:
+            print(f"Error updating tree layout: {e}")
 
     # Color arrays (simplified versions of the Java arrays)
 
