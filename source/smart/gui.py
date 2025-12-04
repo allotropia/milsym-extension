@@ -348,8 +348,19 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
                     print("Could not create tree data model")
                     return
 
-                # Create root node
-                root_node = data_model.createNode("Diagram Structure", True)
+                # Create root node with proper name
+                root_node_name = "Root"  # Default fallback
+                # Try to get proper root name if diagram tree is available
+                try:
+                    temp_diagram_tree = diagram.get_diagram_tree()
+                    if temp_diagram_tree and hasattr(temp_diagram_tree, 'get_root_item'):
+                        temp_root_item = temp_diagram_tree.get_root_item()
+                        if temp_root_item:
+                            root_node_name = self._get_tree_node_display_name(temp_root_item, 1)
+                except:
+                    pass
+
+                root_node = data_model.createNode(root_node_name, True)
                 data_model.setRoot(root_node)
 
                 # Set the data model to the tree control
@@ -376,13 +387,14 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
             if diagram_tree is not None and hasattr(diagram_tree, 'get_root_item'):
                 root_item = diagram_tree.get_root_item()
                 if root_item is not None:
-                    # Update root node display name
+                    # Get the root name (should match what we used during creation)
                     root_name = self._get_tree_node_display_name(root_item, 1)
-                    if not root_name or root_name == "Item 1":
-                        root_name = "Root"
-                    root_node.setDisplayValue(root_name)
 
-                    # Populate children of root item
+                    # Store root item in mapping for selection
+                    if not hasattr(self, '_node_to_tree_item_map'):
+                        self._node_to_tree_item_map = {}
+                    self._node_to_tree_item_map.clear()
+                    self._node_to_tree_item_map[root_name] = root_item                    # Populate children of root item
                     self._populate_tree_children(data_model, root_node, root_item)
                 else:
                     print("No root item found in diagram tree")
