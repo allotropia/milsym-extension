@@ -19,6 +19,7 @@ from unohelper import systemPathToFileUrl, fileUrlToSystemPath
 from com.sun.star.beans import PropertyValue
 from com.sun.star.ui import XUIElement, XUIElementFactory, XToolPanel, XSidebarPanel, LayoutSize
 from com.sun.star.awt import XWindowPeer, XWindowListener, XActionListener, Size
+from com.sun.star.awt import XFocusListener, XKeyListener
 from com.sun.star.view.SelectionType import SINGLE
 
 class SidebarFactory(unohelper.Base, XUIElementFactory):
@@ -132,6 +133,12 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
             names = ("Name", "Text",)
             values = ("tbFilter", "Filtering...",)
             tbFilter = self.createControl(self.ctx, "com.sun.star.awt.UnoControlEdit", "com.sun.star.awt.UnoControlEditModel", x, y, width, height, names, values)
+
+            tb_focus_listener = TextboxFocusListener(tbFilter)
+            tbFilter.addFocusListener(tb_focus_listener)
+
+            tb_key_listener = TextboxKeyListener(self, tbFilter)
+            tbFilter.addKeyListener(tb_key_listener)
 
             # Tree control
             x = self.LEFT_MARGIN
@@ -311,3 +318,68 @@ class NewButtonListener(unohelper.Base, XActionListener):
 
     def disposing(self, event):
         pass
+
+class TextboxFocusListener(unohelper.Base, XFocusListener):
+
+    def __init__(self, textbox, placeholder="Filtering..."):
+        self.textbox = textbox
+        self.placeholder = placeholder
+
+    def focusGained(self, event):
+        if self.textbox.getText() == self.placeholder:
+            self.textbox.setText("")
+
+    def focusLost(self, event):
+        if not self.textbox.getText():
+            self.textbox.setText(self.placeholder)
+
+class TextboxKeyListener(unohelper.Base, XKeyListener):
+    def __init__(self, sidebar, textbox):
+        self.textbox = textbox
+        self.sidebar = sidebar
+        self.refresh_tree = False
+        self.tree_restored = True
+
+    def keyPressed(self, event):
+        pass
+
+    def keyReleased(self, event):
+        text = self.textbox.getText()
+
+        if text:
+            found_count = 0
+            same_name = False
+            self.tree_restored = True
+
+            if self.refresh_tree:
+                self.sidebar.init_favorites_sidebar()
+                self.refresh_tree = False
+
+            root_node = self.sidebar.root_node
+            for i in  reversed(range(root_node.getChildCount())):
+                parent_node = root_node.getChildAt(i)
+
+                for j in reversed(range(parent_node.getChildCount())):
+                    child_node = parent_node.getChildAt(j)
+
+                    search_text = text.lower()
+                    node_name = child_node.getDisplayValue().lower()
+
+                    found = (node_name.startswith(search_text) or
+                             any(word.startswith(search_text) for word in node_name.split()))
+
+                    if not found:
+                        parent_node.removeChildByIndex(j)
+                        if parent_node.getChildCount() == 0:
+                            root_node.removeChildByIndex(i)
+                    else:
+                        found_count += 1
+                        if text.lower().strip() == node_name.lower().strip():
+                            same_name = True
+
+            if same_name or found_count == 0:
+                self.refresh_tree = True
+        else:
+            if self.tree_restored:
+                self.sidebar.init_favorites_sidebar()
+                self.tree_restored = False
