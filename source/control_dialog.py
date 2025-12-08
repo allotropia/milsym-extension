@@ -15,8 +15,9 @@ base_dir = os.path.dirname(__file__)
 if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
 
-from com.sun.star.awt import XDialogEventHandler, XTopWindowListener, XMouseListener
+from com.sun.star.awt import XDialogEventHandler, XTopWindowListener, XMouseListener, XKeyListener
 from com.sun.star.awt import MouseButton
+from com.sun.star.awt.Key import UP, DOWN, LEFT, RIGHT, PAGEUP, PAGEDOWN, HOME, END
 from com.sun.star.view.SelectionType import SINGLE as SELECTION_TYPE_SINGLE
 from com.sun.star.view import XSelectionChangeListener
 from com.sun.star.datatransfer.dnd import XDragGestureListener, XDropTargetListener
@@ -198,6 +199,10 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
                 # Add mouse listener for tree click handling
                 tree_mouse_handler = TreeMouseHandler(self)
                 self.tree_control.addMouseListener(tree_mouse_handler)
+
+                # Add key listener to detect keyboard navigation
+                tree_key_handler = TreeKeyHandler(self)
+                self.tree_control.addKeyListener(tree_key_handler)
 
                 # Set up selection listener for bidirectional selection
                 self._setup_selection_listener()
@@ -591,6 +596,47 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
                         return
         except Exception as e:
             print(f"Error selecting newly added child: {e}")
+
+class TreeKeyHandler(unohelper.Base, XKeyListener):
+    """Handle keyboard events on tree control for navigation selection"""
+
+    def __init__(self, dialog_handler):
+        self.dialog_handler = dialog_handler
+
+    def keyPressed(self, event):
+        """Handle key pressed events for navigation"""
+        pass
+
+    def keyReleased(self, event):
+        """Handle key released events - check for navigation keys"""
+        try:
+            # Check for navigation keys (arrows, page up/down, home, end)
+            navigation_keys = [
+                UP,       # Up arrow
+                DOWN,     # Down arrow
+                LEFT,     # Left arrow
+                RIGHT,    # Right arrow
+                PAGEUP,   # Page Up
+                PAGEDOWN, # Page Down
+                HOME,     # Home
+                END       # End
+            ]
+
+            if event.KeyCode in navigation_keys:
+                try:
+                    selection = event.Source.getSelection()
+                    if selection:
+                        self.dialog_handler.handle_tree_selection(selection)
+                except Exception as e:
+                    print(f"Error getting tree selection after key navigation: {e}")
+
+        except Exception as e:
+            print(f"Error handling key release: {e}")
+
+    def disposing(self, event):
+        """Handle disposing events"""
+        pass
+
 
 class TreeMouseHandler(unohelper.Base, XMouseListener):
     """Handle mouse events on tree control for click selection"""
