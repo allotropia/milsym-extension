@@ -18,6 +18,7 @@ from sidebar_rename_dialog import RenameDialog
 
 from unohelper import systemPathToFileUrl, fileUrlToSystemPath
 from com.sun.star.beans import PropertyValue
+from com.sun.star.ui.dialogs.TemplateDescription import FILESAVE_SIMPLE
 from com.sun.star.ui import XUIElement, XUIElementFactory, XToolPanel, XSidebarPanel, LayoutSize
 from com.sun.star.awt import XWindowPeer, XWindowListener, XActionListener, Size
 from com.sun.star.awt import XFocusListener, XKeyListener
@@ -127,6 +128,9 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
             values = ("btImport", "...")
             btImport = self.createControl(self.ctx, "com.sun.star.awt.UnoControlButton", "com.sun.star.awt.UnoControlButtonModel", x, y, width, height, names, values)
 
+            btImport_button_listener = ImportExportButtonListener(self.ctx, self)
+            btImport.addActionListener(btImport_button_listener)
+
             # Filter textbox
             x = self.LEFT_MARGIN
             y = self.TOP_MARGIN + self.BUTTON_HEIGHT + self.VERTICAL_SPACING
@@ -209,16 +213,17 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
                     json_data = json.load(f)
 
                 if json_data:
-                    sidc_value = json_data[0]
+                    sidc_value = json_data.get("sidc", "")
                     symbol_params.append(str(sidc_value))
 
-                    for item in json_data[1:]:
-                        if isinstance(item, dict):
-                            for key, value in item.items():
-                                nv = uno.createUnoStruct("com.sun.star.beans.NamedValue")
-                                nv.Name = key
-                                nv.Value = value
-                                symbol_params.append(nv)
+                    for key, value in json_data.items():
+                        if key == "sidc":
+                            continue
+
+                        nv = uno.createUnoStruct("com.sun.star.beans.NamedValue")
+                        nv.Name = key
+                        nv.Value = value
+                        symbol_params.append(nv)
 
             except Exception as e:
                 print("JSON read error:", e)
@@ -387,3 +392,64 @@ class TextboxKeyListener(unohelper.Base, XKeyListener):
                 self.sidebar.init_favorites_sidebar()
                 self.sidebar.removed_nodes.clear()
                 break
+
+class ImportExportButtonListener(unohelper.Base, XActionListener):
+    def __init__(self, ctx, sidebar):
+        self.ctx = ctx
+        self.sidebar = sidebar
+
+    def actionPerformed(self, event):
+        self.save_file_dialog()
+
+    def disposing(self, event):
+        pass
+
+    def save_file_dialog(self):
+        try:
+            file_picker = self.ctx.getServiceManager().createInstanceWithContext("com.sun.star.ui.dialogs.FilePicker", self.ctx)
+            file_picker.initialize((FILESAVE_SIMPLE,))
+            file_picker.setDefaultName("sidebar_data.json")
+            file_picker.appendFilter("", "*.json")
+
+            if file_picker.execute() != 1:
+                file_picker.dispose()
+                return
+
+            selected_file = file_picker.getFiles()[0]
+            if selected_file.startswith("file:///"):
+                path = uno.fileUrlToSystemPath(selected_file)
+            else:
+                path = selected_file
+
+            file_picker.dispose()
+
+            all_data = {}
+            favorites_dir = self.sidebar.favorites_dir_path
+            for category_name in os.listdir(favorites_dir):
+                category_path = os.path.join(favorites_dir, category_name)
+                if not os.path.isdir(category_path):
+                    continue
+
+                all_data[category_name] = {}
+                for file_name in os.listdir(category_path):
+                    if file_name.endswith(".json"):
+                        file_base = os.path.splitext(file_name)[0]
+
+                        json_path = os.path.join(category_path, f"{file_base}.json")
+                        with open(json_path, "r", encoding="utf-8") as f:
+                            data = json.load(f)
+
+                        svg_path = os.path.join(category_path, f"{file_base}.svg")
+                        with open(svg_path, "r", encoding="utf-8") as f:
+                            svg_content = f.read()
+
+                        all_data[category_name][file_base] = {
+                            "data": data,
+                            "svg": svg_content
+                        }
+
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(all_data, f, indent=4, ensure_ascii=False)
+
+        except Exception as e:
+            print("Save file error:", e)

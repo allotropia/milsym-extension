@@ -48,12 +48,12 @@ class SidebarTree():
             preview_file.write(svg_data)
 
     def serialize_svg_args(self, svg_args):
-        result = []
+        result = {}
         for i, arg in enumerate(svg_args):
             if i == 0:
-                result.append(arg)
+                result["sidc"] = arg
             else:
-                result.append({arg.Name: arg.Value})
+                result[arg.Name] = arg.Value
 
         return result
 
