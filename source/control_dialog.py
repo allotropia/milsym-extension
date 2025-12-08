@@ -225,9 +225,9 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
             else:
                 print("No diagram tree available or invalid structure")
 
-            # Expand the tree to show structure
+            # Expand all nodes in the tree to show full structure
             try:
-                self.tree_control.expandNode(root_node)
+                self._expand_all_nodes(root_node)
             except:
                 pass
 
@@ -302,6 +302,20 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
                 self.populate_tree()
         except Exception as e:
             print(f"Error refreshing tree: {e}")
+
+    def _expand_all_nodes(self, node):
+        """Recursively expand all nodes in the tree"""
+        try:
+            if node is not None:
+                # Expand current node
+                self.tree_control.expandNode(node)
+
+                # Recursively expand all children
+                for i in range(node.getChildCount()):
+                    child_node = node.getChildAt(i)
+                    self._expand_all_nodes(child_node)
+        except Exception as e:
+            print(f"Error expanding node: {e}")
 
     def _setup_drag_and_drop(self):
         """Setup drag & drop functionality for the tree control"""
