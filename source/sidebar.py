@@ -18,7 +18,7 @@ from sidebar_rename_dialog import RenameDialog
 
 from unohelper import systemPathToFileUrl, fileUrlToSystemPath
 from com.sun.star.beans import PropertyValue
-from com.sun.star.ui.dialogs.TemplateDescription import FILESAVE_AUTOEXTENSION
+from com.sun.star.ui.dialogs.TemplateDescription import FILESAVE_AUTOEXTENSION, FILEOPEN_SIMPLE
 from com.sun.star.ui import XUIElement, XUIElementFactory, XToolPanel, XSidebarPanel, LayoutSize
 from com.sun.star.awt import XWindowPeer, XWindowListener, XActionListener, Size
 from com.sun.star.awt import XFocusListener, XKeyListener
@@ -129,6 +129,9 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
             values = ("btImport", "\u21E5")
             btImport = self.createControl(self.ctx, "com.sun.star.awt.UnoControlButton", "com.sun.star.awt.UnoControlButtonModel", x, y, width, height, names, values)
             btImport.getModel().setPropertyValue("HelpText", "Import symbols")
+
+            btImport_listener = ImportButtonListener(self.ctx, self)
+            btImport.addActionListener(btImport_listener)
 
             # Export button
             x = 0  # X position will be set later in onResize()
@@ -412,6 +415,56 @@ class TextboxKeyListener(unohelper.Base, XKeyListener):
                 self.sidebar.removed_nodes.clear()
                 self.filter_sidebar_tree(search_text)
                 break
+
+class ImportButtonListener(unohelper.Base, XActionListener):
+    def __init__(self, ctx, sidebar):
+        self.ctx = ctx
+        self.sidebar = sidebar
+
+    def actionPerformed(self, event):
+        try:
+            file_picker = self.ctx.getServiceManager().createInstanceWithContext("com.sun.star.ui.dialogs.FilePicker", self.ctx)
+            file_picker.initialize((FILEOPEN_SIMPLE,))
+            file_picker.appendFilter("JSON File", "*.json")
+
+            if file_picker.execute() != 1:
+                file_picker.dispose()
+                return
+
+            selected_file = file_picker.getFiles()[0]
+            if selected_file.startswith("file:///"):
+                path = uno.fileUrlToSystemPath(selected_file)
+            else:
+                path = selected_file
+
+            file_picker.dispose()
+
+            with open(path, "r", encoding="utf-8") as f:
+                all_data = json.load(f)
+
+            favorites_dir = self.sidebar.favorites_dir_path
+            os.makedirs(favorites_dir, exist_ok=True)
+
+            for category_name, symbols in all_data.items():
+                category_path = os.path.join(favorites_dir, category_name)
+                os.makedirs(category_path, exist_ok=True)
+
+                for symbol_name, symbol_content in symbols.items():
+                    json_path = os.path.join(category_path, f"{symbol_name}.json")
+                    with open(json_path, "w", encoding="utf-8") as f:
+                        json.dump(symbol_content["data"], f, indent=4, ensure_ascii=False)
+
+                    svg_path = os.path.join(category_path, f"{symbol_name}.svg")
+                    with open(svg_path, "w", encoding="utf-8") as f:
+                        f.write(symbol_content["svg"])
+
+            self.sidebar.init_favorites_sidebar()
+
+        except Exception as e:
+            print("File opening error:", e)
+
+    def disposing(self, event):
+        pass
 
 class ExportButtonListener(unohelper.Base, XActionListener):
     def __init__(self, ctx, sidebar):
