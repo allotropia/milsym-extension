@@ -32,6 +32,7 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
         self.x_context = x_context
         self.tree_control = None
         self._populate_tree_on_show = True
+        self._parent_before_add = None
 
     def callHandlerMethod(self, dialog, eventObject, methodName):
         if methodName == "OnAdd":
@@ -42,15 +43,23 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
                     if org_chart.is_error_in_tree():
                         self.get_gui().ask_user_for_repair(org_chart)
                     else:
+                        # Store current selected shape before adding
+                        self._store_selection_before_add()
+                        # Add shape and get reference to newly created shape
                         self.get_controller().get_diagram().add_shape()
                         self.get_controller().get_diagram().refresh_diagram()
                         # Refresh tree after adding shape
                         self.refresh_tree()
+                        self._select_newly_added_child()
                 else:
+                    # Store current selected shape before adding
+                    self._store_selection_before_add()
+                    # Add shape and get reference to newly created shape
                     self.get_controller().get_diagram().add_shape()
                     self.get_controller().get_diagram().refresh_diagram()
                     # Refresh tree after adding shape
                     self.refresh_tree()
+                    self._select_newly_added_child()
                 self.get_controller().add_selection_listener()
                 self.get_controller().set_text_field_of_control_dialog()
             return True
@@ -522,8 +531,66 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
             print(f"Error moving tree item: {e}")
             return False
 
+    def _store_selection_before_add(self):
+        """Store the currently selected tree item before adding a new shape"""
+        try:
+            controller = self.get_controller()
+            selection = controller._x_controller.getSelection()
+            if selection and selection.getCount() > 0:
+                selected_shape = selection.getByIndex(0)
+                # Find the tree item for this shape
+                for tree_item in self._node_to_tree_item_map.values():
+                    if tree_item.get_rectangle_shape() == selected_shape:
+                        self._parent_before_add = tree_item
+                        return
+            self._parent_before_add = None
+        except Exception as e:
+            print(f"Error storing selection before add: {e}")
+            self._parent_before_add = None
 
+    def _select_newly_added_child(self):
+        """Find and select the newly added child shape"""
+        try:
+            if not self._parent_before_add:
+                print("No parent stored, cannot find new child")
+                return
 
+            parent_tree_item = self._parent_before_add
+
+            # Find the parent in the current tree mapping
+            parent_node_name = None
+            for node_name, tree_item in self._node_to_tree_item_map.items():
+                if tree_item == parent_tree_item:
+                    parent_node_name = node_name
+                    break
+
+            if not parent_node_name:
+                # Try to find parent by shape
+                parent_shape = parent_tree_item.get_rectangle_shape()
+                for node_name, tree_item in self._node_to_tree_item_map.items():
+                    if tree_item.get_rectangle_shape() == parent_shape:
+                        parent_node_name = node_name
+                        parent_tree_item = tree_item
+                        break
+
+            if parent_tree_item and parent_tree_item.get_first_child():
+                # Look for the last (newest) child
+                child_item = parent_tree_item.get_first_child()
+                last_child = child_item
+
+                # Find the last sibling (most recently added)
+                while child_item:
+                    last_child = child_item
+                    child_item = child_item.get_first_sibling()
+
+                if last_child:
+                    new_shape = last_child.get_rectangle_shape()
+                    if new_shape:
+                        controller = self.get_controller()
+                        controller.set_selected_shape(new_shape)
+                        return
+        except Exception as e:
+            print(f"Error selecting newly added child: {e}")
 
 class TreeMouseHandler(unohelper.Base, XMouseListener):
     """Handle mouse events on tree control for click selection"""
