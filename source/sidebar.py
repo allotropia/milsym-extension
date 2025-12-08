@@ -18,7 +18,7 @@ from sidebar_rename_dialog import RenameDialog
 
 from unohelper import systemPathToFileUrl, fileUrlToSystemPath
 from com.sun.star.beans import PropertyValue
-from com.sun.star.ui.dialogs.TemplateDescription import FILESAVE_SIMPLE
+from com.sun.star.ui.dialogs.TemplateDescription import FILESAVE_AUTOEXTENSION
 from com.sun.star.ui import XUIElement, XUIElementFactory, XToolPanel, XSidebarPanel, LayoutSize
 from com.sun.star.awt import XWindowPeer, XWindowListener, XActionListener, Size
 from com.sun.star.awt import XFocusListener, XKeyListener
@@ -408,9 +408,9 @@ class ImportExportButtonListener(unohelper.Base, XActionListener):
     def save_file_dialog(self):
         try:
             file_picker = self.ctx.getServiceManager().createInstanceWithContext("com.sun.star.ui.dialogs.FilePicker", self.ctx)
-            file_picker.initialize((FILESAVE_SIMPLE,))
+            file_picker.initialize((FILESAVE_AUTOEXTENSION,))
             file_picker.setDefaultName("sidebar_data.json")
-            file_picker.appendFilter("", "*.json")
+            file_picker.appendFilter("JOSN File", "*.json")
 
             if file_picker.execute() != 1:
                 file_picker.dispose()
