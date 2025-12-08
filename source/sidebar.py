@@ -50,7 +50,8 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
     POS_ALL = 15
 
     MIN_WIDTH = 250
-    BUTTON_WIDTH = 60
+    NEW_BUTTON_WIDTH = 60
+    BUTTON_WIDTH = 35
     BUTTON_HEIGHT = 30
     TEXTBOX_HEIGHT = 28
     VERTICAL_SPACING = 6
@@ -111,7 +112,7 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
             # New button
             x = self.LEFT_MARGIN
             y = self.TOP_MARGIN
-            width = self.BUTTON_WIDTH
+            width = self.NEW_BUTTON_WIDTH
             height = self.BUTTON_HEIGHT
             names = ("Name", "Label")
             values = ("btNew", "New")
@@ -119,17 +120,28 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
             listener = NewButtonListener(self.ctx, self)
             btNew.addActionListener(listener)
 
-            # Import/Export button
+            # Import button
             x = 0  # X position will be set later in onResize()
             y = self.TOP_MARGIN
             width = self.BUTTON_WIDTH
             height = self.BUTTON_HEIGHT
             names = ("Name", "Label")
-            values = ("btImport", "...")
+            values = ("btImport", "\u21E5")
             btImport = self.createControl(self.ctx, "com.sun.star.awt.UnoControlButton", "com.sun.star.awt.UnoControlButtonModel", x, y, width, height, names, values)
+            btImport.getModel().setPropertyValue("HelpText", "Import symbols")
 
-            btImport_button_listener = ImportExportButtonListener(self.ctx, self)
-            btImport.addActionListener(btImport_button_listener)
+            # Export button
+            x = 0  # X position will be set later in onResize()
+            y = self.TOP_MARGIN
+            width = self.BUTTON_WIDTH
+            height = self.BUTTON_HEIGHT
+            names = ("Name", "Label")
+            values = ("btExport", "\u21E4")
+            btExport = self.createControl(self.ctx, "com.sun.star.awt.UnoControlButton", "com.sun.star.awt.UnoControlButtonModel", x, y, width, height, names, values)
+            btExport.getModel().setPropertyValue("HelpText", "Export symbols")
+
+            btExport_listener = ExportButtonListener(self.ctx, self)
+            btExport.addActionListener(btExport_listener)
 
             # Filter textbox
             x = self.LEFT_MARGIN
@@ -166,6 +178,7 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
 
             container.addControl("btNew", btNew)
             container.addControl("btImport", btImport)
+            container.addControl("btExport", btExport)
             container.addControl("tbFilter", tbFilter)
             container.addControl("treeCtrl", treeCtrl)
 
@@ -299,8 +312,14 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
             btImport = self.toolpanel.getControl("btImport")
             if btImport:
                 rect = btImport.getPosSize()
-                new_btImport_x_pos = toolpanel_width - self.BUTTON_WIDTH - self.LEFT_MARGIN
+                new_btImport_x_pos = toolpanel_width - (self.BUTTON_WIDTH * 2) - self.LEFT_MARGIN
                 btImport.setPosSize(new_btImport_x_pos, rect.Y , rect.Width, rect.Height, self.POS_ALL)
+
+            btExport = self.toolpanel.getControl("btExport")
+            if btExport:
+                rect = btExport.getPosSize()
+                new_btExport_x_pos = toolpanel_width - self.BUTTON_WIDTH - self.LEFT_MARGIN
+                btExport.setPosSize(new_btExport_x_pos, rect.Y , rect.Width, rect.Height, self.POS_ALL)
 
         except Exception as e:
             print("Resize error:", e)
@@ -394,18 +413,12 @@ class TextboxKeyListener(unohelper.Base, XKeyListener):
                 self.filter_sidebar_tree(search_text)
                 break
 
-class ImportExportButtonListener(unohelper.Base, XActionListener):
+class ExportButtonListener(unohelper.Base, XActionListener):
     def __init__(self, ctx, sidebar):
         self.ctx = ctx
         self.sidebar = sidebar
 
     def actionPerformed(self, event):
-        self.save_file_dialog()
-
-    def disposing(self, event):
-        pass
-
-    def save_file_dialog(self):
         try:
             file_picker = self.ctx.getServiceManager().createInstanceWithContext("com.sun.star.ui.dialogs.FilePicker", self.ctx)
             file_picker.initialize((FILESAVE_AUTOEXTENSION,))
@@ -454,3 +467,6 @@ class ImportExportButtonListener(unohelper.Base, XActionListener):
 
         except Exception as e:
             print("Save file error:", e)
+
+    def disposing(self, event):
+        pass
