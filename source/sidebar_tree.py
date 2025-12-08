@@ -229,6 +229,9 @@ class TreeMouseListener(unohelper.Base, XMouseListener, XMouseMotionListener):
                 popup = self._create_popup_menu()
                 popup.execute(peer, rect, 0)
 
+            if event.ClickCount == 2:
+                self.sidebar_panel.rename_symbol()
+
         except Exception as e:
             print("Mouse released error:", e)
 
@@ -245,7 +248,8 @@ class TreeMouseListener(unohelper.Base, XMouseListener, XMouseMotionListener):
         popup = sm.createInstance("com.sun.star.awt.PopupMenu")
 
         popup.insertItem(1, "Edit symbol", MenuItemStyle.AUTOCHECK, 0)
-        popup.insertItem(2, "Delete symbol", MenuItemStyle.AUTOCHECK, 1)
+        popup.insertItem(2, "Rename symbol", MenuItemStyle.AUTOCHECK, 1)
+        popup.insertItem(3, "Delete symbol", MenuItemStyle.AUTOCHECK, 2)
 
         popup.addMenuListener(PopupMenuHandler(self.ctx, self.sidebar_panel, self.favorites_dir_path))
 
@@ -264,6 +268,8 @@ class PopupMenuHandler(unohelper.Base, XMenuListener):
             model = self.sidebar_panel.desktop.getCurrentComponent()
             open_symbol_dialog(self.ctx, model, None, self.sidebar_panel, None, node_value)
         elif menu_id == 2: # Delete
+            self.sidebar_panel.rename_symbol()
+        elif menu_id == 3: # Delete
             self.key_listener.delete_selected_node()
 
     def itemActivated(self, event): pass

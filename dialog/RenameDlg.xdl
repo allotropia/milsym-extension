@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE dlg:window PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "dialog.dtd">
+<dlg:window xmlns:dlg="http://openoffice.org/2000/dialog" xmlns:script="http://openoffice.org/2000/script" dlg:id="name" dlg:left="120" dlg:top="110" dlg:width="128" dlg:height="49" dlg:closeable="true" dlg:moveable="true" dlg:title="Name">
+ <dlg:bulletinboard>
+  <dlg:text dlg:id="lbName" dlg:tab-index="0" dlg:left="4" dlg:top="2" dlg:width="50" dlg:height="12" dlg:value="Name:" dlg:valign="center"/>
+  <dlg:textfield dlg:id="tbName" dlg:tab-index="1" dlg:left="4" dlg:top="15" dlg:width="120" dlg:height="14">
+   <script:event script:event-name="on-textchange" script:macro-name="vnd.sun.star.UNO:tbName" script:language="UNO"/>
+   <script:event script:event-name="on-keydown" script:macro-name="vnd.sun.star.UNO:tbNameKeydown" script:language="UNO"/>
+  </dlg:textfield>
+  <dlg:button dlg:id="btOk" dlg:tab-index="2" dlg:left="89" dlg:top="32" dlg:width="35" dlg:height="14" dlg:value="Ok" dlg:valign="center">
+   <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btOk" script:language="UNO"/>
+  </dlg:button>
+  <dlg:button dlg:id="btCancel" dlg:tab-index="3" dlg:left="52" dlg:top="32" dlg:width="35" dlg:height="14" dlg:value="Cancel" dlg:valign="center">
+   <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:btCancel" script:language="UNO"/>
+  </dlg:button>
+ </dlg:bulletinboard>
+</dlg:window>

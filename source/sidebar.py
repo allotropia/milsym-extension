@@ -14,6 +14,7 @@ import unohelper
 from sidebar_tree import SidebarTree, TreeKeyListener, TreeMouseListener
 from symbol_dialog import open_symbol_dialog
 from utils import insertSvgGraphic
+from sidebar_rename_dialog import RenameDialog
 
 from unohelper import systemPathToFileUrl, fileUrlToSystemPath
 from com.sun.star.beans import PropertyValue
@@ -266,6 +267,9 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
         for i in range(self.root_node.getChildCount()):
             category_node = self.root_node.getChildAt(i)
             tree_ctrl.expandNode(category_node)
+
+    def rename_symbol(self):
+        RenameDialog(self.ctx, self.selected_node, self.favorites_dir_path).run()
 
     def onResize(self, event):
         try:
