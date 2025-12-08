@@ -38,28 +38,14 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
         if methodName == "OnAdd":
             if self.get_controller().get_diagram() is not None:
                 self.get_controller().remove_selection_listener()
-                if self.get_controller().get_group_type() == self.get_controller().ORGANIGROUP:
-                    org_chart = self.get_controller().get_diagram()
-                    if org_chart.is_error_in_tree():
-                        self.get_gui().ask_user_for_repair(org_chart)
-                    else:
-                        # Store current selected shape before adding
-                        self._store_selection_before_add()
-                        # Add shape and get reference to newly created shape
-                        self.get_controller().get_diagram().add_shape()
-                        self.get_controller().get_diagram().refresh_diagram()
-                        # Refresh tree after adding shape
-                        self.refresh_tree()
-                        self._select_newly_added_child()
-                else:
-                    # Store current selected shape before adding
-                    self._store_selection_before_add()
-                    # Add shape and get reference to newly created shape
-                    self.get_controller().get_diagram().add_shape()
-                    self.get_controller().get_diagram().refresh_diagram()
-                    # Refresh tree after adding shape
-                    self.refresh_tree()
-                    self._select_newly_added_child()
+                # Store current selected shape before adding
+                self._store_selection_before_add()
+                # Add shape and get reference to newly created shape
+                self.get_controller().get_diagram().add_shape()
+                self.get_controller().get_diagram().refresh_diagram()
+                # Refresh tree after adding shape
+                self.refresh_tree()
+                self._select_newly_added_child()
                 self.get_controller().add_selection_listener()
                 self.get_controller().set_text_field_of_control_dialog()
             return True
