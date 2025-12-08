@@ -63,6 +63,7 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
         self.tree_control = None
         self.mutable_tree_data_model = None
         self.selected_node = None
+        self.removed_nodes = []
 
         self.sidebar_tree = SidebarTree(ctx)
 
@@ -337,7 +338,6 @@ class TextboxKeyListener(unohelper.Base, XKeyListener):
     def __init__(self, sidebar, textbox):
         self.textbox = textbox
         self.sidebar = sidebar
-        self.refresh_tree = False
         self.tree_restored = True
 
     def keyPressed(self, event):
@@ -345,41 +345,41 @@ class TextboxKeyListener(unohelper.Base, XKeyListener):
 
     def keyReleased(self, event):
         text = self.textbox.getText()
+        self.filter_sidebar_tree(text)
 
-        if text:
-            found_count = 0
-            same_name = False
-            self.tree_restored = True
-
-            if self.refresh_tree:
+    def filter_sidebar_tree(self, text: str):
+        if not text:
+            if self.tree_restored:
                 self.sidebar.init_favorites_sidebar()
-                self.refresh_tree = False
+                self.sidebar.removed_nodes.clear()
+                self.tree_restored = False
+            return
 
-            root_node = self.sidebar.root_node
-            for i in  reversed(range(root_node.getChildCount())):
+        self.tree_restored = True
+        search_text = text.lower()
+        root_node = self.sidebar.root_node
+
+        for i in  reversed(range(root_node.getChildCount())):
                 parent_node = root_node.getChildAt(i)
 
                 for j in reversed(range(parent_node.getChildCount())):
                     child_node = parent_node.getChildAt(j)
-
-                    search_text = text.lower()
                     node_name = child_node.getDisplayValue().lower()
-
                     found = (node_name.startswith(search_text) or
                              any(word.startswith(search_text) for word in node_name.split()))
 
                     if not found:
+                        self.sidebar.removed_nodes.append(child_node)
                         parent_node.removeChildByIndex(j)
                         if parent_node.getChildCount() == 0:
                             root_node.removeChildByIndex(i)
-                    else:
-                        found_count += 1
-                        if text.lower().strip() == node_name.lower().strip():
-                            same_name = True
 
-            if same_name or found_count == 0:
-                self.refresh_tree = True
-        else:
-            if self.tree_restored:
+        for node in self.sidebar.removed_nodes:
+            node_name = node.getDisplayValue().lower()
+            matches_search = (node_name.startswith(search_text) or
+                              any(word.startswith(search_text) for word in node_name.split()))
+
+            if matches_search:
                 self.sidebar.init_favorites_sidebar()
-                self.tree_restored = False
+                self.sidebar.removed_nodes.clear()
+                break
