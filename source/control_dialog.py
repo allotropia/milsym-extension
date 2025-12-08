@@ -133,14 +133,31 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
         pass
 
     def _init_tree_control(self):
-        """Initialize the tree control"""
+        """Initialize the tree control and set up listeners"""
         try:
             dialog = self.get_gui()._x_control_dialog
-            if dialog is not None:
-                # Get the tree control from the dialog
-                self.tree_control = dialog.getControl("OrbatTree")
-                if self.tree_control is None:
-                    print("Warning: Could not find OrbatTree control in dialog")
+            self.tree_control = dialog.getControl("OrbatTree")
+
+            # Add mouse listener for tree click handling
+            tree_mouse_handler = TreeMouseHandler(self)
+            self.tree_control.addMouseListener(tree_mouse_handler)
+
+            # Add key listener to detect keyboard navigation
+            tree_key_handler = TreeKeyHandler(self)
+            self.tree_control.addKeyListener(tree_key_handler)
+
+            # Set up selection listener for bidirectional selection
+            self._setup_selection_listener()
+            # Enable drag & drop functionality
+            self._setup_drag_and_drop()
+
+            # Configure tree control properties
+            tree_model = self.tree_control.getModel()
+            tree_model.setPropertyValue("SelectionType", SELECTION_TYPE_SINGLE)
+            tree_model.setPropertyValue("RootDisplayed", True)
+            tree_model.setPropertyValue("ShowsHandles", True)
+            tree_model.setPropertyValue("ShowsRootHandles", True)
+            tree_model.setPropertyValue("Editable", False)
         except Exception as e:
             print(f"Error initializing tree control: {e}")
 
@@ -159,59 +176,37 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
                 print("No diagram available")
                 return
 
-            # Get or create the tree data model
-            ctx = self.get_gui()._x_context
-            service_manager = ctx.getServiceManager()
+            service_manager = self.x_context.getServiceManager()
+            data_model = service_manager.createInstanceWithContext(
+                    "com.sun.star.awt.tree.MutableTreeDataModel", self.x_context)
 
-            # Create a new tree data model
-            try:
-                data_model = service_manager.createInstanceWithContext(
-                    "com.sun.star.awt.tree.MutableTreeDataModel", ctx)
-
-                if data_model is None:
-                    print("Could not create tree data model")
-                    return
-
-                # Create root node with proper name
-                root_node_name = "Root"  # Default fallback
-                # Try to get proper root name if diagram tree is available
-                try:
-                    temp_diagram_tree = diagram.get_diagram_tree()
-                    if temp_diagram_tree:
-                        temp_root_item = temp_diagram_tree.get_root_item()
-                        if temp_root_item:
-                            root_node_name = self._get_tree_node_display_name(temp_root_item, 1)
-                except:
-                    pass
-
-                root_node = data_model.createNode(root_node_name, True)
-                data_model.setRoot(root_node)
-
-                # Set the data model to the tree control
-                tree_model = self.tree_control.getModel()
-                tree_model.setPropertyValue("DataModel", data_model)
-                tree_model.setPropertyValue("SelectionType", SELECTION_TYPE_SINGLE)
-                tree_model.setPropertyValue("RootDisplayed", True)
-                tree_model.setPropertyValue("ShowsHandles", True)
-                tree_model.setPropertyValue("ShowsRootHandles", True)
-                tree_model.setPropertyValue("Editable", False)
-
-                # Add mouse listener for tree click handling
-                tree_mouse_handler = TreeMouseHandler(self)
-                self.tree_control.addMouseListener(tree_mouse_handler)
-
-                # Add key listener to detect keyboard navigation
-                tree_key_handler = TreeKeyHandler(self)
-                self.tree_control.addKeyListener(tree_key_handler)
-
-                # Set up selection listener for bidirectional selection
-                self._setup_selection_listener()
-                # Enable drag & drop functionality
-                self._setup_drag_and_drop()
-
-            except Exception as e:
-                print(f"Error creating tree data model: {e}")
+            if data_model is None:
+                print("Could not create tree data model")
                 return
+
+            # Create root node with proper name
+            root_node_name = "Root"  # Default fallback
+            # Try to get proper root name if diagram tree is available
+            try:
+                # Get the current diagram
+                controller = self.get_controller()
+                diagram = controller.get_diagram()
+
+                if diagram is None:
+                    print("No diagram available")
+                    return
+                temp_diagram_tree = diagram.get_diagram_tree()
+                if temp_diagram_tree:
+                    temp_root_item = temp_diagram_tree.get_root_item()
+                    if temp_root_item:
+                        root_node_name = self._get_tree_node_display_name(temp_root_item, 1)
+            except:
+                pass
+
+            root_node = data_model.createNode(root_node_name, True)
+            data_model.setRoot(root_node)
+            tree_model = self.tree_control.getModel()
+            tree_model.setPropertyValue("DataModel", data_model)
 
             diagram_tree = diagram.get_diagram_tree()
             if diagram_tree is not None:
