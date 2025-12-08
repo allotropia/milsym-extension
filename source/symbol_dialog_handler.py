@@ -172,7 +172,6 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             selected_index = eventObject.Source.getSelectedItemPos()
             selected_value = dialog.getControl("ltbSearch").getItem(selected_index)
             self.update_listbox_value(dialog, selected_value)
-            dialog.getControl("tlbPreview").setFocus()
             return True
         elif methodName == "click_Search":
             self.apply_search_selection(dialog, eventObject)
@@ -180,7 +179,6 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         elif methodName == "click_dialog":
             selected_value = dialog.getControl("tbSearch").Text
             self.update_listbox_value(dialog, selected_value)
-            dialog.getControl("tlbPreview").setFocus()
             return True
         elif self.button_handler(dialog, methodName):
             return True
@@ -382,7 +380,6 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         selected_value = dialog.getControl("tbSearch").Text
         self.update_listbox_value(dialog, selected_value)
         dialog.getControl("ltbSearch").setVisible(False)
-        dialog.getControl("tlbPreview").setFocus()
 
     def button_handler(self, dialog, active_button_id, updatePreview = True):
         group_name = None

@@ -8,9 +8,6 @@
   <dlg:style dlg:style-id="2" dlg:font-height="9"/>
  </dlg:styles>
  <dlg:bulletinboard>
-  <dlg:titledbox dlg:id="tlbPreview" dlg:tab-index="41" dlg:left="376" dlg:top="7" dlg:width="145" dlg:height="106" dlg:help-text="&amp;2.MilSymDlg.tlbPreview.HelpText">
-   <dlg:title dlg:value="&amp;3.MilSymDlg.tlbPreview.Label"/>
-  </dlg:titledbox>
   <dlg:img dlg:style-id="0" dlg:id="imgPreview" dlg:tab-index="40" dlg:left="376" dlg:top="11" dlg:width="145" dlg:height="102" dlg:help-text="&amp;4.MilSymDlg.imgPreview.HelpText" dlg:scale-image="false" dlg:scale-mode="none" dlg:tabstop="false"/>
   <dlg:text dlg:style-id="1" dlg:id="lbRealExerSimul" dlg:tab-index="0" dlg:left="6" dlg:top="8" dlg:width="140" dlg:height="10" dlg:help-text="&amp;5.MilSymDlg.lbRealExerSimul.HelpText" dlg:value="&amp;6.MilSymDlg.lbRealExerSimul.Label" dlg:valign="top" dlg:tabstop="true"/>
   <dlg:button dlg:id="btReality" dlg:tab-index="2" dlg:left="4" dlg:top="21" dlg:width="45" dlg:height="28" dlg:help-text="&amp;7.MilSymDlg.btReality.HelpText" dlg:tabstop="true" dlg:value="&amp;8.MilSymDlg.btReality.Label" dlg:valign="center" dlg:image-src="vnd.sun.star.extension://com.collabora.milsymbol/img/reality.svg" dlg:grab-focus="false">
