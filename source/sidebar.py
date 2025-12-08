@@ -391,6 +391,7 @@ class TextboxKeyListener(unohelper.Base, XKeyListener):
             if matches_search:
                 self.sidebar.init_favorites_sidebar()
                 self.sidebar.removed_nodes.clear()
+                self.filter_sidebar_tree(search_text)
                 break
 
 class ImportExportButtonListener(unohelper.Base, XActionListener):
