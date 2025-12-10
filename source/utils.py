@@ -78,12 +78,12 @@ def insertSvgGraphic(ctx, model, svg_data, params, selected_shape, scale_factor=
                 shape = model.createInstance("com.sun.star.text.TextGraphicObject")
             else:
                 shape = model.createInstance("com.sun.star.drawing.GraphicObjectShape")
-            size = parse_svg_dimensions(svg_data, scale_factor)
         else:
             shape = selected_shape
-            size = selected_shape.getSize()
 
         shape.setPropertyValue("Graphic", graphic)
+
+        size = parse_svg_dimensions(svg_data, scale_factor)
         shape.setSize(size)
 
         # set MilSym-specific user defined attributes
@@ -134,11 +134,8 @@ def insertGraphicAttributes(shape, params):
     attributeHash = shape.UserDefinedAttributes
     userAttrs = AttributeData()
 
-    #shape can contain only one color mode at a time
-    #removes the previous color mode
-    for attr in ("MilSymColorMode", "MilSymFillColor", "MilSymFill"):
-        if attr in attributeHash.getElementNames():
-            attributeHash.removeByName(attr)
+    for name in list(attributeHash.getElementNames()):
+        attributeHash.removeByName(name)
 
     # first tuple is unnamed 'milsym code' entry. special handling.
     userAttrs.Type = "CDATA"

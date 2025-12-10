@@ -307,6 +307,9 @@
   <dlg:menulist dlg:id="ltbCountry" dlg:tab-index="147" dlg:left="380" dlg:top="371" dlg:width="135" dlg:height="12" dlg:page="2" dlg:help-text="&amp;286.MilSymDlg.ltbCountry.HelpText" dlg:spin="true">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:ltbCountry" script:language="UNO"/>
   </dlg:menulist>
+  <dlg:button dlg:id="btReset" dlg:tab-index="149" dlg:left="382" dlg:top="395" dlg:width="45" dlg:height="15" dlg:help-text="&amp;287.MilSymDlg.btReset.HelpText" dlg:value="&amp;288.MilSymDlg.btReset.Label" dlg:valign="center">
+   <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:dialog_btReset" script:language="UNO"/>
+  </dlg:button>
   <dlg:button dlg:id="btCancel" dlg:tab-index="19" dlg:left="429" dlg:top="395" dlg:width="45" dlg:height="15" dlg:help-text="&amp;287.MilSymDlg.btCancel.HelpText" dlg:value="&amp;288.MilSymDlg.btCancel.Label" dlg:valign="center">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.UNO:dialog_btCancel" script:language="UNO"/>
   </dlg:button>

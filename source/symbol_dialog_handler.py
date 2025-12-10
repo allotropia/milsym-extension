@@ -14,7 +14,6 @@ from com.sun.star.awt import XDialogEventHandler
 from com.sun.star.awt.ImageScaleMode import ISOTROPIC
 from com.sun.star.beans import NamedValue
 from xml.etree.ElementPath import prepare_self
-import time
 
 base_dir = os.path.dirname(__file__)
 if base_dir not in sys.path:
@@ -61,27 +60,30 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
         if not has_selected_item:
             self.init_listbox(self.dialog)
+            self.init_buttons()
+            self.updatePreview()
 
+    def init_buttons(self, is_reset=False):
+        if not is_reset:
             self.dialog.getControl("btReality").getModel().State = 1
             self.dialog.getControl("btFriend").getModel().State = 1
-            self.dialog.getControl("btPresent").getModel().State = 1
-            self.dialog.getControl("btNotApplicableReinReduc").getModel().State = 1
-            self.dialog.getControl("btStack1").getModel().State = 1
-            self.dialog.getControl("btLight").getModel().State = 1
-            self.dialog.getControl("btTarget").getModel().State = 1
-            self.dialog.getControl("btNotApplicableSignature").getModel().State = 1
-
-            self.version = symbols_data.VERSION
             self.context = symbols_data.BUTTONS["CONTEXT"]["btReality"]
             self.affiliation= symbols_data.BUTTONS["AFFILIATION"]["btFriend"]
-            self.status = symbols_data.BUTTONS["STATUS"]["btPresent"]
-            self.reinforced = symbols_data.BUTTONS["REINFORCED_REDUCED"]["btNotApplicableReinReduc"]
-            self.stack = symbols_data.BUTTONS["STACK"]["btStack1"]
-            self.color = symbols_data.BUTTONS["COLOR"]["btLight"]
-            self.signature = symbols_data.BUTTONS["SIGNATURE"]["btNotApplicableSignature"]
-            self.engagement = symbols_data.BUTTONS["ENGAGEMENT"]["btTarget"]
 
-            self.updatePreview()
+        self.dialog.getControl("btPresent").getModel().State = 1
+        self.dialog.getControl("btNotApplicableReinReduc").getModel().State = 1
+        self.dialog.getControl("btStack1").getModel().State = 1
+        self.dialog.getControl("btLight").getModel().State = 1
+        self.dialog.getControl("btTarget").getModel().State = 1
+        self.dialog.getControl("btNotApplicableSignature").getModel().State = 1
+
+        self.version = symbols_data.VERSION
+        self.status = symbols_data.BUTTONS["STATUS"]["btPresent"]
+        self.reinforced = symbols_data.BUTTONS["REINFORCED_REDUCED"]["btNotApplicableReinReduc"]
+        self.stack = symbols_data.BUTTONS["STACK"]["btStack1"]
+        self.color = symbols_data.BUTTONS["COLOR"]["btLight"]
+        self.signature = symbols_data.BUTTONS["SIGNATURE"]["btNotApplicableSignature"]
+        self.engagement = symbols_data.BUTTONS["ENGAGEMENT"]["btTarget"]
 
     def init_listbox(self, dialog, selected_index = 4):
         self.populate_symbol_listboxes(dialog, selected_index)
@@ -201,6 +203,9 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         elif methodName == "dialog_btCancel":
             dialog.endExecute()
             return True
+        elif methodName == "dialog_btReset":
+            self.reset_symbol(dialog)
+            return True
         else:
             return False
 
@@ -209,6 +214,23 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
     def disposing(self, event):
         pass
+
+    def reset_symbol(self, dialog):
+        self.disable_callHandler = True
+        for textbox, option_name in self.textbox_map.items():
+                dialog.getControl(textbox).Text = ""
+                self.sidc_options[option_name] = ""
+        self.disable_callHandler = False
+
+        symbolSet_item = next((item for item in symbols_data.SYMBOLS
+                               if item["value"] == self.symbolSet),None)
+        index = symbols_data.SYMBOLS.index(symbolSet_item)
+        self.init_listbox(self.dialog, index)
+
+        self.init_buttons(True)
+        self.update_buttons_state(dialog)
+
+        self.updatePreview()
 
     def listbox_handler(self, dialog, eventObject, methodName):
         if methodName == "ltbSymbolSet":
@@ -630,8 +652,8 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             user_attrs = shape.getPropertyValue("UserDefinedAttributes")
             if hasattr(user_attrs, "getElementNames"):
                 for element in user_attrs.getElementNames():
-                    attr = user_attrs.getByName(element)  # AttributeData objektum
-                    other_attrs[element] = str(attr.Value)  # <-- EZ A LÉNYEG
+                    attr = user_attrs.getByName(element)
+                    other_attrs[element] = str(attr.Value)
         else:
             other_attrs["MilSymCode"] = str(tree_node_value[0])
             for entry in tree_node_value[1:]:
