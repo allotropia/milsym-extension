@@ -17,14 +17,14 @@ from utils import insertSvgGraphic
 from sidebar_rename_dialog import RenameDialog
 
 from unohelper import systemPathToFileUrl, fileUrlToSystemPath
-from com.sun.star.beans import PropertyValue
 from com.sun.star.ui.dialogs.TemplateDescription import FILESAVE_AUTOEXTENSION, FILEOPEN_SIMPLE
 from com.sun.star.ui import XUIElement, XUIElementFactory, XToolPanel, XSidebarPanel, LayoutSize
-from com.sun.star.awt import XWindowPeer, XWindowListener, XActionListener, Size
+from com.sun.star.awt import XWindowListener, XActionListener
 from com.sun.star.awt import XFocusListener, XKeyListener
 from com.sun.star.view.SelectionType import SINGLE
 from com.sun.star.datatransfer.dnd import XDragGestureListener, XDragSourceListener, XDropTargetListener
 from com.sun.star.datatransfer import XTransferable, DataFlavor
+from com.sun.star.datatransfer.dnd.DNDConstants import ACTION_COPY
 from com.sun.star.frame import XFrameActionListener
 
 class SidebarFactory(unohelper.Base, XUIElementFactory):
@@ -197,24 +197,28 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
 
             # Add drag gesture recognizer for native drag support
             try:
-                # Get the tree control's peer (the actual UI component)
-                tree_peer = treeCtrl.getPeer()
-                if tree_peer:
-                    # Try to get drag source from the peer directly
-                    drag_source = tree_peer.queryInterface(uno.getTypeByName("com.sun.star.datatransfer.dnd.XDragSource"))
-                    if drag_source:
-                        drag_source.addDragGestureListener(drag_handler)
-                        print("Native drag and drop setup successful")
-                    else:
-                        raise Exception("Tree peer doesn't support drag source interface")
-                else:
-                    raise Exception("Could not get tree peer")
+                # Try to set up drag source
+                try:
+                    drag_gesture_recognizer = toolkit.getDragGestureRecognizer(treeCtrl.getPeer())
+                    drag_gesture_recognizer.addDragGestureListener(drag_handler)
+                except Exception as e:
+                    print(f"Could not set up drag source: {e}")
+
+                # Try to set up drop target
+                """ try:
+                    drop_target = toolkit.getDropTarget(peer)
+                    drop_target.addDropTargetListener(drop_handler)
+                    drop_target.setActive(True)
+                except Exception as e:
+                    print(f"Could not set up drop target: {e}") """
+
+
             except Exception as e:
                 print(f"Could not setup native drag support, falling back to mouse listener: {e}")
                 # Fallback to mouse listener approach
-                mouse_handler = TreeMouseListener(self.ctx, treeCtrl, self, self.favorites_dir_path)
-                treeCtrl.addMouseListener(mouse_handler)
-                treeCtrl.addMouseMotionListener(mouse_handler)
+                #mouse_handler = TreeMouseListener(self.ctx, treeCtrl, self, self.favorites_dir_path)
+                #treeCtrl.addMouseListener(mouse_handler)
+                #treeCtrl.addMouseMotionListener(mouse_handler)
 
             return container
         except Exception as e:
@@ -268,22 +272,13 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
     def _setup_drop_target_on_frame(self, frame):
         """Setup drop target on a specific frame"""
         try:
-            if frame and hasattr(frame, 'getContainerWindow'):
-                container_window = frame.getContainerWindow()
-                if container_window:
-                    # Create drop target listener for the document window
-                    drop_listener = DocumentDropTargetListener(self.ctx, self)
+            toolkit = self.ctx.ServiceManager.createInstanceWithContext("com.sun.star.awt.Toolkit", self.ctx)
 
-                    # Try to setup drop target on document window
-                    peer = container_window.getPeer()
-                    if hasattr(peer, 'setDropTarget'):
-                        # Create drop target
-                        drop_target = self.ctx.getServiceManager().createInstanceWithContext(
-                            "com.sun.star.datatransfer.dnd.XDropTarget", self.ctx)
-                        if drop_target:
-                            drop_target.addDropTargetListener(drop_listener)
-                            peer.setDropTarget(drop_target)
-                            print("Drop target setup on document window")
+            # Create drop target listener for the document window
+            drop_listener = DocumentDropTargetListener(self.ctx, self)
+            drop_target = toolkit.getDropTarget(frame.getComponentWindow())
+            drop_target.addDropTargetListener(drop_listener)
+            drop_target.setActive(True)
         except Exception as e:
             print(f"Could not setup drop target on frame: {e}")
 
@@ -605,7 +600,7 @@ class TreeDragDropHandler(unohelper.Base, XDragGestureListener, XDragSourceListe
 
                 # Start the drag operation
                 drag_source = event.DragSource
-                drag_source.startDrag(event, 1, transferable, self)  # 1 = MOVE action
+                drag_source.startDrag(event, ACTION_COPY, 0, 0, transferable, self)  # 1 = MOVE action
 
                 print(f"Started drag for node: {node.getDisplayValue()}")
         except Exception as e:
