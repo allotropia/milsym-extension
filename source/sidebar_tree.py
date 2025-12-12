@@ -31,16 +31,25 @@ class SidebarTree():
     def set_favorites_dir_path(self, favorites_dir_path):
         self.favorites_dir_path = favorites_dir_path
 
-    def create_svg_file_path(self, category_name, base_name="Symbol"):
+    def create_svg_file_path(self, category_name, svg_name):
         category_dir_path = os.path.join(self.favorites_dir_path, category_name)
         os.makedirs(category_dir_path, exist_ok=True)
+        symbol_full_path = os.path.join(category_dir_path, f"{svg_name}.svg")
+        return symbol_full_path
+
+    def generate_unique_name(self, parent_node, base_name="Symbol"):
+        existing_names = set()
+        count = parent_node.getChildCount()
+
+        for i in range(count):
+            child = parent_node.getChildAt(i)
+            existing_names.add(child.getDisplayValue())
 
         counter = 1
         while True:
-            svg_name = f"{base_name} {counter}"
-            symbol_full_path = os.path.join(category_dir_path, f"{svg_name}.svg")
-            if not os.path.exists(symbol_full_path):
-                return symbol_full_path, svg_name
+            new_name = f"{base_name} {counter}"
+            if new_name not in existing_names:
+                return new_name
             counter += 1
 
     def create_svg_file(self, symbol_full_path, svg_data):
@@ -57,10 +66,56 @@ class SidebarTree():
 
         return result
 
-    def create_node(self, root_node, tree_data_model, category_name, svg_data, svg_args):
+    def node_name_exists(self, parent_node, name: str) -> bool:
+        child_count = parent_node.getChildCount()
+
+        for i in range(child_count):
+            child = parent_node.getChildAt(i)
+            if child.getDisplayValue() == name:
+                return True
+
+        return False
+
+    def create_node(self, root_node, tree_data_model, category_name,
+                    svg_data, svg_args, is_editing, selected_node):
         try:
             if svg_data is None:
                 return
+
+            if is_editing:
+                # remove the selected node from the tree
+                # and later append the newly edited node back to the tree
+                parent_node = selected_node.getParent()
+                child_idx = parent_node.getIndex(selected_node)
+                parent_node.removeChildByIndex(child_idx)
+
+                if parent_node.getChildCount() == 0:
+                    root_node = parent_node.getParent()
+                    parent_idx = root_node.getIndex(parent_node)
+                    root_node.removeChildByIndex(parent_idx)
+
+                # get the category name of the selected node from its file path
+                path = fileUrlToSystemPath(selected_node.getNodeGraphicURL())
+                directory = os.path.dirname(path)
+                selected_node_category_name = os.path.basename(directory)
+
+                # if the category name of the selected node differs from the target category,
+                # not only remove the node from the tree, but also delete its associated
+                # SVG and JSON files from the user's profile folder
+                if selected_node_category_name != category_name:
+                    node_name = selected_node.getDisplayValue()
+                    path = os.path.join(self.favorites_dir_path, selected_node_category_name, node_name)
+                    svg_path = f"{path}.svg"
+                    json_path = f"{path}.json"
+                    if os.path.exists(svg_path):
+                        os.remove(svg_path)
+                    if os.path.exists(json_path):
+                        os.remove(json_path)
+
+                    # Delete category folder when it's empty
+                    category_dir = os.path.dirname(svg_path)
+                    if os.path.exists(category_dir) and len(os.listdir(category_dir)) == 0:
+                        os.rmdir(category_dir)
 
             existing_category_node = None
             for i in range(root_node.getChildCount()):
@@ -73,11 +128,20 @@ class SidebarTree():
                 existing_category_node = tree_data_model.createNode(category_name, True)
                 root_node.appendChild(existing_category_node)
 
-            symbol_full_path, node_name = self.create_svg_file_path(category_name)
-            symbol_child = tree_data_model.createNode(node_name, False)
+            if is_editing:
+                node_name = selected_node.getDisplayValue()
+                is_name_exists = self.node_name_exists(existing_category_node, node_name)
+                if is_name_exists:
+                    node_name = self.generate_unique_name(existing_category_node)
 
+            else:
+                node_name = self.generate_unique_name(existing_category_node)
+
+            symbol_full_path = self.create_svg_file_path(category_name, node_name)
             self.create_svg_file(symbol_full_path, svg_data)
             svg_url = systemPathToFileUrl(symbol_full_path)
+
+            symbol_child = tree_data_model.createNode(node_name, False)
             symbol_child.setNodeGraphicURL(svg_url)
 
             # create JSON file to store symbol parameters
@@ -91,6 +155,11 @@ class SidebarTree():
 
             existing_category_node.appendChild(symbol_child)
             self.tree_control.expandNode(existing_category_node)
+
+            # simulate quick edit to highlight the node
+            self.tree_control.startEditingAtNode(symbol_child)
+            self.tree_control.cancelEditing()
+
         except Exception as e:
             print("Error creating symbol node:", e)
 
@@ -219,6 +288,10 @@ class TreeMouseListener(unohelper.Base, XMouseListener, XMouseMotionListener):
                 self.drop_allowed = False
 
             if (event.Buttons == MouseButton.RIGHT and node and node.getChildCount() == 0):
+                # simulate quick edit to highlight the node
+                self.tree.startEditingAtNode(node)
+                self.tree.cancelEditing()
+
                 rect = uno.createUnoStruct("com.sun.star.awt.Rectangle")
                 rect.X = event.X
                 rect.Y = event.Y

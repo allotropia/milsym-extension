@@ -201,9 +201,10 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
         except Exception as e:
             print("Control error:", e)
 
-    def insert_symbol_node(self, category_name, svg_data, svg_args):
+    def insert_symbol_node(self, category_name, svg_data, svg_args, is_editing):
         self.sidebar_tree.create_node(self.root_node, self.mutable_tree_data_model,
-                                      category_name, svg_data, svg_args)
+                                      category_name, svg_data, svg_args, is_editing,
+                                      self.selected_node)
 
     def get_favorites_dir_path(self, ctx):
         ps = ctx.getByName("/singletons/com.sun.star.util.thePathSettings")

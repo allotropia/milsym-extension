@@ -35,6 +35,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         self.sidc_options = {}
         self.listbox_values = {}
         self.disable_callHandler = False
+        self.is_editing = False
         self.color = None
         self.hex_color = None
         self.final_svg_data = None
@@ -191,7 +192,8 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
                 insertGraphicAttributes(shape,
                                         self.final_svg_args)
             elif self.sidebar_panel is not None:
-                self.sidebar_panel.insert_symbol_node(self.tree_category_name, self.sidebar_symbol_svg_data, self.final_svg_args)
+                self.sidebar_panel.insert_symbol_node(self.tree_category_name, self.sidebar_symbol_svg_data,
+                                                      self.final_svg_args, self.is_editing)
             else: # document
                 insertSvgGraphic(
                     self.ctx, self.model,
@@ -546,6 +548,8 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
         if not attrs:
             return False
+
+        self.is_editing = True
 
         for element, value in attrs.items():
             name = self.get_textbox_name(element)
