@@ -390,8 +390,6 @@ class Controller(unohelper.Base, XSelectionChangeListener):
             else:
                 self.disappear_control_dialog()
 
-            self.set_text_field_of_control_dialog()
-
     def disappear_control_dialog(self):
         """Hide control dialog"""
         if self._gui is not None:
@@ -409,9 +407,7 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                 return True
         return False
 
-    def set_text_field_of_control_dialog(self):
-        """Set text field of control dialog"""
-        # TODO: Implement when GUI is available
+
 
 # pythonloader loads a static g_ImplementationHelper variable
 g_ImplementationHelper = unohelper.ImplementationHelper()

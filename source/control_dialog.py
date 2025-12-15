@@ -48,7 +48,6 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
                 self.refresh_tree()
                 self._select_newly_added_child()
                 self.get_controller().add_selection_listener()
-                self.get_controller().set_text_field_of_control_dialog()
             return True
         elif methodName == "OnRemove":
             self.remove_selected_shape()
@@ -98,7 +97,6 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
                 # Refresh tree after removing shape
                 self.refresh_tree()
             self.get_controller().add_selection_listener()
-            self.get_controller().set_text_field_of_control_dialog()
 
     # XTopWindowListener methods
     def windowClosing(self, event):
