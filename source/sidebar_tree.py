@@ -17,6 +17,7 @@ from com.sun.star.beans import PropertyValue
 from com.sun.star.awt import SystemPointer, Key, MouseButton, MenuItemStyle, Rectangle
 from com.sun.star.awt import XMouseListener, XMouseMotionListener, XMenuListener, XKeyListener
 from com.sun.star.awt.tree import XMutableTreeDataModel, XMutableTreeNode, XTreeControl, XTreeNode
+from com.sun.star.view import XSelectionChangeListener
 
 class SidebarTree():
 
@@ -163,6 +164,24 @@ class SidebarTree():
         except Exception as e:
             print("Error creating symbol node:", e)
 
+class TreeSelectionChangeListener(unohelper.Base, XSelectionChangeListener):
+    def __init__(self, sidebar_panel):
+        self.sidebar_panel = sidebar_panel
+
+    def selectionChanged(self, event):
+        node = self.sidebar_panel.selected_node
+        if node and event.Source.isEditing():
+            node_name = node.getDisplayValue()
+            if not node_name:
+                node.setDisplayValue(self.sidebar_panel.selected_node_name)
+                return
+
+            parent_node = node.getParent()
+            if not parent_node:
+                return
+
+            self.sidebar_panel.rename_symbol_files()
+
 class TreeKeyListener(unohelper.Base, XKeyListener):
     def __init__(self, sidebar_panel, favorites_dir_path):
         self.sidebar_panel = sidebar_panel
@@ -240,15 +259,36 @@ class TreeMouseListener(unohelper.Base, XMouseListener, XMouseMotionListener):
             x, y = event.X, event.Y
             node = self.tree.getNodeForLocation(x, y)
             if node and node.getChildCount() == 0 and not self.drop_allowed:
-                self.sidebar_panel.selected_node = node
                 svg_url = node.getNodeGraphicURL()
                 file_path = fileUrlToSystemPath(svg_url)
                 self.svg_data = self.svg_data_from_url(file_path)
+
+                if self.tree.isEditing():
+                    self.finalize_node_edit()
+                else:
+                    self.sidebar_panel.selected_node = node
+
+                if event.ClickCount == 2:
+                    self.sidebar_panel.selected_node_name = node.getDisplayValue()
+                    self.tree.startEditingAtNode(node)
             else:
-                self.sidebar_panel.selected_node = None
+                if self.tree.isEditing():
+                    self.finalize_node_edit()
 
         except Exception as e:
             print("Mouse pressed error:", e)
+
+    def finalize_node_edit(self):
+        selected_node = self.sidebar_panel.selected_node
+        old_node_name = selected_node.getDisplayValue()
+
+        self.tree.cancelEditing()
+
+        new_node_name = selected_node.getDisplayValue()
+        if not new_node_name:
+            selected_node.setDisplayValue(old_node_name)
+        else:
+            self.sidebar_panel.rename_symbol_files()
 
     def mouseMoved(self, event):
         try:
@@ -301,9 +341,6 @@ class TreeMouseListener(unohelper.Base, XMouseListener, XMouseMotionListener):
                 peer = self.tree.getPeer()
                 popup = self._create_popup_menu()
                 popup.execute(peer, rect, 0)
-
-            if event.ClickCount == 2:
-                self.sidebar_panel.rename_symbol()
 
         except Exception as e:
             print("Mouse released error:", e)

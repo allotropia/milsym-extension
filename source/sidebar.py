@@ -11,7 +11,7 @@ import uno
 import json
 import unohelper
 
-from sidebar_tree import SidebarTree, TreeKeyListener, TreeMouseListener
+from sidebar_tree import SidebarTree, TreeKeyListener, TreeMouseListener, TreeSelectionChangeListener
 from symbol_dialog import open_symbol_dialog
 from utils import insertSvgGraphic
 from sidebar_rename_dialog import RenameDialog
@@ -66,6 +66,7 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
         self.tree_control = None
         self.mutable_tree_data_model = None
         self.selected_node = None
+        self.selected_node_name = None
         self.removed_nodes = []
 
         self.sidebar_tree = SidebarTree(ctx)
@@ -178,6 +179,9 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
 
             key_listener =  TreeKeyListener(self, self.favorites_dir_path)
             treeCtrl.addKeyListener(key_listener)
+
+            selection_listener = TreeSelectionChangeListener(self)
+            treeCtrl.addSelectionChangeListener(selection_listener)
 
             container.addControl("btNew", btNew)
             container.addControl("btImport", btImport)
@@ -292,6 +296,56 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
 
     def rename_symbol(self):
         RenameDialog(self.ctx, self.selected_node, self.favorites_dir_path).run()
+
+    def get_symbol_path(self, symbol_name):
+        category_name = self.selected_node.getParent().getDisplayValue()
+        category_path = os.path.join(self.favorites_dir_path, category_name)
+        path = os.path.join(category_path, symbol_name)
+        return path
+
+    def node_name_exists(self, parent_node, name: str, exclude_node=None) -> bool:
+        for i in range(parent_node.getChildCount()):
+            child = parent_node.getChildAt(i)
+            if child == exclude_node:
+                continue
+            if child.getDisplayValue() == name:
+                return True
+
+        return False
+
+    def rename_symbol_files(self):
+        old_name = self.selected_node_name
+        if not old_name:
+            return
+
+        node = self.selected_node
+        new_name = node.getDisplayValue()
+        if old_name == new_name:
+            return
+
+        exists = self.node_name_exists(node.getParent(), new_name, node)
+        if exists:
+            n = 1
+            base_name = new_name
+            new_name = f"{base_name} ({n})"
+
+            while self.node_name_exists(node.getParent(), new_name, node):
+                n += 1
+                new_name = f"{base_name} ({n})"
+
+            node.setDisplayValue(new_name)
+
+        old_svg = self.get_symbol_path(old_name) + ".svg"
+        old_json = self.get_symbol_path(old_name) + ".json"
+
+        new_svg = self.get_symbol_path(new_name) + ".svg"
+        new_json = self.get_symbol_path(new_name) + ".json"
+
+        os.rename(old_svg, new_svg)
+        os.rename(old_json, new_json)
+
+        node.setNodeGraphicURL(systemPathToFileUrl(new_svg))
+        self.selected_node_name = None
 
     def onResize(self, event):
         try:
