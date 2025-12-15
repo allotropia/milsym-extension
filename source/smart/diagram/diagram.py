@@ -200,7 +200,7 @@ class Diagram(ABC):
         """Set shape properties"""
         try:
             if shape_type == self.DIAGRAM_SHAPE_TYPE:
-                svg_url = "vnd.sun.star.extension://com.collabora.milsymbol/img/friend.svg"
+                svg_url = "vnd.sun.star.extension://com.collabora.milsymbol/img/orbat_base.svg"
                 graphic_provider = self._x_context.ServiceManager.createInstanceWithContext("com.sun.star.graphic.GraphicProvider", self._x_context)
                 media_properties = (PropertyValue("URL", 0, svg_url, 0),)
                 graphic = graphic_provider.queryGraphic(media_properties)

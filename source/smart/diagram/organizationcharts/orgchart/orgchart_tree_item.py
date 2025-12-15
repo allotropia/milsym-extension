@@ -259,10 +259,10 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
 
         if self._level > last_hor_level:
             self.set_position(Point(X=int(x_coord + calculated_width * 0.1), Y=y_coord))
-            self.set_size(Size(Width=int(calculated_width * 0.9), Height=calculated_height))
         else:
             self.set_position(Point(X=x_coord, Y=y_coord))
-            self.set_size(Size(Width=calculated_width, Height=calculated_height))
+
+        self.set_size(Size(Width=int(calculated_width * 0.9), Height=calculated_height))
 
     def _calculate_size_for_aspect_ratio(self):
         """Calculate size with fixed height and proportional width"""
