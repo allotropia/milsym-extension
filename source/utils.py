@@ -63,7 +63,7 @@ def parse_svg_dimensions(svg_data, scale_factor=1):
     return shape_size
 
 
-def insertSvgGraphic(ctx, model, svg_data, params, selected_shape, scale_factor=1):
+def insertSvgGraphic(ctx, model, svg_data, params, selected_shape, smybol_name, scale_factor=1):
     is_writer = model.supportsService("com.sun.star.text.TextDocument")
     is_calc = model.supportsService("com.sun.star.sheet.SpreadsheetDocument")
     is_draw_impress = model.supportsService("com.sun.star.presentation.PresentationDocument") or \
@@ -95,12 +95,14 @@ def insertSvgGraphic(ctx, model, svg_data, params, selected_shape, scale_factor=
             view_cursor_supplier = controller
             cursor = view_cursor_supplier.getViewCursor()
             text = cursor.getText()
+            shape.setName(smybol_name)
             text.insertTextContent(cursor, shape, True)
         # Calc - for spreadsheets, we'll use the shape directly since frames are not well supported
         elif is_calc:
             controller = model.getCurrentController()
             active_sheet = controller.getActiveSheet()
             draw_page = active_sheet.getDrawPage()
+            shape.setPropertyValue("Name", smybol_name)
             pos = shape.getPosition()
             draw_page.add(shape)
             shape.setPosition(pos)
@@ -121,6 +123,7 @@ def insertSvgGraphic(ctx, model, svg_data, params, selected_shape, scale_factor=
         elif is_draw_impress:
             controller = model.getCurrentController()
             current_page = controller.getCurrentPage()
+            shape.setPropertyValue("Name", smybol_name)
             pos = shape.getPosition()
             current_page.add(shape)
             shape.setPosition(pos)

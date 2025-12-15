@@ -324,7 +324,8 @@ class TreeMouseListener(unohelper.Base, XMouseListener, XMouseMotionListener):
             if node and self.drop_allowed and self.svg_data:
                 model = self.sidebar_panel.desktop.getCurrentComponent()
                 params = node.DataValue
-                insertSvgGraphic(self.ctx, model, self.svg_data, params, None, 3)
+                node_name = node.getDisplayValue()
+                insertSvgGraphic(self.ctx, model, self.svg_data, params, None, node_name, 3)
                 self.drop_allowed = False
 
             if (event.Buttons == MouseButton.RIGHT and node and node.getChildCount() == 0):

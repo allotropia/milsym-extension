@@ -199,7 +199,8 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
                     self.ctx, self.model,
                     self.final_svg_data,
                     self.final_svg_args,
-                    self.selected_shape)
+                    self.selected_shape,
+                    "Symbol " + "(" + self.sidc + ")")
             dialog.endExecute()
             return True
         elif methodName == "dialog_btCancel":
