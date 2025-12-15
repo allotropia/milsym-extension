@@ -387,9 +387,6 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                     if self._gui.is_visible_control_dialog():
                         self._gui.set_focus_control_dialog()
 
-            else:
-                self.disappear_control_dialog()
-
     def disappear_control_dialog(self):
         """Hide control dialog"""
         if self._gui is not None:
