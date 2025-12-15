@@ -258,19 +258,53 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
     def _setup_document_drop_targets(self):
         """Setup drop targets on document windows"""
         try:
+            print("setting up document drop targets")
             # Listen for frame events to setup drop targets on new documents
             frame_listener = DocumentFrameListener(self.ctx, self)
             self.desktop.addFrameActionListener(frame_listener)
 
-            # Also setup on currently active document if any
-            current_frame = self.desktop.getCurrentFrame()
-            if current_frame:
-                self._setup_drop_target_on_frame(current_frame)
+            # Setup on all existing frames
+            self._setup_on_existing_frames()
         except Exception as e:
             print(f"Could not setup document drop targets: {e}")
 
+    def _setup_on_existing_frames(self):
+        """Setup drop targets on all existing frames"""
+        try:
+            # First try the current frame
+            current_frame = self.desktop.getCurrentFrame()
+            print("current frame: ", current_frame)
+            if current_frame:
+                self._setup_drop_target_on_frame(current_frame)
+                return
+
+            # If no current frame, iterate through all frames
+            frames = self.desktop.getFrames()
+            print(f"Found {frames.getCount()} frames")
+
+            for i in range(frames.getCount()):
+                frame = frames.getByIndex(i)
+                if frame and self._is_document_frame(frame):
+                    self._setup_drop_target_on_frame(frame)
+
+        except Exception as e:
+            print(f"Could not setup on existing frames: {e}")
+
+    def _is_document_frame(self, frame):
+        """Check if frame is a document frame (not toolbar, etc.)"""
+        try:
+            # Check if frame has a component (document)
+            component = frame.getController()
+            if component:
+                model = component.getModel()
+                return model is not None
+            return False
+        except:
+            return False
+
     def _setup_drop_target_on_frame(self, frame):
         """Setup drop target on a specific frame"""
+        print("Setting up drop target on frame:", frame)
         try:
             toolkit = self.ctx.ServiceManager.createInstanceWithContext("com.sun.star.awt.Toolkit", self.ctx)
 
@@ -592,6 +626,7 @@ class TreeDragDropHandler(unohelper.Base, XDragGestureListener, XDragSourceListe
     def dragGestureRecognized(self, event):
         """Handle drag gesture recognition"""
         try:
+            print("Drag gesture recognized")
             # Get the node at the drag start location
             node = self.tree_control.getNodeForLocation(event.DragOriginX, event.DragOriginY)
             if node and node.getChildCount() == 0:  # Only leaf nodes are draggable
@@ -670,8 +705,10 @@ class DocumentFrameListener(unohelper.Base, XFrameActionListener):
     """Listen for frame events to setup drop targets on new documents"""
 
     def __init__(self, ctx, sidebar_panel):
+        print("frame listener created")
         self.ctx = ctx
         self.sidebar_panel = sidebar_panel
+        self.processed_frames = set()  # Track which frames we've already processed
 
     def frameAction(self, event):
         """Handle frame action events"""
@@ -895,6 +932,7 @@ class DocumentDropTargetListener(unohelper.Base, XDropTargetListener):
     def dragEnter(self, event):
         """Drag entered the drop target"""
         # Check if we can accept this drag
+        print("Drag entered document drop target")
         transferable = event.Transferable
         if transferable:
             data_flavors = transferable.getTransferDataFlavors()
@@ -910,6 +948,7 @@ class DocumentDropTargetListener(unohelper.Base, XDropTargetListener):
 
     def dragOver(self, event):
         """Drag is over the drop target"""
+        print("Drag is over the drop target")
         pass
 
     def dropActionChanged(self, event):
