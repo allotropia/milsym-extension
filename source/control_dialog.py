@@ -17,7 +17,7 @@ if base_dir not in sys.path:
 
 from com.sun.star.awt import XDialogEventHandler, XTopWindowListener, XMouseListener, XKeyListener
 from com.sun.star.awt import MouseButton
-from com.sun.star.awt.Key import UP, DOWN, LEFT, RIGHT, PAGEUP, PAGEDOWN, HOME, END
+from com.sun.star.awt.Key import UP, DOWN, LEFT, RIGHT, PAGEUP, PAGEDOWN, HOME, END, DELETE
 from com.sun.star.view.SelectionType import SINGLE as SELECTION_TYPE_SINGLE
 from com.sun.star.view import XSelectionChangeListener
 from com.sun.star.datatransfer.dnd import XDragGestureListener, XDropTargetListener
@@ -51,24 +51,7 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
                 self.get_controller().set_text_field_of_control_dialog()
             return True
         elif methodName == "OnRemove":
-            if self.get_controller().get_diagram() is not None:
-                self.get_controller().remove_selection_listener()
-                if self.get_controller().get_group_type() == self.get_controller().ORGANIGROUP:
-                    org_chart = self.get_controller().get_diagram()
-                    if org_chart.is_error_in_tree():
-                        self.get_gui().ask_user_for_repair(org_chart)
-                    else:
-                        self.get_controller().get_diagram().remove_shape()
-                        self.get_controller().get_diagram().refresh_diagram()
-                        # Refresh tree after removing shape
-                        self.refresh_tree()
-                else:
-                    self.get_controller().get_diagram().remove_shape()
-                    self.get_controller().get_diagram().refresh_diagram()
-                    # Refresh tree after removing shape
-                    self.refresh_tree()
-                self.get_controller().add_selection_listener()
-                self.get_controller().set_text_field_of_control_dialog()
+            self.remove_selected_shape()
             return True
         elif methodName == "OnEdit":
             self.dialog.execute_properties_dialog()
@@ -95,6 +78,27 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
     def get_controller(self):
         """Get controller reference"""
         return self.dialog.get_controller()
+
+    def remove_selected_shape(self):
+        """Remove the currently selected shape from the diagram"""
+        if self.get_controller().get_diagram() is not None:
+            self.get_controller().remove_selection_listener()
+            if self.get_controller().get_group_type() == self.get_controller().ORGANIGROUP:
+                org_chart = self.get_controller().get_diagram()
+                if org_chart.is_error_in_tree():
+                    self.get_gui().ask_user_for_repair(org_chart)
+                else:
+                    self.get_controller().get_diagram().remove_shape()
+                    self.get_controller().get_diagram().refresh_diagram()
+                    # Refresh tree after removing shape
+                    self.refresh_tree()
+            else:
+                self.get_controller().get_diagram().remove_shape()
+                self.get_controller().get_diagram().refresh_diagram()
+                # Refresh tree after removing shape
+                self.refresh_tree()
+            self.get_controller().add_selection_listener()
+            self.get_controller().set_text_field_of_control_dialog()
 
     # XTopWindowListener methods
     def windowClosing(self, event):
@@ -603,8 +607,13 @@ class TreeKeyHandler(unohelper.Base, XKeyListener):
         pass
 
     def keyReleased(self, event):
-        """Handle key released events - check for navigation keys"""
+        """Handle key released events"""
         try:
+            # Check for DELETE key
+            if event.KeyCode == DELETE:
+                self.dialog_handler.remove_selected_shape()
+                return
+
             # Check for navigation keys (arrows, page up/down, home, end)
             navigation_keys = [
                 UP,       # Up arrow
