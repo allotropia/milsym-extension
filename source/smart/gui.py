@@ -21,6 +21,9 @@ from com.sun.star.awt import WindowDescriptor, WindowAttribute
 from com.sun.star.awt.WindowClass import MODALTOP
 
 class Gui:
+    # Class-level variables to ensure only one dialog exists globally
+    _global_control_dialog = None
+    _global_listener = None
     def __init__(self, controller, x_context, x_frame):
         """Initialize GUI"""
         self._controller = controller
@@ -45,57 +48,100 @@ class Gui:
         """Set visibility of control dialog"""
         new_diagram_id = self.get_controller().get_diagram().get_diagram_id()
 
-        # Need to create new controlDialog when a new diagram selected (not same GUI panels of diagrams)
+        # Check if we need to recreate dialog for a different diagram
+        need_new_dialog = False
         if ((self.get_controller().get_last_diagram_type() != -1 or
              self.get_controller().get_last_diagram_id() != -1) and
             (self.get_controller().get_last_diagram_type() != self.get_controller().get_diagram_type() or
              self.get_controller().get_last_diagram_id() != new_diagram_id)):
-            if self._x_control_dialog is not None:
-                self._x_control_dialog.setVisible(False)
-            self.create_control_dialog()
+            need_new_dialog = True
 
-        if self._x_control_dialog is None:
+        # Create or recreate dialog if needed
+        if self._x_control_dialog is None or need_new_dialog:
+            if need_new_dialog:
+                # Properly dispose the old dialog before creating a new one
+                self.close_and_dispose_control_dialog()
+            else:
+                pass
             self.create_control_dialog()
 
         if self._x_control_dialog is not None:
-            self._x_control_dialog.setVisible(visible)
             if visible:
+                self._x_control_dialog.setVisible(True)
                 self._is_visible_control_dialog = True
                 self._x_control_dialog.setFocus()
                 # Refresh tree when dialog becomes visible
                 if self._o_listener:
                     self._o_listener.refresh_tree()
             else:
+                self._x_control_dialog.setVisible(False)
                 self._is_visible_control_dialog = False
 
         self.get_controller().set_last_diagram_type(self.get_controller().get_diagram_type())
         self.get_controller().set_last_diagram_id(new_diagram_id)
 
     def create_control_dialog(self):
-        """Create control dialog"""
+        """Create control dialog - ensures only one instance is created globally"""
+        # If a global dialog exists, dispose it first to ensure clean handler binding
+        if Gui._global_control_dialog is not None:
+            self._dispose_global_dialog()
+
         try:
             dialog_provider = self._x_context.getServiceManager().createInstanceWithContext("com.sun.star.awt.DialogProvider2", self._x_context)
             s_dialog_url = "vnd.sun.star.extension://com.collabora.milsymbol/dialog/ControlDlg.xdl"
 
-            self._o_listener = ControlDlgHandler(self, self._x_context)
-            self._x_control_dialog = dialog_provider.createDialogWithHandler(s_dialog_url, self._o_listener)
+            # Create handler first
+            new_listener = ControlDlgHandler(self, self._x_context)
 
-            if self._x_control_dialog is not None:
-                self._x_control_dialog.addTopWindowListener(self._o_listener)
+            # Create dialog with handler to ensure proper binding
+            new_dialog = dialog_provider.createDialogWithHandler(s_dialog_url, new_listener)
+
+            if new_dialog is not None:
+                new_dialog.addTopWindowListener(new_listener)
+
+                # Store in both global and instance variables
+                Gui._global_control_dialog = new_dialog
+                Gui._global_listener = new_listener
+                self._x_control_dialog = new_dialog
+                self._o_listener = new_listener
 
         except Exception as ex:
             print(f"Error creating control dialog: {ex}")
+            # Reset state on error to allow retry
+            Gui._global_control_dialog = None
+            Gui._global_listener = None
+            self._x_control_dialog = None
+            self._o_listener = None
+
+    def _dispose_global_dialog(self):
+        """Helper method to dispose the global dialog"""
+        if Gui._global_control_dialog is not None:
+            try:
+                if Gui._global_listener is not None:
+                    Gui._global_control_dialog.removeTopWindowListener(Gui._global_listener)
+                Gui._global_control_dialog.setVisible(False)
+
+                # Dispose through XComponent interface
+                x_component = Gui._global_control_dialog.queryInterface(uno.getTypeByName("com.sun.star.lang.XComponent"))
+                if x_component is not None:
+                    x_component.dispose()
+                else:
+                    Gui._global_control_dialog.dispose()
+            except Exception as ex:
+                print(f"Error disposing global dialog: {ex}")
+            finally:
+                Gui._global_control_dialog = None
+                Gui._global_listener = None
 
     def close_and_dispose_control_dialog(self):
         """Close and dispose control dialog"""
-        if self._x_control_dialog is not None:
-            self._x_control_dialog.removeTopWindowListener(self._o_listener)
-            self._x_control_dialog.setVisible(False)
-            x_comp = self._x_control_dialog
-            if x_comp is not None:
-                x_comp.dispose()
-
+        # Clear all references to prevent recreation during disposal
         self._x_control_dialog = None
+        self._o_listener = None
+        self._is_visible_control_dialog = False
+
+        # Dispose the global dialog
+        self._dispose_global_dialog()
 
     def is_visible_control_dialog(self):
         """Check if control dialog is visible"""
