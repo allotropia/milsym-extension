@@ -379,11 +379,6 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                     if not self._gui.is_visible_control_dialog():
                         self._gui.set_visible_control_dialog(True)
 
-                    # if self.is_only_simple_item_selected():
-                    #     self._gui.enable_text_field_of_control_dialog(True)
-                    # else:
-                    #     self._gui.enable_text_field_of_control_dialog(False)
-
                     if self._gui.is_visible_control_dialog():
                         self._gui.set_focus_control_dialog()
 
