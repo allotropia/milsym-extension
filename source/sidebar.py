@@ -936,14 +936,11 @@ class DocumentDropTargetListener(unohelper.Base, XDropTargetListener):
         """Drag entered the drop target"""
         # Check if we can accept this drag
         print("Drag entered document drop target")
-        transferable = event.Transferable
-        if transferable:
-            data_flavors = transferable.getTransferDataFlavors()
-            for flavor in data_flavors:
-                if flavor.MimeType == "application/x-milsymbol-node":
-                    event.acceptDrag(1)  # Accept drag with MOVE action
-                    return
-        event.rejectDrag()
+        for flavor in event.SupportedDataFlavors:
+            if flavor.MimeType == "application/x-milsymbol-node":
+                event.Context.acceptDrag(1)  # Accept drag with MOVE action
+                return
+        event.Context.rejectDrag()
 
     def dragExit(self, event):
         """Drag exited the drop target"""
