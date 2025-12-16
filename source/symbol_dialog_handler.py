@@ -21,6 +21,7 @@ if base_dir not in sys.path:
 
 from data import symbols_data
 from data import country_data
+from data.help_content import HELP_CONTENT
 from utils import insertSvgGraphic, insertGraphicAttributes, getExtensionBasePath, create_graphic_from_svg
 from translator import Translator
 
@@ -150,7 +151,12 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         if getattr(self, "disable_callHandler", False):
             return
 
-        if methodName == "btCustom":
+        # Generic help button handler - handles any button with id "btHelp<FieldName>"
+        if methodName.startswith("btHelp"):
+            field_name = methodName[6:]
+            self.show_help_dialog(field_name)
+            return True
+        elif methodName == "btCustom":
             hex_color = self.pick_custom_color()
             if hex_color:
                 self.hex_color = hex_color
@@ -288,6 +294,31 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         green = (color_val >> 8) & 0xFF
         blue  = color_val & 0xFF
         return f"#{red:02X}{green:02X}{blue:02X}"
+
+    def show_help_dialog(self, field_name):
+        """Display a message box with help text for the specified field.
+
+        Args:
+            field_name: The field name (without "btHelp" prefix) to look up in HELP_CONTENT
+        """
+        from com.sun.star.awt.MessageBoxType import INFOBOX
+        from com.sun.star.awt.MessageBoxButtons import BUTTONS_OK
+
+        help_info = HELP_CONTENT.get(field_name)
+        if not help_info:
+            return
+
+        toolkit = self.ctx.getServiceManager().createInstanceWithContext(
+            "com.sun.star.awt.Toolkit", self.ctx)
+        parent_window = self.dialog.getPeer()
+        msgbox = toolkit.createMessageBox(
+            parent_window,
+            INFOBOX,
+            BUTTONS_OK,
+            self.translator.translate(help_info["title"]),
+            self.translator.translate(help_info["message"])
+        )
+        msgbox.execute()
 
     def textbox_handler(self, dialog, methodName):
         options_name = self.textbox_map.get(methodName)
