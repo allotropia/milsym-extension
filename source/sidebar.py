@@ -661,6 +661,9 @@ class TreeDragDropHandler(unohelper.Base, XDragGestureListener, XDragSourceListe
         else:
             print("Drag drop was cancelled")
 
+    def dropActionChanged(self, event):
+        pass
+
     def disposing(self, event):
         pass
 
