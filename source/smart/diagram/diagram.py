@@ -357,7 +357,11 @@ class Diagram(ABC):
             x_curr_shape = None
             curr_shape_name = ""
             self._x_draw_page = self.get_controller().get_current_page()
-            self._diagram_id = self.get_controller().get_current_diagram_id()
+
+            _current_diagram_id = self.get_controller().get_current_diagram_id()
+            if _current_diagram_id != 0:
+                self._diagram_id = _current_diagram_id
+
             s_diagram_id = str(self._diagram_id)
 
             for i in range(self._x_draw_page.getCount()):
