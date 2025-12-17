@@ -15,3 +15,7 @@ Build the extension with:
 Then install the resulting `milsymbol-extension.oxt` using the LibreOffice extension manager, or use unopkg:
 
 `unopkg add -f milsymbol-extension.oxt`
+
+## Autocomplete suggestions
+
+Install [types-unopy](https://pypi.org/project/types-unopy/) and restart your LSP.
