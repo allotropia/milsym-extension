@@ -91,7 +91,8 @@ class Gui:
             s_dialog_url = "vnd.sun.star.extension://com.collabora.milsymbol/dialog/ControlDlg.xdl"
 
             # Create handler first
-            new_listener = ControlDlgHandler(self, self._x_context)
+            model = self._x_frame.getController().getModel()
+            new_listener = ControlDlgHandler(self, self._x_context, model)
 
             # Create dialog with handler to ensure proper binding
             new_dialog = dialog_provider.createDialogWithHandler(s_dialog_url, new_listener)
