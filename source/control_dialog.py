@@ -24,16 +24,29 @@ from com.sun.star.datatransfer.dnd import XDragGestureListener, XDropTargetListe
 from com.sun.star.datatransfer.dnd import XDragSourceListener
 from com.sun.star.datatransfer.dnd.DNDConstants import ACTION_MOVE
 from com.sun.star.datatransfer import XTransferable, DataFlavor
+from com.sun.star.beans import NamedValue
+from utils import extractGraphicAttributes, getExtensionBasePath
+from unohelper import systemPathToFileUrl
+import tempfile
+
 
 class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener):
     buttons = ["addShape", "removeShape", "editShape"]
 
-    def __init__(self, dialog, x_context):
+    def __init__(self, dialog, x_context, model):
         self.dialog = dialog
         self.x_context = x_context
         self.tree_control = None
         self._populate_tree_on_show = True
         self._parent_before_add = None
+        factory = self.x_context.getServiceManager().createInstanceWithContext(
+            "com.sun.star.script.provider.MasterScriptProviderFactory", self.x_context
+        )
+        provider = factory.createScriptProvider(model)
+        self.script = provider.getScript(
+            "vnd.sun.star.script:milsymbol.milsymbol.js?language=JavaScript&location=user:uno_packages/"
+            + getExtensionBasePath(self.x_context)
+        )
 
     def callHandlerMethod(self, dialog, eventObject, methodName):
         if methodName == "OnAdd":
@@ -208,6 +221,16 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
             root_node = data_model.createNode(root_node_name, True)
             data_model.setRoot(root_node)
             tree_model = self.tree_control.getModel()
+
+            # Add icon preview before setting data_model
+            diagram_tree = diagram.get_diagram_tree()
+            if diagram_tree is not None:
+                root_item = diagram_tree.get_root_item()
+                if root_item is not None:
+                    shape = root_item.get_rectangle_shape()
+                    root_name = self._get_tree_node_display_name(root_item, 1)
+                    self._add_icon_preview_tree_node(shape, root_name, root_node)
+
             tree_model.setPropertyValue("DataModel", data_model)
 
             diagram_tree = diagram.get_diagram_tree()
@@ -220,7 +243,9 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
                     # Store root item in mapping for selection
                     self._node_to_tree_item_map = {}
                     self._node_to_tree_item_map.clear()
-                    self._node_to_tree_item_map[root_name] = root_item                    # Populate children of root item
+                    self._node_to_tree_item_map[root_name] = root_item
+
+                    # Populate children of root item
                     self._populate_tree_children(data_model, root_node, root_item)
                 else:
                     print("No root item found in diagram tree")
@@ -273,6 +298,9 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
             if not hasattr(self, '_node_to_tree_item_map'):
                 self._node_to_tree_item_map = {}
             self._node_to_tree_item_map[display_name] = tree_item
+
+            shape = tree_item.get_rectangle_shape()
+            self._add_icon_preview_tree_node(shape, display_name, node)
 
             # Add children
             child_count = 0
@@ -334,7 +362,11 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
 
                 # Try to set up drag source
                 try:
-                    toolkit = self.x_context.getServiceManager().createInstanceWithContext("com.sun.star.awt.Toolkit", self.x_context)
+                    toolkit = (
+                        self.x_context.getServiceManager().createInstanceWithContext(
+                            "com.sun.star.awt.Toolkit", self.x_context
+                        )
+                    )
                     drag_gesture_recognizer = toolkit.getDragGestureRecognizer(peer)
                     drag_gesture_recognizer.addDragGestureListener(drag_handler)
                 except Exception as e:
@@ -350,6 +382,104 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
 
         except Exception as e:
             print(f"Error setting up drag & drop: {e}")
+
+    def _add_icon_preview_tree_node(self, shape, name, node):
+        try:
+            if shape is None:
+                node.setNodeGraphicURL(
+                    "vnd.sun.star.extension://com.collabora.milsymbol/img/orbat_base_small.svg"
+                )
+                return
+
+            attributes = extractGraphicAttributes(shape)
+            if attributes and "MilSymCode" in attributes:
+                svg_data = self._generate_icon_svg(attributes)
+                if svg_data:
+                    svg_url = self._save_svg_to_temp_and_get_url(svg_data, name)
+                    if svg_url:
+                        node.setNodeGraphicURL(svg_url)
+            else:
+                node.setNodeGraphicURL(
+                    "vnd.sun.star.extension://com.collabora.milsymbol/img/orbat_base_small.svg"
+                )
+        except Exception as e:
+            print(f"Error adding root node icon: {e}")
+
+    def _generate_icon_svg(self, attributes):
+        """Generate small SVG icon from symbol attributes
+
+        Args:
+            attributes: Dictionary of symbol attributes extracted from shape
+
+        Returns:
+            SVG string data or None if generation fails
+        """
+        try:
+            sidc_code = attributes.get("MilSymCode")
+            if not sidc_code:
+                return None
+
+            args = [sidc_code, NamedValue("size", 14.0)]
+
+            if "MilSymStack" in attributes:
+                args.append(NamedValue("stack", attributes["MilSymStack"]))
+
+            if "MilSymReinforced" in attributes:
+                args.append(NamedValue("reinforced", attributes["MilSymReinforced"]))
+
+            if "MilSymStaff" in attributes:
+                args.append(NamedValue("staff", attributes["MilSymStaff"]))
+
+            if "MilSymSpecialheadquarters" in attributes:
+                args.append(
+                    NamedValue(
+                        "specialheadquarters", attributes["MilSymSpecialheadquarters"]
+                    )
+                )
+
+            if "MilSymCountrycode" in attributes:
+                args.append(NamedValue("countrycode", attributes["MilSymCountrycode"]))
+
+            result = self.script.invoke(args, (), ())
+            svg_data = str(result[0])
+            return svg_data
+
+        except Exception as e:
+            print(f"Error generating icon SVG: {e}")
+            return None
+
+    def _save_svg_to_temp_and_get_url(self, svg_data, node_identifier):
+        """Save SVG to temp file and return file URL for setNodeGraphicURL()
+
+        Args:
+            svg_data: SVG content as string
+            node_identifier: Unique identifier for the node (used in filename)
+
+        Returns:
+            file:// URL string or None if save fails
+        """
+        try:
+            if not svg_data:
+                return None
+
+            safe_name = "".join(
+                c if c.isalnum() or c in ("-", "_") else "_" for c in node_identifier
+            )
+            safe_name = safe_name[:50]
+
+            temp_fd, temp_path = tempfile.mkstemp(
+                suffix=".svg", prefix=f"orbat_icon_{safe_name}_"
+            )
+
+            with os.fdopen(temp_fd, "w", encoding="utf-8") as f:
+                f.write(svg_data)
+
+            file_url = systemPathToFileUrl(temp_path)
+            return file_url
+
+        except Exception as e:
+            print(f"Error saving SVG to temp file: {e}")
+            return None
 
     def _get_tree_node_display_name(self, tree_item, item_number):
         """Get a meaningful display name for a tree node"""
@@ -500,7 +630,7 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
     def move_tree_item(self, source_node_name, target_node_name, drop_position):
         """Move a tree item to a new position and update the diagram"""
         try:
-            if not hasattr(self, '_node_to_tree_item_map'):
+            if not hasattr(self, "_node_to_tree_item_map"):
                 return False
 
             source_tree_item = self._node_to_tree_item_map.get(source_node_name)
@@ -514,9 +644,11 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
             controller = self.get_controller()
             diagram = controller.get_diagram()
 
-            if diagram and hasattr(diagram, 'move_tree_item'):
+            if diagram and hasattr(diagram, "move_tree_item"):
                 # Call diagram's move method
-                success = diagram.move_tree_item(source_tree_item, target_tree_item, drop_position)
+                success = diagram.move_tree_item(
+                    source_tree_item, target_tree_item, drop_position
+                )
                 if success:
                     # Refresh the diagram and tree view
                     diagram.refresh_diagram()
@@ -594,6 +726,7 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
         except Exception as e:
             print(f"Error selecting newly added child: {e}")
 
+
 class TreeKeyHandler(unohelper.Base, XKeyListener):
     """Handle keyboard events on tree control for navigation selection"""
 
@@ -614,14 +747,14 @@ class TreeKeyHandler(unohelper.Base, XKeyListener):
 
             # Check for navigation keys (arrows, page up/down, home, end)
             navigation_keys = [
-                UP,       # Up arrow
-                DOWN,     # Down arrow
-                LEFT,     # Left arrow
-                RIGHT,    # Right arrow
-                PAGEUP,   # Page Up
-                PAGEDOWN, # Page Down
-                HOME,     # Home
-                END       # End
+                UP,  # Up arrow
+                DOWN,  # Down arrow
+                LEFT,  # Left arrow
+                RIGHT,  # Right arrow
+                PAGEUP,  # Page Up
+                PAGEDOWN,  # Page Down
+                HOME,  # Home
+                END,  # End
             ]
 
             if event.KeyCode in navigation_keys:
@@ -658,7 +791,9 @@ class TreeMouseHandler(unohelper.Base, XMouseListener):
                 tree_control = self.dialog_handler.tree_control
                 if tree_control:
                     try:
-                        selected_node = tree_control.getNodeForLocation(event.X, event.Y)
+                        selected_node = tree_control.getNodeForLocation(
+                            event.X, event.Y
+                        )
                         if selected_node:
                             self.dialog_handler.handle_tree_selection(selected_node)
 
@@ -678,6 +813,7 @@ class TreeMouseHandler(unohelper.Base, XMouseListener):
     def disposing(self, event):
         """Handle disposing events"""
         pass
+
 
 class TreeSelectionListener(unohelper.Base, XSelectionChangeListener):
     """Listen for shape selection changes to update tree selection"""
@@ -703,6 +839,8 @@ class TreeSelectionListener(unohelper.Base, XSelectionChangeListener):
     def disposing(self, event):
         """Handle disposing events"""
         pass
+
+
 class TreeDragHandler(unohelper.Base, XDragGestureListener, XDragSourceListener):
     """Handle drag operations on tree control"""
 
@@ -717,19 +855,26 @@ class TreeDragHandler(unohelper.Base, XDragGestureListener, XDragSourceListener)
             if tree_control:
                 # Get the node at the drag point
                 try:
-                    node = tree_control.getNodeForLocation(event.DragOriginX, event.DragOriginY)
-                    if node and hasattr(node, 'getDisplayValue'):
+                    node = tree_control.getNodeForLocation(
+                        event.DragOriginX, event.DragOriginY
+                    )
+                    if node and hasattr(node, "getDisplayValue"):
                         self.dragged_node_name = node.getDisplayValue()
 
                         # Don't allow dragging the root node
-                        if self.dragged_node_name == "Root" or "Diagram Structure" in self.dragged_node_name:
+                        if (
+                            self.dragged_node_name == "Root"
+                            or "Diagram Structure" in self.dragged_node_name
+                        ):
                             return
 
                         # Create transferable data
                         transferable = TreeNodeTransferable(self.dragged_node_name)
 
                         # Start drag operation
-                        event.DragSource.startDrag(event, ACTION_MOVE, 0, 0, transferable, self)
+                        event.DragSource.startDrag(
+                            event, ACTION_MOVE, 0, 0, transferable, self
+                        )
                         print(f"Started drag for node: {self.dragged_node_name}")
 
                 except Exception as e:
@@ -784,12 +929,14 @@ class TreeDropHandler(unohelper.Base, XDropTargetListener):
                 try:
                     data_flavor = TreeNodeTransferable.get_data_flavor()
                     if transferable.isDataFlavorSupported(data_flavor):
-                        data = transferable.getTransferData(data_flavor) # Doesn't work
-                        data = uno.invoke(transferable, 'getTransferData', (data_flavor,)) # Doesn't work either
+                        data = transferable.getTransferData(data_flavor)  # Doesn't work
+                        data = uno.invoke(
+                            transferable, "getTransferData", (data_flavor,)
+                        )  # Doesn't work either
                         print("Received drop data:", data)
                         if data:
                             # Extract string from uno.Any if needed
-                            if hasattr(data, 'value'):
+                            if hasattr(data, "value"):
                                 dragged_node_name = str(data.value)
                             else:
                                 dragged_node_name = str(data)
@@ -797,14 +944,18 @@ class TreeDropHandler(unohelper.Base, XDropTargetListener):
                         # Get the drop target node
                         tree_control = self.dialog_handler.tree_control
                         if tree_control:
-                            target_node = tree_control.getNodeForLocation(event.LocationX, event.LocationY)
-                            if target_node and hasattr(target_node, 'getDisplayValue'):
+                            target_node = tree_control.getNodeForLocation(
+                                event.LocationX, event.LocationY
+                            )
+                            if target_node and hasattr(target_node, "getDisplayValue"):
                                 target_node_name = target_node.getDisplayValue()
 
                                 # Don't allow dropping on the root node or on itself
-                                if (target_node_name == "Root" or
-                                    "Diagram Structure" in target_node_name or
-                                    dragged_node_name == target_node_name):
+                                if (
+                                    target_node_name == "Root"
+                                    or "Diagram Structure" in target_node_name
+                                    or dragged_node_name == target_node_name
+                                ):
                                     event.Source.rejectDrop()
                                     return
 
@@ -814,7 +965,8 @@ class TreeDropHandler(unohelper.Base, XDropTargetListener):
 
                                 # Perform the move operation
                                 success = self.dialog_handler.move_tree_item(
-                                    dragged_node_name, target_node_name, drop_position)
+                                    dragged_node_name, target_node_name, drop_position
+                                )
 
                                 if success:
                                     event.Source.dropComplete(True)
@@ -891,8 +1043,10 @@ class TreeNodeTransferable(unohelper.Base, XTransferable):
 
     def isDataFlavorSupported(self, flavor):
         """Check if data flavor is supported"""
-        return (flavor.MimeType == self._data_flavor.MimeType and
-                flavor.HumanPresentableName == self._data_flavor.HumanPresentableName)
+        return (
+            flavor.MimeType == self._data_flavor.MimeType
+            and flavor.HumanPresentableName == self._data_flavor.HumanPresentableName
+        )
 
     def _create_data_flavor(self):
         """Create the data flavor for tree node data"""

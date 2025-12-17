@@ -63,6 +63,24 @@ def parse_svg_dimensions(svg_data, scale_factor=1):
     return shape_size
 
 
+def extractGraphicAttributes(shape):
+    """Extract symbol attributes from shape's UserDefinedAttributes
+ 
+    Args:
+        shape: The shape object to extract attributes from
+
+    Returns:
+        Dictionary of attribute name to value mappings
+    """
+    attributeHash = shape.UserDefinedAttributes
+
+    attributes = {}
+    for name in attributeHash.getElementNames():
+        attr_data = attributeHash.getByName(name)
+        attributes[name] = attr_data.Value
+    return attributes
+
+
 def insertSvgGraphic(ctx, model, svg_data, params, selected_shape, smybol_name, scale_factor=1):
     is_writer = model.supportsService("com.sun.star.text.TextDocument")
     is_calc = model.supportsService("com.sun.star.sheet.SpreadsheetDocument")
