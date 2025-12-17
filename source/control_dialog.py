@@ -16,9 +16,8 @@ base_dir = os.path.dirname(__file__)
 if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
 
-from com.sun.star.awt import XDialogEventHandler, XTopWindowListener, XMouseListener, XKeyListener
+from com.sun.star.awt import KeyModifier, XDialogEventHandler, XTopWindowListener, XMouseListener, XKeyListener, Key
 from com.sun.star.awt import MouseButton
-from com.sun.star.awt.Key import UP, DOWN, LEFT, RIGHT, PAGEUP, PAGEDOWN, HOME, END, DELETE
 from com.sun.star.view.SelectionType import SINGLE as SELECTION_TYPE_SINGLE
 from com.sun.star.view import XSelectionChangeListener
 from com.sun.star.datatransfer.dnd import XDragGestureListener, XDropTargetListener
@@ -750,21 +749,25 @@ class TreeKeyHandler(unohelper.Base, XKeyListener):
     def keyReleased(self, event):
         """Handle key released events"""
         try:
-            # Check for DELETE key
-            if event.KeyCode == DELETE:
+            if event.KeyCode == Key.DELETE:
                 self.dialog_handler.remove_selected_shape()
                 return
+            elif event.KeyCode == Key.C and (event.Modifiers & KeyModifier.MOD1):
+                print("TODO: Handle copying")
+                return
+            elif event.KeyCode == Key.P and (event.Modifiers & KeyModifier.MOD1):
+                print("TODO: Handle pasting")
+                return
 
-            # Check for navigation keys (arrows, page up/down, home, end)
             navigation_keys = [
-                UP,  # Up arrow
-                DOWN,  # Down arrow
-                LEFT,  # Left arrow
-                RIGHT,  # Right arrow
-                PAGEUP,  # Page Up
-                PAGEDOWN,  # Page Down
-                HOME,  # Home
-                END,  # End
+                Key.UP,
+                Key.DOWN,
+                Key.LEFT,
+                Key.RIGHT,
+                Key.PAGEUP,
+                Key.PAGEDOWN,
+                Key.HOME,
+                Key.END,
             ]
 
             if event.KeyCode in navigation_keys:
