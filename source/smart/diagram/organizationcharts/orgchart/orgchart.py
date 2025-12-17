@@ -70,8 +70,7 @@ class OrgChart(OrganizationChart):
                 # Create base control shape
                 x_base_shape = self.create_shape(
                     Diagram.DIAGRAM_BASE_SHAPE_TYPE, 0,
-                    self.page_props.border_left, self.page_props.border_top,
-                    self._draw_area_width, self._draw_area_height
+                    self.page_props.border_left, self.page_props.border_top
                 )
                 self._x_shapes.add(x_base_shape)
                 self.set_control_shape_props(x_base_shape)
@@ -83,8 +82,7 @@ class OrgChart(OrganizationChart):
                 # Create start shape
                 x_start_shape = self.create_shape(
                     Diagram.DIAGRAM_SHAPE_TYPE, 1,
-                    self.page_props.border_left, self.page_props.border_top,
-                    self._draw_area_width, self._draw_area_height
+                    self.page_props.border_left, self.page_props.border_top
                 )
                 self._x_shapes.add(x_start_shape)
 
