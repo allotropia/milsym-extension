@@ -11,6 +11,7 @@ Translator module for loading localized strings from property files
 """
 
 import uno
+from utils import get_package_location
 
 
 class Translator:
@@ -33,16 +34,7 @@ class Translator:
             self._resource_cache = {}
             Translator._initialized = True
 
-    def get_package_location(self):
-        """Get package location from package information provider"""
-        try:
-            x_name_access = self._x_context
-            x_pip = x_name_access.getByName("/singletons/com.sun.star.deployment.PackageInformationProvider")
-            location = x_pip.getPackageLocation("com.collabora.milsymbol")
-            return location
-        except Exception as ex:
-            print(f"Error getting package location: {ex}")
-            return None
+
 
     def get_locale(self):
         """Get locale from configuration provider"""
@@ -66,7 +58,7 @@ class Translator:
             return self._resource_cache[dialog_name]
 
         x_resources = None
-        m_res_root_url = self.get_package_location() + "/dialog/"
+        m_res_root_url = get_package_location(self._x_context) + "/dialog/"
 
         try:
             args = (

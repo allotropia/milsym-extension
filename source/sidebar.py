@@ -13,7 +13,7 @@ import unohelper
 
 from sidebar_tree import SidebarTree, TreeKeyListener, TreeMouseListener, TreeSelectionChangeListener
 from symbol_dialog import open_symbol_dialog
-from utils import insertSvgGraphic
+from utils import insertSvgGraphic, get_package_location
 from sidebar_rename_dialog import RenameDialog
 
 from unohelper import systemPathToFileUrl, fileUrlToSystemPath
@@ -635,7 +635,7 @@ class TreeDragDropHandler(unohelper.Base, XDragGestureListener, XDragSourceListe
 
                 # Start the drag operation
                 drag_source = event.DragSource
-                drag_source.startDrag(event, ACTION_COPY, 0, 0, transferable, self)  # 1 = MOVE action
+                drag_source.startDrag(event, ACTION_COPY, 0, 0, transferable, self)
 
                 print(f"Started drag for node: {node.getDisplayValue()}")
         except Exception as e:
@@ -678,20 +678,23 @@ class SymbolTransferable(unohelper.Base, XTransferable):
 
         # Setup data flavors
         self.data_flavor = DataFlavor()
-        self.data_flavor.MimeType = "application/x-milsymbol-node"
-        self.data_flavor.HumanPresentableName = "Military Symbol Node"
-        self.data_flavor.DataType = uno.getTypeByName("string")
+        self.data_flavor.MimeType = "application/x-openoffice-drawing;windows_formatname=\"Drawing Format\""
 
     def getTransferData(self, flavor):
         """Get the transferable data"""
+        print("getTransferData called with flavor:", flavor.MimeType)
         if flavor.MimeType == self.data_flavor.MimeType:
-            # Return node data as JSON string
-            node_data = {
-                "displayValue": self.node.getDisplayValue(),
-                "graphicURL": self.node.getNodeGraphicURL() if hasattr(self.node, 'getNodeGraphicURL') else None,
-                "dataValue": self.node.DataValue if hasattr(self.node, 'DataValue') else None
-            }
-            return json.dumps(node_data)
+
+            # LibreOffice expects a byte sequence containing a document with the graphic
+            # Read the template document from the data folder
+            package_path = get_package_location(self.ctx)
+            template_path = os.path.join(package_path, "source", "data", "dragdropgraphic.fodg")
+            with open(template_path, 'r', encoding='utf-8') as f:
+                data_string = f.read()
+
+            # TODO: Replace placeholders in the svg with proper svg data
+            data_bytes = data_string.encode('utf-8')
+            return uno.ByteSequence(data_bytes)
         else:
             raise uno.RuntimeException("Unsupported data flavor", self)
 
@@ -737,16 +740,27 @@ class DocumentDropTargetListener(unohelper.Base, XDropTargetListener):
 
     def drop(self, event):
         """Handle drop event with shape hit testing"""
+        print("DocumentDropTargetListener: drop event received")
         try:
             # Check if we can handle this drop
             transferable = event.Transferable
             data_flavors = transferable.getTransferDataFlavors()
+            print(f"Available data flavors: {[flavor.MimeType for flavor in data_flavors]}")
 
             for flavor in data_flavors:
-                if flavor.MimeType == "application/x-milsymbol-node":
-                    # Get the dropped data
-                    node_data_json = transferable.getTransferData(flavor)
-                    node_data = json.loads(node_data_json)
+                if flavor.MimeType == "application/x-openoffice-drawing;windows_formatname=\"Drawing Format\"":
+                    # Get the dropped data as input stream
+                    input_stream = transferable.getTransferData(flavor)
+
+                    # Read all bytes from the stream
+                    available_bytes = input_stream.available()
+                    if available_bytes > 0:
+                        byte_sequence, bytes_read = input_stream.readBytes(None, available_bytes)
+                        # Convert bytes back to string
+                        node_data_json = bytes(byte_sequence).decode('utf-8')
+                        node_data = json.loads(node_data_json)
+                    else:
+                        continue
 
                     # Insert the symbol at the drop location
                     model = self.sidebar_panel.desktop.getCurrentComponent()
@@ -937,7 +951,7 @@ class DocumentDropTargetListener(unohelper.Base, XDropTargetListener):
         # Check if we can accept this drag
         print("Drag entered document drop target")
         for flavor in event.SupportedDataFlavors:
-            if flavor.MimeType == "application/x-milsymbol-node":
+            if flavor.MimeType == "application/x-openoffice-drawing;windows_formatname=\"Drawing Format\"":
                 event.Context.acceptDrag(1)  # Accept drag with MOVE action
                 return
         event.Context.rejectDrag()
