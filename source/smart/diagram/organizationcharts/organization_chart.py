@@ -408,6 +408,10 @@ class OrganizationChart(Diagram):
     def add_shape(self):
         """Add shape - to be implemented by subclasses"""
 
+    @abstractmethod
+    def paste_subtree(self):
+        """Paste copied subtree - to be implemented by subclasses"""
+
     def remove_shape(self, x_selected_shape=None):
         """Remove shape from organization chart"""
         if x_selected_shape is None:
