@@ -10,6 +10,7 @@ import os
 import sys
 import uno
 import unohelper
+import shutil
 
 base_dir = os.path.dirname(__file__)
 if base_dir not in sys.path:
@@ -39,6 +40,7 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
         self.tree_control = None
         self._populate_tree_on_show = True
         self._parent_before_add = None
+        self._temp_dir: str | None = None
         factory = self.x_context.getServiceManager().createInstanceWithContext(
             "com.sun.star.script.provider.MasterScriptProviderFactory", self.x_context
         )
@@ -116,6 +118,13 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
         """Handle window closing event"""
         if event.Source == self.get_gui()._x_control_dialog:
             self.get_gui().set_visible_control_dialog(False)
+
+        # Delete tmp preview directory
+        if self._temp_dir is None:
+            return
+
+        shutil.rmtree(self._temp_dir, ignore_errors=True)
+        self._temp_dir = None
 
     def windowOpened(self, event):
         """Handle window opened event"""
@@ -467,11 +476,12 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
             )
             safe_name = safe_name[:50]
 
-            temp_fd, temp_path = tempfile.mkstemp(
-                suffix=".svg", prefix=f"orbat_icon_{safe_name}_"
-            )
+            if not hasattr(self, "_temp_dir") or self._temp_dir is None:
+                self._temp_dir = tempfile.mkdtemp(prefix="orbat_icons_")
 
-            with os.fdopen(temp_fd, "w", encoding="utf-8") as f:
+            temp_path = os.path.join(self._temp_dir, f"{safe_name}.svg")
+
+            with open(temp_path, "w", encoding="utf-8") as f:
                 f.write(svg_data)
 
             file_url = systemPathToFileUrl(temp_path)
