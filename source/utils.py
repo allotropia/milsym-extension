@@ -10,7 +10,6 @@ import sys
 import os
 import uno
 import xml.etree.ElementTree as ET
-from pickle import NONE
 
 base_dir = os.path.dirname(__file__)
 if base_dir not in sys.path:
@@ -20,6 +19,7 @@ from com.sun.star.awt import Size, Point
 from com.sun.star.beans import PropertyValue
 from com.sun.star.text.TextContentAnchorType import AT_PARAGRAPH
 from com.sun.star.xml import AttributeData
+from com.sun.star.beans import NamedValue
 
 
 def parse_svg_dimensions(svg_data, scale_factor=1):
@@ -171,6 +171,48 @@ def insertGraphicAttributes(shape, params):
     # seems we're getting a copy above; set it explicitely
     shape.setPropertyValue("UserDefinedAttributes", attributeHash)
 
+def generate_icon_svg(script, attributes, size):
+    """Generate SVG icon from symbol attributes
+
+    Args:
+        attributes: Dictionary of symbol attributes extracted from shape
+
+    Returns:
+        SVG string data or None if generation fails
+    """
+    try:
+        sidc_code = attributes.get("MilSymCode")
+        if not sidc_code:
+            return None
+
+        args = [sidc_code, NamedValue("size", size)]
+
+        if "MilSymStack" in attributes:
+            args.append(NamedValue("stack", attributes["MilSymStack"]))
+
+        if "MilSymReinforced" in attributes:
+            args.append(NamedValue("reinforced", attributes["MilSymReinforced"]))
+
+        if "MilSymStaff" in attributes:
+            args.append(NamedValue("staff", attributes["MilSymStaff"]))
+
+        if "MilSymSpecialheadquarters" in attributes:
+            args.append(
+                NamedValue(
+                    "specialheadquarters", attributes["MilSymSpecialheadquarters"]
+                )
+            )
+
+        if "MilSymCountrycode" in attributes:
+            args.append(NamedValue("countrycode", attributes["MilSymCountrycode"]))
+
+        result = script.invoke(args, (), ())
+        svg_data = str(result[0])
+        return svg_data
+
+    except Exception as e:
+        print(f"Error generating icon SVG: {e}")
+        return None
 
 def create_graphic_from_svg(ctx, svg_data):
     """Create XGraphic from SVG data"""

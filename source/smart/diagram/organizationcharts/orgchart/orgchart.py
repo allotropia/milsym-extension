@@ -13,6 +13,7 @@
 OrgChart class - Main organization chart implementation
 Python port of OrgChart.java
 """
+from utils import generate_icon_svg
 from ...diagram import Diagram
 from ..organization_chart import OrganizationChart
 from .orgchart_tree import OrgChartTree
@@ -282,6 +283,91 @@ class OrgChart(OrganizationChart):
             )
 
         self._diagram_tree.set_tree()
+
+    def paste_subtree(self, target_tree_item, clipboard_item, script=None):
+        """Paste copied subtree as children of target item"""
+        if self._diagram_tree is None:
+            return False
+        if target_tree_item is None or clipboard_item is None:
+            return False
+
+        try:
+            self._paste_script = script
+            self._paste_item_recursive(target_tree_item, clipboard_item)
+            return True
+        except Exception as ex:
+            print(f"Error pasting subtree: {ex}")
+            return False
+        finally:
+            self._paste_script = None
+
+    def _paste_item_recursive(self, parent_tree_item, clipboard_item):
+        """Recursively paste a ClipboardItem and its children"""
+        top_shape_id = self.get_top_shape_id()
+        x_new_shape = self.create_shape(Diagram.DIAGRAM_SHAPE_TYPE, top_shape_id)
+        self._x_shapes.add(x_new_shape)
+        self._diagram_tree.add_to_rectangles(x_new_shape)
+
+        if self._paste_script and "MilSymCode" in clipboard_item.attributes:
+            svg_data = generate_icon_svg(
+                self._paste_script, clipboard_item.attributes, 32.0
+            )
+            if svg_data:
+                self.set_new_shape_properties(
+                    x_new_shape, Diagram.DIAGRAM_SHAPE_TYPE, svg_data
+                )
+                self._copy_attributes_to_shape(x_new_shape, clipboard_item.attributes)
+            else:
+                self.set_shape_properties(x_new_shape, Diagram.DIAGRAM_SHAPE_TYPE)
+        else:
+            self.set_shape_properties(x_new_shape, Diagram.DIAGRAM_SHAPE_TYPE)
+
+        new_tree_item = OrgChartTreeItem(
+            self._diagram_tree, x_new_shape, parent_tree_item, 0, 0.0
+        )
+
+        if not parent_tree_item.is_first_child():
+            parent_tree_item.set_first_child(new_tree_item)
+        else:
+            last_child = parent_tree_item.get_last_child()
+            if last_child is not None:
+                last_child.set_first_sibling(new_tree_item)
+
+        self.set_move_protect_of_shape(x_new_shape)
+
+        x_connector_shape = self.create_shape(Diagram.CONNECTOR_SHAPE, top_shape_id)
+        self._x_shapes.add(x_connector_shape)
+        self.set_move_protect_of_shape(x_connector_shape)
+        self._diagram_tree.add_to_connectors(x_connector_shape)
+
+        end_shape_conn_pos = 0
+        if parent_tree_item.get_level() + 1 > OrgChartTree.LAST_HOR_LEVEL:
+            end_shape_conn_pos = 3
+
+        self.set_connector_shape_props(
+            x_connector_shape,
+            parent_tree_item.get_rectangle_shape(),
+            2,
+            x_new_shape,
+            end_shape_conn_pos,
+        )
+
+        for child_clipboard in clipboard_item.children:
+            self._paste_item_recursive(new_tree_item, child_clipboard)
+
+        return new_tree_item
+
+    def _copy_attributes_to_shape(self, shape, attributes):
+        """Copy attributes to shape's UserDefinedAttributes"""
+        from com.sun.star.xml import AttributeData
+
+        attribute_hash = shape.UserDefinedAttributes
+        user_attrs = AttributeData()
+        for name, value in attributes.items():
+            user_attrs.Type = "CDATA"
+            user_attrs.Value = str(value)
+            attribute_hash[name] = user_attrs
+        shape.setPropertyValue("UserDefinedAttributes", attribute_hash)
 
     def add_shape(self):
         """Add new shape to diagram"""

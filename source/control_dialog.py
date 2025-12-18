@@ -92,6 +92,38 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
         """Get controller reference"""
         return self.dialog.get_controller()
 
+    def paste_to_selected_item(self):
+        """Paste clipboard contents to currently selected item"""
+
+        if self._clipboard is None:
+            return
+
+        try:
+            selected_node = self.tree_control.getSelection()
+            if selected_node is None:
+                return
+
+            node_name = selected_node.getDisplayValue()
+            target_tree_item = self._node_to_tree_item_map.get(node_name)
+            if target_tree_item is None:
+                return
+
+            controller = self.get_controller()
+            diagram = controller.get_diagram()
+
+            if diagram:
+                controller.remove_selection_listener()
+                success = diagram.paste_subtree(
+                    target_tree_item, self._clipboard, self.script
+                )
+                if success:
+                    diagram.refresh_diagram()
+                    self.refresh_tree()
+                controller.add_selection_listener()
+
+        except Exception as ex:
+            print(f"Error pasting: {ex}")
+
     def copy_selected_item(self):
         """Copy the currently selected item and its subtree"""
         try:
@@ -804,7 +836,7 @@ class TreeKeyHandler(unohelper.Base, XKeyListener):
                 self.dialog_handler.copy_selected_item()
                 return
             elif event.KeyCode == Key.V and (event.Modifiers & KeyModifier.MOD1):
-                print("TODO: Handle pasting")
+                self.dialog_handler.paste_to_selected_item()
                 return
 
             navigation_keys = [
