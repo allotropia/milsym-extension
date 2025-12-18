@@ -44,7 +44,9 @@ rsync -av \
     --exclude="milsymbol/stack-extension.mjs" \
     --exclude="milsymbol/country-flags.js" \
     --exclude="milsymbol/convert-to-unicode.py" \
+    --exclude=".*" \
     --exclude="*~" \
+    --exclude="__pycache__" \
     --exclude=".git/" \
     --exclude=".gitignore" \
     --exclude="$TEMP_DIR/" \
