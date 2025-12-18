@@ -92,6 +92,49 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
         """Get controller reference"""
         return self.dialog.get_controller()
 
+    def copy_selected_item(self):
+        """Copy the currently selected item and its subtree"""
+        try:
+            if self.tree_control is None:
+                return
+
+            selected_node = self.tree_control.getSelection()
+            if selected_node is None:
+                return
+
+            node_name = selected_node.getDisplayValue()
+            tree_item = self._node_to_tree_item_map.get(node_name)
+            if tree_item is None:
+                return
+
+            self._clipboard = self._serialize_tree_item(tree_item)
+            print(f"Copied: {node_name}")
+
+        except Exception as ex:
+            print(f"Error copying item: {ex}")
+
+    def _serialize_tree_item(self, tree_item):
+        """Recursively serialize a tree item and all its descendants to ClipboardItem"""
+        if tree_item is None:
+            return None
+
+        shape = tree_item.get_rectangle_shape()
+        if shape is None:
+            return None
+
+        attributes = extractGraphicAttributes(shape)
+
+        # Recursively serialize all children
+        children = []
+        child_item = tree_item.get_first_child()
+        while child_item is not None:
+            child_clipboard = self._serialize_tree_item(child_item)
+            if child_clipboard is not None:
+                children.append(child_clipboard)
+            child_item = child_item.get_first_sibling()
+
+        return ClipboardItem(attributes, children)
+
     def remove_selected_shape(self):
         """Remove the currently selected shape from the diagram"""
         if self.get_controller().get_diagram() is not None:
@@ -735,6 +778,11 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
         except Exception as e:
             print(f"Error selecting newly added child: {e}")
 
+class ClipboardItem:
+    """Stores data for a copied tree item and its children"""
+    def __init__(self, attributes, children=None):
+        self.attributes = attributes    # Shape attributes (MilSymCode, etc.)
+        self.children = children if children is not None else []
 
 class TreeKeyHandler(unohelper.Base, XKeyListener):
     """Handle keyboard events on tree control for navigation selection"""
@@ -753,9 +801,9 @@ class TreeKeyHandler(unohelper.Base, XKeyListener):
                 self.dialog_handler.remove_selected_shape()
                 return
             elif event.KeyCode == Key.C and (event.Modifiers & KeyModifier.MOD1):
-                print("TODO: Handle copying")
+                self.dialog_handler.copy_selected_item()
                 return
-            elif event.KeyCode == Key.P and (event.Modifiers & KeyModifier.MOD1):
+            elif event.KeyCode == Key.V and (event.Modifiers & KeyModifier.MOD1):
                 print("TODO: Handle pasting")
                 return
 
