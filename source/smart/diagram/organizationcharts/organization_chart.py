@@ -297,7 +297,10 @@ class OrganizationChart(Diagram):
     def init_properties(self):
         """Initialize properties from control and root shapes"""
         x_control_shape = self.get_diagram_tree().get_control_shape()
-        x_root_shape = self.get_diagram_tree().get_root_item().get_rectangle_shape()
+        root_item = self.get_diagram_tree().get_root_item()
+        if root_item is None:
+            return
+        x_root_shape = root_item.get_rectangle_shape()
         if x_control_shape is not None and x_root_shape is not None:
             self.init_properties_from_shapes(x_control_shape, x_root_shape)
             self.init_root_element_hidden_property()
