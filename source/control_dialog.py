@@ -25,7 +25,7 @@ from com.sun.star.datatransfer.dnd import XDragSourceListener
 from com.sun.star.datatransfer.dnd.DNDConstants import ACTION_MOVE
 from com.sun.star.datatransfer import XTransferable, DataFlavor
 from com.sun.star.beans import NamedValue
-from utils import extractGraphicAttributes, getExtensionBasePath
+from utils import extractGraphicAttributes, getExtensionBasePath, generate_icon_svg
 from unohelper import systemPathToFileUrl
 import tempfile
 
@@ -140,7 +140,6 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
                 return
 
             self._clipboard = self._serialize_tree_item(tree_item)
-            print(f"Copied: {node_name}")
 
         except Exception as ex:
             print(f"Error copying item: {ex}")
@@ -476,7 +475,7 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
 
             attributes = extractGraphicAttributes(shape)
             if attributes and "MilSymCode" in attributes:
-                svg_data = self._generate_icon_svg(attributes)
+                svg_data = generate_icon_svg(self.script, attributes, 14.0)
                 if svg_data:
                     svg_url = self._save_svg_to_temp_and_get_url(svg_data, name)
                     if svg_url:
@@ -487,49 +486,6 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
                 )
         except Exception as e:
             print(f"Error adding root node icon: {e}")
-
-    def _generate_icon_svg(self, attributes):
-        """Generate small SVG icon from symbol attributes
-
-        Args:
-            attributes: Dictionary of symbol attributes extracted from shape
-
-        Returns:
-            SVG string data or None if generation fails
-        """
-        try:
-            sidc_code = attributes.get("MilSymCode")
-            if not sidc_code:
-                return None
-
-            args = [sidc_code, NamedValue("size", 14.0)]
-
-            if "MilSymStack" in attributes:
-                args.append(NamedValue("stack", attributes["MilSymStack"]))
-
-            if "MilSymReinforced" in attributes:
-                args.append(NamedValue("reinforced", attributes["MilSymReinforced"]))
-
-            if "MilSymStaff" in attributes:
-                args.append(NamedValue("staff", attributes["MilSymStaff"]))
-
-            if "MilSymSpecialheadquarters" in attributes:
-                args.append(
-                    NamedValue(
-                        "specialheadquarters", attributes["MilSymSpecialheadquarters"]
-                    )
-                )
-
-            if "MilSymCountrycode" in attributes:
-                args.append(NamedValue("countrycode", attributes["MilSymCountrycode"]))
-
-            result = self.script.invoke(args, (), ())
-            svg_data = str(result[0])
-            return svg_data
-
-        except Exception as e:
-            print(f"Error generating icon SVG: {e}")
-            return None
 
     def _save_svg_to_temp_and_get_url(self, svg_data, node_identifier):
         """Save SVG to temp file and return file URL for setNodeGraphicURL()
