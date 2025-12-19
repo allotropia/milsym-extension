@@ -363,6 +363,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             self.disable_callHandler = False
         elif methodName == "search_change":
             search_text = dialog.getControl("tbSearch").Text
+            search_listbox = dialog.getControl("ltbSearch")
             if search_text:
                 matches = []
                 search = search_text.lower()
@@ -375,7 +376,6 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
                         if search in label_lower:
                             matches.append(label)
 
-                search_listbox = dialog.getControl("ltbSearch")
                 search_listbox.removeItems(0, search_listbox.getItemCount())
                 for item in matches:
                     search_listbox.addItem(item, search_listbox.getItemCount())
