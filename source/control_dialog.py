@@ -443,6 +443,7 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
                 peer = self.tree_control.getPeer()
 
                 # Try to set up drag source
+                toolkit = None
                 try:
                     toolkit = (
                         self.x_context.getServiceManager().createInstanceWithContext(
@@ -455,12 +456,13 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
                     print(f"Could not set up drag source: {e}")
 
                 # Try to set up drop target
-                try:
-                    drop_target = toolkit.getDropTarget(peer)
-                    drop_target.addDropTargetListener(drop_handler)
-                    drop_target.setActive(True)
-                except Exception as e:
-                    print(f"Could not set up drop target: {e}")
+                if toolkit is not None:
+                    try:
+                        drop_target = toolkit.getDropTarget(peer)
+                        drop_target.addDropTargetListener(drop_handler)
+                        drop_target.setActive(True)
+                    except Exception as e:
+                        print(f"Could not set up drop target: {e}")
 
         except Exception as e:
             print(f"Error setting up drag & drop: {e}")
@@ -983,12 +985,17 @@ class TreeDropHandler(unohelper.Base, XDropTargetListener):
                             transferable, "getTransferData", (data_flavor,)
                         )  # Doesn't work either
                         print("Received drop data:", data)
+                        dragged_node_name = None
                         if data:
                             # Extract string from uno.Any if needed
                             if hasattr(data, "value"):
                                 dragged_node_name = str(data.value)
                             else:
                                 dragged_node_name = str(data)
+
+                        if dragged_node_name is None:
+                            event.Source.dropComplete(False)
+                            return
 
                         # Get the drop target node
                         tree_control = self.dialog_handler.tree_control
