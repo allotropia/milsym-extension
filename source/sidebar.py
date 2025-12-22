@@ -9,6 +9,7 @@
 import os
 import uno
 import json
+import base64
 import unohelper
 
 from sidebar_tree import SidebarTree, TreeKeyListener, TreeMouseListener, TreeSelectionChangeListener
@@ -692,6 +693,12 @@ class SymbolTransferable(unohelper.Base, XTransferable):
             with open(template_path, 'r', encoding='utf-8') as f:
                 data_string = f.read()
 
+            # Get SVG content from the dragged node
+            svg_string = self._get_svg_content_from_node()
+            # Base64 encode the SVG content
+            svg_base64 = base64.b64encode(svg_string.encode('utf-8')).decode('utf-8')
+            data_string = data_string.replace('SVG_BASE_64_ENCODED', svg_base64)
+
             # TODO: Replace placeholders in the svg with proper svg data
             data_bytes = data_string.encode('utf-8')
             return uno.ByteSequence(data_bytes)
@@ -705,6 +712,32 @@ class SymbolTransferable(unohelper.Base, XTransferable):
     def isDataFlavorSupported(self, flavor):
         """Check if data flavor is supported"""
         return flavor.MimeType == self.data_flavor.MimeType
+
+    def _get_svg_content_from_node(self):
+        """Get SVG content from the dragged node"""
+        try:
+            # Get the symbol name from the node
+            symbol_name = self.node.getDisplayValue()
+
+            # Get the category name from the parent node
+            parent_node = self.node.getParent()
+            category_name = parent_node.getDisplayValue()
+
+            # Construct the path to the SVG file
+            category_path = os.path.join(self.favorites_dir_path, category_name)
+            svg_file_path = os.path.join(category_path, f"{symbol_name}.svg")
+
+            # Read and return the SVG content
+            if os.path.exists(svg_file_path):
+                with open(svg_file_path, 'r', encoding='utf-8') as f:
+                    return f.read()
+            else:
+                print(f"SVG file not found: {svg_file_path}")
+                return ""
+
+        except Exception as e:
+            print(f"Error reading SVG content: {e}")
+            return ""
 
 
 class DocumentFrameListener(unohelper.Base, XFrameActionListener):

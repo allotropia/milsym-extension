@@ -512,11 +512,8 @@
             <draw:page draw:name="page0" draw:style-name="dp1">
                 <draw:frame draw:name="Symbol (130310000000000000000000000000)" draw:style-name="gr1" draw:text-style-name="P1" draw:layer="layout" svg:width="6.271cm" svg:height="4.286cm" svg:x="0cm" svg:y="0cm">
                     <draw:image draw:mime-type="image/svg+xml">
-                        <office:binary-data>PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMiIgYmFzZVByb2ZpbGU9InRpbnkiIHdpZHRoPSIyMzciIGhlaWdodD0iMTYyIiB2aWV3Qm94PSIyMSA0NiAxNTggMTA4Ij48cGF0aCBkPSJNMjUsNTAgbDE1MCwwIDAsMTAwIC0xNTAsMCB6IiBzdHJva2Utd2lkdGg9IjQiIHN0cm9rZT0iYmxhY2siIGZpbGw9InJnYigxMjgsMjI0LDI1NSkiIGZpbGwtb3BhY2l0eT0iMSIgPjwvcGF0aD48L3N2Zz4=</office:binary-data>
+                        <office:binary-data>SVG_BASE_64_ENCODED</office:binary-data>
                         <text:p/>
-                    </draw:image>
-                    <draw:image draw:mime-type="image/png">
-                        <office:binary-data>iVBORw0KGgoAAAANSUhEUgAAAO4AAACjCAYAAACNKCKQAAAACXBIWXMAAA7EAAAOwwHaapjcAAACD0lEQVR4nO3ZMQrDMBAAQTvkIXmqn5qfOJ0hoEKkUFgzUx4qrlkE0rYBAADAPeyD2bl8C2DG1evjn1sAvxEuBAkXgoQLQcKFoOfswePtsRlWOF6jz55vblwIEi4ECReChAtBwoUg4UKQcCFIuBAkXAgSLgQJF4KEC0HChSDhQpBwIUi4ECRcCBIuBAkXgoQLQcKFIOFCkHAhSLgQJFwIEi4ECReChAtBwoUg4UKQcCFIuBAkXAgSLgQJF4KEC0HChSDhQpBwIUi4ECRcCBIuBAkXgoQLQcKFIOFCkHAhSLgQJFwIEi4ECReChAtBwoUg4UKQcCFIuBAkXAgSLgQJF4KEC0HChSDhQpBwIUi4ECRcCBIuBAkXgoQLQcKFIOFCkHAhSLgQJFwIEi4ECReChAtBwoUg4UKQcCFIuBAkXAgSLgQJF4KEC0HChSDhQpBwIUi4ECRcCBIuBAkXgoQLQcKFIOFCkHAhSLgQJFwIEi4ECReChAtBwoUg4UKQcCFIuBAkXAgSLgQJF4KEC0HChSDhQpBwIUi4ECRcCBIuBAkXgoQLQcKFIOFCkHAhSLgQJFwIEi4ECReChAtBwoUg4UKQcCFIuBAkXAgSLgQJF4KEC0HChSDhQpBwIUi4ECRcCBIuBAkXgoQLQcKFIOFCkHAhaB/MzuVbADOuXt24ECRcCBIuBAkXgoQLAADAXXwACaMGOa9VCpAAAAAASUVORK5CYII=</office:binary-data>
                     </draw:image>
                 </draw:frame>
             </draw:page>
