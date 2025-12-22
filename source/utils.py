@@ -10,6 +10,7 @@ import sys
 import os
 import uno
 import xml.etree.ElementTree as ET
+from unohelper import fileUrlToSystemPath
 
 base_dir = os.path.dirname(__file__)
 if base_dir not in sys.path:
@@ -65,7 +66,7 @@ def parse_svg_dimensions(svg_data, scale_factor=1):
 
 def extractGraphicAttributes(shape):
     """Extract symbol attributes from shape's UserDefinedAttributes
- 
+
     Args:
         shape: The shape object to extract attributes from
 
@@ -243,6 +244,11 @@ def create_graphic_from_svg(ctx, svg_data):
         return None
 
 
-def getExtensionBasePath(ctx, extensionName="com.collabora.milsymbol"):
+def get_package_location(ctx, extensionName="com.collabora.milsymbol"):
+    """Get package location from package information provider"""
     srv = ctx.getByName("/singletons/com.sun.star.deployment.PackageInformationProvider")
-    return os.path.basename(srv.getPackageLocation(extensionName))
+    return fileUrlToSystemPath(srv.getPackageLocation(extensionName))
+
+def getExtensionBasePath(ctx, extensionName="com.collabora.milsymbol"):
+    """Get the base path of the extension installation directory"""
+    return os.path.basename(get_package_location(ctx, extensionName))

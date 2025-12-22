@@ -9,20 +9,23 @@
 import os
 import uno
 import json
+import base64
 import unohelper
 
 from sidebar_tree import SidebarTree, TreeKeyListener, TreeMouseListener, TreeSelectionChangeListener
 from symbol_dialog import open_symbol_dialog
-from utils import insertSvgGraphic
+from utils import get_package_location, parse_svg_dimensions
 from sidebar_rename_dialog import RenameDialog
 
 from unohelper import systemPathToFileUrl, fileUrlToSystemPath
-from com.sun.star.beans import PropertyValue
 from com.sun.star.ui.dialogs.TemplateDescription import FILESAVE_AUTOEXTENSION, FILEOPEN_SIMPLE
 from com.sun.star.ui import XUIElement, XUIElementFactory, XToolPanel, XSidebarPanel, LayoutSize
-from com.sun.star.awt import XWindowPeer, XWindowListener, XActionListener, Size
+from com.sun.star.awt import XWindowListener, XActionListener
 from com.sun.star.awt import XFocusListener, XKeyListener
 from com.sun.star.view.SelectionType import SINGLE
+from com.sun.star.datatransfer.dnd import XDragGestureListener, XDragSourceListener
+from com.sun.star.datatransfer import XTransferable, DataFlavor
+from com.sun.star.datatransfer.dnd.DNDConstants import ACTION_COPY
 
 class SidebarFactory(unohelper.Base, XUIElementFactory):
     def __init__(self, ctx):
@@ -173,9 +176,9 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
             self.tree_control = treeCtrl
             self.sidebar_tree.set_tree_control(treeCtrl)
 
-            drag_handler = TreeMouseListener(self.ctx, treeCtrl, self, self.favorites_dir_path)
-            treeCtrl.addMouseListener(drag_handler)
-            treeCtrl.addMouseMotionListener(drag_handler)
+            mouse_listener = TreeMouseListener(self.ctx, treeCtrl, self, self.favorites_dir_path)
+            treeCtrl.addMouseListener(mouse_listener)
+            treeCtrl.addMouseMotionListener(mouse_listener)
 
             key_listener =  TreeKeyListener(self, self.favorites_dir_path)
             treeCtrl.addKeyListener(key_listener)
@@ -188,6 +191,22 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
             container.addControl("btExport", btExport)
             container.addControl("tbFilter", tbFilter)
             container.addControl("treeCtrl", treeCtrl)
+
+            # Setup native drag and drop after adding controls to container
+            # This ensures the tree control's peer is properly initialized
+            drag_handler = TreeDragDropHandler(self.ctx, treeCtrl, self, self.favorites_dir_path)
+
+            # Add drag gesture recognizer for native drag support
+            try:
+                # Try to set up drag source
+                try:
+                    drag_gesture_recognizer = toolkit.getDragGestureRecognizer(treeCtrl.getPeer())
+                    drag_gesture_recognizer.addDragGestureListener(drag_handler)
+                except Exception as e:
+                    print(f"Could not set up drag source: {e}")
+
+            except Exception as e:
+                print(f"Could not setup native drag support, falling back to mouse listener: {e}")
 
             return container
         except Exception as e:
@@ -520,6 +539,129 @@ class ImportButtonListener(unohelper.Base, XActionListener):
 
     def disposing(self, event):
         pass
+
+
+class TreeDragDropHandler(unohelper.Base, XDragGestureListener, XDragSourceListener):
+    """Native drag and drop handler for tree control"""
+
+    def __init__(self, ctx, tree_control, sidebar_panel, favorites_dir_path):
+        self.ctx = ctx
+        self.tree_control = tree_control
+        self.sidebar_panel = sidebar_panel
+        self.favorites_dir_path = favorites_dir_path
+
+    def dragGestureRecognized(self, event):
+        """Handle drag gesture recognition"""
+        try:
+            # Get the node at the drag start location
+            node = self.tree_control.getNodeForLocation(event.DragOriginX, event.DragOriginY)
+            if node and node.getChildCount() == 0:  # Only leaf nodes are draggable
+                # Create transferable data
+                transferable = SymbolTransferable(self.ctx, node, self.favorites_dir_path)
+
+                # Start the drag operation
+                drag_source = event.DragSource
+                drag_source.startDrag(event, ACTION_COPY, 0, 0, transferable, self)
+        except Exception as e:
+            print(f"Error in dragGestureRecognized: {e}")
+
+    # XDragSourceListener methods
+    def dragEnter(self, event):
+        """Drag entered a drop target"""
+        pass
+
+    def dragExit(self, event):
+        """Drag exited a drop target"""
+        pass
+
+    def dragOver(self, event):
+        """Drag is over a drop target"""
+        pass
+
+    def dragDropEnd(self, event):
+        """Drag operation ended"""
+        pass
+
+    def dropActionChanged(self, event):
+        pass
+
+    def disposing(self, event):
+        pass
+
+
+class SymbolTransferable(unohelper.Base, XTransferable):
+    """Transferable data for symbol drag and drop"""
+
+    def __init__(self, ctx, node, favorites_dir_path):
+        self.ctx = ctx
+        self.node = node
+        self.favorites_dir_path = favorites_dir_path
+
+        # Setup data flavors
+        self.data_flavor = DataFlavor()
+        self.data_flavor.MimeType = "application/x-openoffice-drawing;windows_formatname=\"Drawing Format\""
+
+    def getTransferData(self, flavor):
+        """Get the transferable data"""
+        if flavor.MimeType == self.data_flavor.MimeType:
+
+            # LibreOffice expects a byte sequence containing a document with the graphic
+            # Read the template document from the data folder
+            package_path = get_package_location(self.ctx)
+            template_path = os.path.join(package_path, "source", "data", "dragdropgraphic.fodg")
+            with open(template_path, 'r', encoding='utf-8') as f:
+                data_string = f.read()
+
+            # Get SVG content from the dragged node
+            svg_string = self._get_svg_content_from_node()
+            # Base64 encode the SVG content
+            svg_base64 = base64.b64encode(svg_string.encode('utf-8')).decode('utf-8')
+            svg_size = parse_svg_dimensions(svg_string)
+            factor = 5
+            width_cm = svg_size.Width / 1000.0 * factor  # 1/100mm to cm
+            height_cm = svg_size.Height / 1000.0 * factor # 1/100mm to cm
+            data_string = data_string.replace('SVG_BASE_64_ENCODED', svg_base64)
+            data_string = data_string.replace('SVG_WIDTH_CM', str(width_cm)+'cm')
+            data_string = data_string.replace('SVG_HEIGHT_CM', str(height_cm)+'cm')
+
+            data_bytes = data_string.encode('utf-8')
+            return uno.ByteSequence(data_bytes)
+        else:
+            raise uno.RuntimeException("Unsupported data flavor", self)
+
+    def getTransferDataFlavors(self):
+        """Get available data flavors"""
+        return (self.data_flavor,)
+
+    def isDataFlavorSupported(self, flavor):
+        """Check if data flavor is supported"""
+        return flavor.MimeType == self.data_flavor.MimeType
+
+    def _get_svg_content_from_node(self):
+        """Get SVG content from the dragged node"""
+        try:
+            # Get the symbol name from the node
+            symbol_name = self.node.getDisplayValue()
+
+            # Get the category name from the parent node
+            parent_node = self.node.getParent()
+            category_name = parent_node.getDisplayValue()
+
+            # Construct the path to the SVG file
+            category_path = os.path.join(self.favorites_dir_path, category_name)
+            svg_file_path = os.path.join(category_path, f"{symbol_name}.svg")
+
+            # Read and return the SVG content
+            if os.path.exists(svg_file_path):
+                with open(svg_file_path, 'r', encoding='utf-8') as f:
+                    return f.read()
+            else:
+                print(f"SVG file not found: {svg_file_path}")
+                return ""
+
+        except Exception as e:
+            print(f"Error reading SVG content: {e}")
+            return ""
 
 class ExportButtonListener(unohelper.Base, XActionListener):
     def __init__(self, ctx, sidebar):

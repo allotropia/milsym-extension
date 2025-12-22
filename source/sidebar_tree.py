@@ -243,26 +243,12 @@ class TreeMouseListener(unohelper.Base, XMouseListener, XMouseMotionListener):
         self.sidebar_panel = sidebar_panel
         self.favorites_dir_path = favorites_dir_path
         self.model = tree_control.getModel()
-        self.drop_allowed = False
-        self.svg_data = None
-
-        self.pointer = self.ctx.getServiceManager().createInstanceWithContext(
-            "com.sun.star.awt.Pointer", self.ctx)
-
-    def svg_data_from_url(self, file_path):
-        with open(file_path, 'r', encoding='utf-8') as f:
-            svg_data = f.read()
-        return svg_data
 
     def mousePressed(self, event):
         try:
             x, y = event.X, event.Y
             node = self.tree.getNodeForLocation(x, y)
-            if node and node.getChildCount() == 0 and not self.drop_allowed:
-                svg_url = node.getNodeGraphicURL()
-                file_path = fileUrlToSystemPath(svg_url)
-                self.svg_data = self.svg_data_from_url(file_path)
-
+            if node and node.getChildCount() == 0:
                 if self.tree.isEditing():
                     self.finalize_node_edit()
                 else:
@@ -291,43 +277,16 @@ class TreeMouseListener(unohelper.Base, XMouseListener, XMouseMotionListener):
             self.sidebar_panel.rename_symbol_files()
 
     def mouseMoved(self, event):
-        try:
-            # change the mouse pointer to provide visual feedback during DnD
-            if self.pointer.getType() != SystemPointer.ARROW:
-                self.pointer.setType(SystemPointer.ARROW)
-                self.tree.getPeer().setPointer(self.pointer)
-        except Exception as e:
-            print("Mouse moved error:", e)
+        """Handle mouse moved events"""
+        pass
 
     def mouseDragged(self, event):
-        try:
-            # check if the mouse is in the allowed drop area
-            # event.X and event.Y are relative to the TreeControl
-            # the values here (-30, -80) represent thresholds
-            # that determine how far the mouse has moved away from the TreeControl
-            if self.sidebar_panel.selected_node and event.Buttons == MouseButton.LEFT:
-                if event.X <= -30 and event.Y > -80:
-                    self.drop_allowed = True
-                else:
-                    self.drop_allowed = False
-
-                # change the mouse pointer to provide visual feedback during DnD
-                if self.pointer.getType() != SystemPointer.MOVEDATA:
-                    self.pointer.setType(SystemPointer.MOVEDATA)
-                    self.tree.getPeer().setPointer(self.pointer)
-        except Exception as e:
-            print("Mouse dragged error:", e)
+        """Handle mouse dragged events"""
+        pass
 
     def mouseReleased(self, event):
         try:
             node = self.sidebar_panel.selected_node
-            if node and self.drop_allowed and self.svg_data:
-                model = self.sidebar_panel.desktop.getCurrentComponent()
-                params = node.DataValue
-                node_name = node.getDisplayValue()
-                insertSvgGraphic(self.ctx, model, self.svg_data, params, None, node_name, 3)
-                self.drop_allowed = False
-
             if (event.Buttons == MouseButton.RIGHT and node and node.getChildCount() == 0):
                 # simulate quick edit to highlight the node
                 self.tree.startEditingAtNode(node)
