@@ -12,9 +12,9 @@ import json
 import base64
 import unohelper
 
-from sidebar_tree import SidebarTree, TreeKeyListener, TreeMouseListener, TreeSelectionChangeListener
+from sidebar_tree import SidebarTree, TreeKeyListener, TreeSelectionChangeListener
 from symbol_dialog import open_symbol_dialog
-from utils import insertSvgGraphic, get_package_location, parse_svg_dimensions
+from utils import get_package_location, parse_svg_dimensions
 from sidebar_rename_dialog import RenameDialog
 
 from unohelper import systemPathToFileUrl, fileUrlToSystemPath
@@ -23,10 +23,9 @@ from com.sun.star.ui import XUIElement, XUIElementFactory, XToolPanel, XSidebarP
 from com.sun.star.awt import XWindowListener, XActionListener
 from com.sun.star.awt import XFocusListener, XKeyListener
 from com.sun.star.view.SelectionType import SINGLE
-from com.sun.star.datatransfer.dnd import XDragGestureListener, XDragSourceListener, XDropTargetListener
+from com.sun.star.datatransfer.dnd import XDragGestureListener, XDragSourceListener
 from com.sun.star.datatransfer import XTransferable, DataFlavor
 from com.sun.star.datatransfer.dnd.DNDConstants import ACTION_COPY
-from com.sun.star.frame import XFrameActionListener
 
 class SidebarFactory(unohelper.Base, XUIElementFactory):
     def __init__(self, ctx):
@@ -81,9 +80,6 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
 
         self._resizeListener = WindowResizeListener(self.onResize)
         self.xParentWindow.addWindowListener(self._resizeListener)
-
-        # Setup drop targets on document windows
-        self._setup_document_drop_targets()
 
     # XUIElement
     def getRealInterface(self):
@@ -205,21 +201,8 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
                 except Exception as e:
                     print(f"Could not set up drag source: {e}")
 
-                # Try to set up drop target
-                """ try:
-                    drop_target = toolkit.getDropTarget(peer)
-                    drop_target.addDropTargetListener(drop_handler)
-                    drop_target.setActive(True)
-                except Exception as e:
-                    print(f"Could not set up drop target: {e}") """
-
-
             except Exception as e:
                 print(f"Could not setup native drag support, falling back to mouse listener: {e}")
-                # Fallback to mouse listener approach
-                #mouse_handler = TreeMouseListener(self.ctx, treeCtrl, self, self.favorites_dir_path)
-                #treeCtrl.addMouseListener(mouse_handler)
-                #treeCtrl.addMouseMotionListener(mouse_handler)
 
             return container
         except Exception as e:
@@ -256,41 +239,6 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
 
         return favorites_dir_path
 
-    def _setup_document_drop_targets(self):
-        """Setup drop targets on document windows"""
-        try:
-            print("setting up document drop targets")
-            # Listen for frame events to setup drop targets on new documents
-            frame_listener = DocumentFrameListener(self.ctx, self)
-            self.desktop.addFrameActionListener(frame_listener)
-
-            # Setup on all existing frames
-            self._setup_on_existing_frames()
-        except Exception as e:
-            print(f"Could not setup document drop targets: {e}")
-
-    def _setup_on_existing_frames(self):
-        """Setup drop targets on all existing frames"""
-        try:
-            # First try the current frame
-            current_frame = self.desktop.getCurrentFrame()
-            print("current frame: ", current_frame)
-            if current_frame:
-                self._setup_drop_target_on_frame(current_frame)
-                return
-
-            # If no current frame, iterate through all frames
-            frames = self.desktop.getFrames()
-            print(f"Found {frames.getCount()} frames")
-
-            for i in range(frames.getCount()):
-                frame = frames.getByIndex(i)
-                if frame and self._is_document_frame(frame):
-                    self._setup_drop_target_on_frame(frame)
-
-        except Exception as e:
-            print(f"Could not setup on existing frames: {e}")
-
     def _is_document_frame(self, frame):
         """Check if frame is a document frame (not toolbar, etc.)"""
         try:
@@ -302,20 +250,6 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
             return False
         except:
             return False
-
-    def _setup_drop_target_on_frame(self, frame):
-        """Setup drop target on a specific frame"""
-        print("Setting up drop target on frame:", frame)
-        try:
-            toolkit = self.ctx.ServiceManager.createInstanceWithContext("com.sun.star.awt.Toolkit", self.ctx)
-
-            # Create drop target listener for the document window
-            drop_listener = DocumentDropTargetListener(self.ctx, self)
-            drop_target = toolkit.getDropTarget(frame.getComponentWindow())
-            drop_target.addDropTargetListener(drop_listener)
-            drop_target.setActive(True)
-        except Exception as e:
-            print(f"Could not setup drop target on frame: {e}")
 
     def import_json_data(self, file_name, category_path):
         symbol_params = []
@@ -627,7 +561,6 @@ class TreeDragDropHandler(unohelper.Base, XDragGestureListener, XDragSourceListe
     def dragGestureRecognized(self, event):
         """Handle drag gesture recognition"""
         try:
-            print("Drag gesture recognized")
             # Get the node at the drag start location
             node = self.tree_control.getNodeForLocation(event.DragOriginX, event.DragOriginY)
             if node and node.getChildCount() == 0:  # Only leaf nodes are draggable
@@ -637,8 +570,6 @@ class TreeDragDropHandler(unohelper.Base, XDragGestureListener, XDragSourceListe
                 # Start the drag operation
                 drag_source = event.DragSource
                 drag_source.startDrag(event, ACTION_COPY, 0, 0, transferable, self)
-
-                print(f"Started drag for node: {node.getDisplayValue()}")
         except Exception as e:
             print(f"Error in dragGestureRecognized: {e}")
 
@@ -657,10 +588,7 @@ class TreeDragDropHandler(unohelper.Base, XDragGestureListener, XDragSourceListe
 
     def dragDropEnd(self, event):
         """Drag operation ended"""
-        if event.DropSuccess:
-            print("Drag drop completed successfully")
-        else:
-            print("Drag drop was cancelled")
+        pass
 
     def dropActionChanged(self, event):
         pass
@@ -683,7 +611,6 @@ class SymbolTransferable(unohelper.Base, XTransferable):
 
     def getTransferData(self, flavor):
         """Get the transferable data"""
-        print("getTransferData called with flavor:", flavor.MimeType)
         if flavor.MimeType == self.data_flavor.MimeType:
 
             # LibreOffice expects a byte sequence containing a document with the graphic
@@ -743,274 +670,6 @@ class SymbolTransferable(unohelper.Base, XTransferable):
         except Exception as e:
             print(f"Error reading SVG content: {e}")
             return ""
-
-
-class DocumentFrameListener(unohelper.Base, XFrameActionListener):
-    """Listen for frame events to setup drop targets on new documents"""
-
-    def __init__(self, ctx, sidebar_panel):
-        print("frame listener created")
-        self.ctx = ctx
-        self.sidebar_panel = sidebar_panel
-        self.processed_frames = set()  # Track which frames we've already processed
-
-    def frameAction(self, event):
-        """Handle frame action events"""
-        try:
-            from com.sun.star.frame.FrameAction import FRAME_ACTIVATED, COMPONENT_ATTACHED
-
-            # Setup drop target when frame is activated or component is attached
-            if event.Action in (FRAME_ACTIVATED, COMPONENT_ATTACHED):
-                self.sidebar_panel._setup_drop_target_on_frame(event.Frame)
-        except Exception as e:
-            print(f"Error in frame action listener: {e}")
-
-    def disposing(self, event):
-        pass
-
-
-class DocumentDropTargetListener(unohelper.Base, XDropTargetListener):
-    """Handle drops on document windows"""
-
-    def __init__(self, ctx, sidebar_panel):
-        self.ctx = ctx
-        self.sidebar_panel = sidebar_panel
-
-    def drop(self, event):
-        """Handle drop event with shape hit testing"""
-        print("DocumentDropTargetListener: drop event received")
-        try:
-            # Check if we can handle this drop
-            transferable = event.Transferable
-            data_flavors = transferable.getTransferDataFlavors()
-            print(f"Available data flavors: {[flavor.MimeType for flavor in data_flavors]}")
-
-            for flavor in data_flavors:
-                if flavor.MimeType == "application/x-openoffice-drawing;windows_formatname=\"Drawing Format\"":
-                    # Get the dropped data as input stream
-                    input_stream = transferable.getTransferData(flavor)
-
-                    # Read all bytes from the stream
-                    available_bytes = input_stream.available()
-                    if available_bytes > 0:
-                        byte_sequence, bytes_read = input_stream.readBytes(None, available_bytes)
-                        # Convert bytes back to string
-                        node_data_json = bytes(byte_sequence).decode('utf-8')
-                        node_data = json.loads(node_data_json)
-                    else:
-                        continue
-
-                    # Insert the symbol at the drop location
-                    model = self.sidebar_panel.desktop.getCurrentComponent()
-                    if model:
-                        svg_url = node_data.get("graphicURL")
-                        if svg_url:
-                            svg_path = fileUrlToSystemPath(svg_url)
-                            with open(svg_path, 'r', encoding='utf-8') as f:
-                                svg_data = f.read()
-
-                            # Convert drop coordinates and check for shapes at that location
-                            drop_position, target_shape = self._get_drop_position_and_target(event, model)
-
-                            if target_shape:
-                                # Update the existing target shape with the new SVG
-                                self._update_shape_with_svg(target_shape, svg_data, node_data.get("dataValue", []))
-                                target_name = target_shape.getName() if hasattr(target_shape, 'getName') else 'unnamed shape'
-                                print(f"Updated existing shape '{target_name}' with symbol '{node_data.get('displayValue')}'")
-                            else:
-                                # Create new shape at drop coordinates if no target shape found
-                                params = node_data.get("dataValue", [])
-                                insertSvgGraphic(self.ctx, model, svg_data, params, drop_position, 3)
-                                print(f"Created new symbol '{node_data.get('displayValue')}' at coordinates ({drop_position.X}, {drop_position.Y})")
-
-                            event.acceptDrop(1)  # Accept the drop
-                            return
-
-            # Reject the drop if we can't handle it
-            event.rejectDrop()
-
-        except Exception as e:
-            print(f"Error in drop handler: {e}")
-            event.rejectDrop()
-
-    def _get_drop_position_and_target(self, event, model):
-        """Convert drop coordinates and detect target shape using hit testing"""
-        try:
-            # Create drop position point
-            drop_position = uno.createUnoStruct('com.sun.star.awt.Point')
-            drop_position.X = event.LocationInTarget.X * 100  # Convert to document units (1/100mm)
-            drop_position.Y = event.LocationInTarget.Y * 100
-
-            # Try to find a shape at the drop location using hit testing
-            target_shape = self._find_shape_at_position(model, drop_position)
-
-            return drop_position, target_shape
-
-        except Exception as e:
-            print(f"Error calculating drop position: {e}")
-            # Fallback to basic position
-            drop_position = uno.createUnoStruct('com.sun.star.awt.Point')
-            drop_position.X = event.LocationInTarget.X * 100
-            drop_position.Y = event.LocationInTarget.Y * 100
-            return drop_position, None
-
-    def _find_shape_at_position(self, model, position):
-        """Find shape at given position using hit testing"""
-        try:
-            controller = model.getCurrentController()
-            if not controller:
-                return None
-
-            # Get the current page/slide
-            current_page = None
-            if hasattr(controller, 'getCurrentPage'):
-                current_page = controller.getCurrentPage()
-            elif hasattr(model, 'getCurrentPage'):
-                current_page = model.getCurrentPage()
-            elif hasattr(model, 'getDrawPage'):
-                current_page = model.getDrawPage()
-
-            if not current_page:
-                return None
-
-            # Check each shape to see if the drop position intersects with it
-            for i in range(current_page.getCount()):
-                shape = current_page.getByIndex(i)
-                if self._point_in_shape(position, shape):
-                    return shape
-
-            return None
-
-        except Exception as e:
-            print(f"Error in shape hit testing: {e}")
-            return None
-
-    def _point_in_shape(self, point, shape):
-        """Check if a point is inside a shape's bounding rectangle"""
-        try:
-            shape_pos = shape.getPosition()
-            shape_size = shape.getSize()
-
-            # Check if point is within shape bounds
-            if (point.X >= shape_pos.X and
-                point.X <= shape_pos.X + shape_size.Width and
-                point.Y >= shape_pos.Y and
-                point.Y <= shape_pos.Y + shape_size.Height):
-                return True
-
-            return False
-
-        except Exception as e:
-            print(f"Error checking point in shape: {e}")
-            return False
-
-    def _update_shape_with_svg(self, target_shape, svg_data, params):
-        """Update an existing shape with new SVG content"""
-        try:
-            # Store the original position and size
-            original_pos = target_shape.getPosition()
-            original_size = target_shape.getSize()
-
-            # Get the page that contains the target shape
-            parent_page = None
-            if hasattr(target_shape, 'getParent'):
-                parent_page = target_shape.getParent()
-
-            if not parent_page:
-                print("Could not find parent page for target shape")
-                return False
-
-            # Create a temporary SVG file for the new content
-            import tempfile
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.svg', delete=False, encoding='utf-8') as temp_file:
-                temp_file.write(svg_data)
-                temp_svg_path = temp_file.name
-
-            try:
-                # Import the new SVG
-                from com.sun.star.beans import PropertyValue
-
-                # Create import properties
-                import_props = []
-
-                # Import filter for SVG
-                filter_prop = PropertyValue()
-                filter_prop.Name = "FilterName"
-                filter_prop.Value = "draw_svg_Export"  # For import, use the export filter name
-                import_props.append(filter_prop)
-
-                # Create URL from temp file
-                from unohelper import systemPathToFileUrl
-                svg_url = systemPathToFileUrl(temp_svg_path)
-
-                # Try to replace the graphic content
-                if hasattr(target_shape, 'setPropertyValue'):
-                    try:
-                        # For GraphicObjectShape, update the GraphicURL property
-                        target_shape.setPropertyValue("GraphicURL", svg_url)
-
-                        # Try to maintain the original position and size
-                        target_shape.setPosition(original_pos)
-                        # Optionally maintain size or let it adapt to new content
-                        # target_shape.setSize(original_size)
-
-                        print(f"Successfully updated shape with new SVG content")
-                        return True
-
-                    except Exception as prop_e:
-                        print(f"Could not update GraphicURL property: {prop_e}")
-
-                # Alternative approach: Replace the shape entirely but preserve position
-                model = self.sidebar_panel.desktop.getCurrentComponent()
-                if model and parent_page:
-                    # Remove the old shape
-                    parent_page.remove(target_shape)
-
-                    # Insert new shape at the same position
-                    insertSvgGraphic(self.ctx, model, svg_data, params, original_pos, 3)
-
-                    print(f"Replaced shape with new SVG content at original position")
-                    return True
-
-            finally:
-                # Clean up temporary file
-                import os
-                try:
-                    os.unlink(temp_svg_path)
-                except:
-                    pass
-
-        except Exception as e:
-            print(f"Error updating shape with SVG: {e}")
-            return False
-
-    def dragEnter(self, event):
-        """Drag entered the drop target"""
-        # Check if we can accept this drag
-        print("Drag entered document drop target")
-        for flavor in event.SupportedDataFlavors:
-            if flavor.MimeType == "application/x-openoffice-drawing;windows_formatname=\"Drawing Format\"":
-                event.Context.acceptDrag(1)  # Accept drag with MOVE action
-                return
-        event.Context.rejectDrag()
-
-    def dragExit(self, event):
-        """Drag exited the drop target"""
-        pass
-
-    def dragOver(self, event):
-        """Drag is over the drop target"""
-        print("Drag is over the drop target")
-        pass
-
-    def dropActionChanged(self, event):
-        """Drop action changed"""
-        pass
-
-    def disposing(self, event):
-        pass
-
-
 
 class ExportButtonListener(unohelper.Base, XActionListener):
     def __init__(self, ctx, sidebar):
