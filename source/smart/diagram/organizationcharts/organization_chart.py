@@ -462,8 +462,27 @@ class OrganizationChart(Diagram):
 
                         x_dad_shape = selected_item.get_dad().get_rectangle_shape()
 
+                        # Preserve children by re-anchoring them to the parent of the deleted shape
                         if selected_item.get_first_child() is not None:
-                            selected_item.get_first_child().remove_items()
+                            # Move all children of the deleted item to become children of its parent
+                            child_to_move = selected_item.get_first_child()
+
+                            # Find the last child of the parent to append the moved children
+                            if dad_item.get_first_child() is None:
+                                # Parent has no children, make the deleted item's children the first children
+                                dad_item.set_first_child(child_to_move)
+                            else:
+                                # Find the last child of the parent and append the moved children there
+                                last_child = dad_item.get_first_child()
+                                while last_child.get_first_sibling() is not None:
+                                    last_child = last_child.get_first_sibling()
+                                last_child.set_first_sibling(child_to_move)
+
+                            # Update parent references for all moved children
+                            current_child = child_to_move
+                            while current_child is not None:
+                                current_child.set_dad(dad_item)
+                                current_child = current_child.get_first_sibling()
 
                         x_conn_shape = self.get_diagram_tree().get_dad_connector_shape(x_selected_shape)
                         if x_conn_shape is not None:
@@ -486,6 +505,8 @@ class OrganizationChart(Diagram):
                                 )
                         else:
                             self.get_controller().set_selected_shape(x_dad_shape)
+
+                        self._update_tree_layout()
 
     def create_diagram(self, data=None):
         """Create diagram - base implementation"""
