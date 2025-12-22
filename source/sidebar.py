@@ -12,7 +12,7 @@ import json
 import base64
 import unohelper
 
-from sidebar_tree import SidebarTree, TreeKeyListener, TreeSelectionChangeListener
+from sidebar_tree import SidebarTree, TreeKeyListener, TreeMouseListener, TreeSelectionChangeListener
 from symbol_dialog import open_symbol_dialog
 from utils import get_package_location, parse_svg_dimensions
 from sidebar_rename_dialog import RenameDialog
@@ -175,6 +175,10 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
             treeCtrl = self.createControl(self.ctx, "com.sun.star.awt.tree.TreeControl", "com.sun.star.awt.tree.TreeControlModel", x, y, width, height, names, values)
             self.tree_control = treeCtrl
             self.sidebar_tree.set_tree_control(treeCtrl)
+
+            mouse_listener = TreeMouseListener(self.ctx, treeCtrl, self, self.favorites_dir_path)
+            treeCtrl.addMouseListener(mouse_listener)
+            treeCtrl.addMouseMotionListener(mouse_listener)
 
             key_listener =  TreeKeyListener(self, self.favorites_dir_path)
             treeCtrl.addKeyListener(key_listener)
