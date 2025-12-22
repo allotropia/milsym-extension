@@ -16,7 +16,7 @@ base_dir = os.path.dirname(__file__)
 if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
 
-from com.sun.star.awt import KeyModifier, XDialogEventHandler, XTopWindowListener, XMouseListener, XKeyListener, Key
+from com.sun.star.awt import KeyModifier, XDialogEventHandler, XTopWindowListener, XMouseListener, XKeyListener, Key, XWindowListener
 from com.sun.star.awt import MouseButton
 from com.sun.star.view.SelectionType import SINGLE as SELECTION_TYPE_SINGLE
 from com.sun.star.view import XSelectionChangeListener
@@ -30,7 +30,7 @@ from unohelper import systemPathToFileUrl
 import tempfile
 
 
-class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener):
+class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener, XWindowListener):
     buttons = ["addShape", "removeShape", "editShape"]
 
     def __init__(self, dialog, x_context, model):
@@ -208,6 +208,17 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
             if self._populate_tree_on_show:
                 self.populate_tree()
                 self._populate_tree_on_show = False
+            # Add window resize listener
+            self._add_resize_listener()
+
+    def _add_resize_listener(self):
+        """Add window resize listener to handle dialog resizing"""
+        try:
+            dialog = self.get_gui()._x_control_dialog
+            if dialog is not None:
+                dialog.addWindowListener(self)
+        except Exception as e:
+            print(f"Error adding resize listener: {e}")
 
     def windowClosed(self, event):
         """Handle window closed event"""
@@ -228,6 +239,48 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener)
     def windowDeactivated(self, event):
         """Handle window deactivated event"""
         pass
+
+    # XWindowListener methods for resize handling
+    def windowResized(self, event):
+        """Handle window resize event"""
+        try:
+            if event.Source == self.get_gui()._x_control_dialog:
+                self._resize_controls(event)
+        except Exception as e:
+            print(f"Error handling window resize: {e}")
+
+    def windowMoved(self, event):
+        """Handle window moved event"""
+        pass
+
+    def windowShown(self, event):
+        """Handle window shown event"""
+        pass
+
+    def windowHidden(self, event):
+        """Handle window hidden event"""
+        pass
+
+    def _resize_controls(self, event):
+        """Resize controls based on new dialog size"""
+        try:
+            # Calculate margins (based on original layout)
+            margin_left = 3
+            margin_right = 3
+            margin_top = 21
+            margin_bottom = 3
+
+            # Calculate new tree control size
+            new_tree_width = event.Width - event.LeftInset - event.RightInset - margin_left - margin_right
+            new_tree_height = event.Height - event.TopInset - event.BottomInset - margin_top - margin_bottom
+
+            # Set new tree control size
+            tree_model = self.tree_control.getModel()
+            tree_model.Width = new_tree_width
+            tree_model.Height = new_tree_height
+
+        except Exception as e:
+            print(f"Error resizing controls: {e}")
 
     def _init_tree_control(self):
         """Initialize the tree control and set up listeners"""
