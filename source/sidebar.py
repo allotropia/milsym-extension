@@ -239,18 +239,6 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
 
         return favorites_dir_path
 
-    def _is_document_frame(self, frame):
-        """Check if frame is a document frame (not toolbar, etc.)"""
-        try:
-            # Check if frame has a component (document)
-            component = frame.getController()
-            if component:
-                model = component.getModel()
-                return model is not None
-            return False
-        except:
-            return False
-
     def import_json_data(self, file_name, category_path):
         symbol_params = []
         symbol_name = os.path.splitext(file_name)[0]
