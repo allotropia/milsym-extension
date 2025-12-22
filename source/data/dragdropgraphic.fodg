@@ -510,7 +510,7 @@
     <office:body>
         <office:drawing>
             <draw:page draw:name="page0" draw:style-name="dp1">
-                <draw:frame draw:name="Symbol (130310000000000000000000000000)" draw:style-name="gr1" draw:text-style-name="P1" draw:layer="layout" svg:width="6.271cm" svg:height="4.286cm" svg:x="0cm" svg:y="0cm">
+                <draw:frame draw:name="Symbol (130310000000000000000000000000)" draw:style-name="gr1" draw:text-style-name="P1" draw:layer="layout" svg:width="SVG_WIDTH_CM" svg:height="SVG_HEIGHT_CM" svg:x="0cm" svg:y="0cm">
                     <draw:image draw:mime-type="image/svg+xml">
                         <office:binary-data>SVG_BASE_64_ENCODED</office:binary-data>
                         <text:p/>

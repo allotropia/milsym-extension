@@ -14,7 +14,7 @@ import unohelper
 
 from sidebar_tree import SidebarTree, TreeKeyListener, TreeMouseListener, TreeSelectionChangeListener
 from symbol_dialog import open_symbol_dialog
-from utils import insertSvgGraphic, get_package_location
+from utils import insertSvgGraphic, get_package_location, parse_svg_dimensions
 from sidebar_rename_dialog import RenameDialog
 
 from unohelper import systemPathToFileUrl, fileUrlToSystemPath
@@ -697,9 +697,14 @@ class SymbolTransferable(unohelper.Base, XTransferable):
             svg_string = self._get_svg_content_from_node()
             # Base64 encode the SVG content
             svg_base64 = base64.b64encode(svg_string.encode('utf-8')).decode('utf-8')
+            svg_size = parse_svg_dimensions(svg_string)
+            factor = 5
+            width_cm = svg_size.Width / 1000.0 * factor  # 1/100mm to cm
+            height_cm = svg_size.Height / 1000.0 * factor # 1/100mm to cm
             data_string = data_string.replace('SVG_BASE_64_ENCODED', svg_base64)
+            data_string = data_string.replace('SVG_WIDTH_CM', str(width_cm)+'cm')
+            data_string = data_string.replace('SVG_HEIGHT_CM', str(height_cm)+'cm')
 
-            # TODO: Replace placeholders in the svg with proper svg data
             data_bytes = data_string.encode('utf-8')
             return uno.ByteSequence(data_bytes)
         else:
