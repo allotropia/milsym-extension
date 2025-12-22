@@ -25,6 +25,7 @@ from com.sun.star.datatransfer.dnd import XDragSourceListener
 from com.sun.star.datatransfer.dnd.DNDConstants import ACTION_MOVE
 from com.sun.star.datatransfer import XTransferable, DataFlavor
 from com.sun.star.beans import NamedValue
+from com.sun.star.document import XUndoAction, XUndoManager
 from utils import extractGraphicAttributes, getExtensionBasePath, generate_icon_svg
 from unohelper import systemPathToFileUrl
 import tempfile
@@ -55,9 +56,26 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
                 self.get_controller().remove_selection_listener()
                 # Store current selected shape before adding
                 self._store_selection_before_add()
+
+                # Get undo manager and create undo action
+                undo_manager = self._get_undo_manager()
+                parent_tree_item = self._parent_before_add
+
                 # Add shape and get reference to newly created shape
                 self.get_controller().get_diagram().add_shape()
                 self.get_controller().get_diagram().refresh_diagram()
+
+                # Find the newly added shape for undo tracking
+                added_shape = self._find_newly_added_shape(parent_tree_item)
+
+                # Create and register undo action if we have an undo manager
+                if undo_manager and added_shape and parent_tree_item:
+                    try:
+                        undo_action = AddShapeUndoAction(self, added_shape, parent_tree_item)
+                        undo_manager.addUndoAction(undo_action)
+                    except Exception as e:
+                        print(f"Failed to register undo action: {e}")
+
                 # Refresh tree after adding shape
                 self.refresh_tree()
                 self._select_newly_added_child()
@@ -821,11 +839,127 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
         except Exception as e:
             print(f"Error selecting newly added child: {e}")
 
+    def _get_undo_manager(self):
+        """Get the document's undo manager"""
+        try:
+            controller = self.get_controller()
+            if controller and hasattr(controller, '_x_controller'):
+                # Get the document model from the controller
+                model = controller._x_controller.getModel()
+                if model and hasattr(model, 'getUndoManager'):
+                    return model.getUndoManager()
+                elif hasattr(model, 'UndoManager'):
+                    return model.UndoManager
+        except Exception as e:
+            print(f"Could not get undo manager: {e}")
+        return None
+
+    def _find_newly_added_shape(self, parent_tree_item):
+        """Find the shape that was just added to the parent"""
+        try:
+            if not parent_tree_item:
+                return None
+
+            # Look for the last (newest) child
+            if parent_tree_item.get_first_child():
+                child_item = parent_tree_item.get_first_child()
+                last_child = child_item
+
+                # Find the last sibling (most recently added)
+                while child_item:
+                    last_child = child_item
+                    child_item = child_item.get_first_sibling()
+
+                if last_child:
+                    return last_child.get_rectangle_shape()
+        except Exception as e:
+            print(f"Error finding newly added shape: {e}")
+        return None
+
 class ClipboardItem:
     """Stores data for a copied tree item and its children"""
     def __init__(self, attributes, children=None):
         self.attributes = attributes    # Shape attributes (MilSymCode, etc.)
         self.children = children if children is not None else []
+
+
+class AddShapeUndoAction(unohelper.Base, XUndoAction):
+    """Undo action for adding a shape to the diagram"""
+
+    def __init__(self, dialog_handler, added_shape, parent_tree_item):
+        self.dialog_handler = dialog_handler
+        self.added_shape = added_shape
+        self.parent_tree_item = parent_tree_item
+        self._title = "Add Shape"
+
+    def getTitle(self):
+        """Return the title of this undo action"""
+        return self._title
+
+    def undo(self):
+        """Undo the add shape operation by removing the added shape"""
+        try:
+            if self.added_shape and self.dialog_handler:
+                controller = self.dialog_handler.get_controller()
+                if controller and controller.get_diagram():
+                    # Temporarily remove selection listener to avoid conflicts
+                    controller.remove_selection_listener()
+
+                    # Select the shape to be removed
+                    controller.set_selected_shape(self.added_shape)
+
+                    # Remove the shape using the diagram's remove method
+                    controller.get_diagram().remove_shape()
+                    controller.get_diagram().refresh_diagram()
+
+                    # Refresh the tree view
+                    self.dialog_handler.refresh_tree()
+
+                    # Select the parent shape if it still exists
+                    if self.parent_tree_item:
+                        parent_shape = self.parent_tree_item.get_rectangle_shape()
+                        if parent_shape:
+                            controller.set_selected_shape(parent_shape)
+
+                    # Re-add selection listener
+                    controller.add_selection_listener()
+
+        except Exception as e:
+            print(f"Error during undo add shape: {e}")
+
+    def redo(self):
+        """Redo the add shape operation"""
+        try:
+            if self.parent_tree_item and self.dialog_handler:
+                controller = self.dialog_handler.get_controller()
+                if controller and controller.get_diagram():
+                    # Temporarily remove selection listener
+                    controller.remove_selection_listener()
+
+                    # Select the parent shape
+                    parent_shape = self.parent_tree_item.get_rectangle_shape()
+                    if parent_shape:
+                        controller.set_selected_shape(parent_shape)
+
+                    # Add the shape again
+                    controller.get_diagram().add_shape()
+                    controller.get_diagram().refresh_diagram()
+
+                    # Refresh tree and select newly added shape
+                    self.dialog_handler.refresh_tree()
+                    self.dialog_handler._select_newly_added_child()
+
+                    # Re-add selection listener
+                    controller.add_selection_listener()
+
+        except Exception as e:
+            print(f"Error during redo add shape: {e}")
+
+    def disposing(self, event):
+        """Handle disposing event"""
+        self.dialog_handler = None
+        self.added_shape = None
+        self.parent_tree_item = None
 
 class TreeKeyHandler(unohelper.Base, XKeyListener):
     """Handle keyboard events on tree control for navigation selection"""
