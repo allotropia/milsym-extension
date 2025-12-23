@@ -607,7 +607,7 @@ class SymbolTransferable(unohelper.Base, XTransferable):
 
             # LibreOffice expects a byte sequence containing a document with the graphic
             # Read the template document from the data folder
-            package_path = get_package_location(self.ctx)
+            package_path = fileUrlToSystemPath(get_package_location(self.ctx))
             template_path = os.path.join(package_path, "source", "data", "dragdropgraphic.fodg")
             with open(template_path, 'r', encoding='utf-8') as f:
                 data_string = f.read()

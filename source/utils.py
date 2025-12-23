@@ -10,7 +10,6 @@ import sys
 import os
 import uno
 import xml.etree.ElementTree as ET
-from unohelper import fileUrlToSystemPath
 
 base_dir = os.path.dirname(__file__)
 if base_dir not in sys.path:
@@ -247,7 +246,7 @@ def create_graphic_from_svg(ctx, svg_data):
 def get_package_location(ctx, extensionName="com.collabora.milsymbol"):
     """Get package location from package information provider"""
     srv = ctx.getByName("/singletons/com.sun.star.deployment.PackageInformationProvider")
-    return fileUrlToSystemPath(srv.getPackageLocation(extensionName))
+    return srv.getPackageLocation(extensionName)
 
 def getExtensionBasePath(ctx, extensionName="com.collabora.milsymbol"):
     """Get the base path of the extension installation directory"""
