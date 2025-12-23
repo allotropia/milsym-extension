@@ -100,11 +100,21 @@ class OrganizationChart(Diagram):
     def set_hidden_root_element_prop(self, is_hidden: bool):
         """Set hidden root element property"""
         self._is_hidden_root_element = is_hidden
+        if self.get_diagram_tree() is not None:
+            control_shape = self.get_diagram_tree().get_control_shape()
+            if control_shape is not None:
+                self.set_hidden_root_of_control_shape(control_shape, is_hidden)
 
     def init_root_element_hidden_property(self):
-        """Initialize root element hidden property"""
-        if self.get_diagram_tree().get_root_item() is not None:
-            self._is_hidden_root_element = self.get_diagram_tree().get_root_item().is_hidden_element()
+        """Initialize root element hidden property from control shape"""
+        if self.get_diagram_tree() is None:
+            self._is_hidden_root_element = False
+            return
+        control_shape = self.get_diagram_tree().get_control_shape()
+        if control_shape is not None:
+            self._is_hidden_root_element = self.get_hidden_root_of_control_shape(control_shape)
+        else:
+            self._is_hidden_root_element = False
 
     def is_color_scheme_style(self, style: int) -> bool:
         """Check if style is a color scheme style"""
@@ -304,6 +314,40 @@ class OrganizationChart(Diagram):
         if x_control_shape is not None and x_root_shape is not None:
             self.init_properties_from_shapes(x_control_shape, x_root_shape)
             self.init_root_element_hidden_property()
+
+    def get_hidden_root_of_control_shape(self, control_shape) -> bool:
+        """Get hidden root property from control shape's string"""
+        if control_shape is not None:
+            text = control_shape.getString()
+            if ":" in text:
+                a_str = text.split(":")
+                for i in range(len(a_str) - 1):
+                    if a_str[i] == "HiddenRoot":
+                        return a_str[i + 1] == "true"
+        return False
+
+    def set_hidden_root_of_control_shape(self, control_shape, is_hidden: bool):
+        """Store hidden root property in control shape's string"""
+        if control_shape is not None:
+            text = control_shape.getString()
+            value = "true" if is_hidden else "false"
+
+            if text == "" or ":" not in text:
+                control_shape.setString(f"HiddenRoot:{value}")
+            else:
+                is_already_defined = False
+                a_str = text.split(":")
+                for i in range(len(a_str) - 1):
+                    if a_str[i] == "HiddenRoot":
+                        a_str[i + 1] = value
+                        is_already_defined = True
+
+                if is_already_defined:
+                    text = ":".join(a_str)
+                else:
+                    text += f":HiddenRoot:{value}"
+
+                control_shape.setString(text)
 
     def init_properties_from_shapes(self, x_control_shape, x_root_shape):
         """Initialize properties from control and root shapes"""
