@@ -184,6 +184,18 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
 
         return ClipboardItem(attributes, children)
 
+    def handle_undo(self):
+        """Trigger undo via the document's undo manager"""
+        undo_manager = self._get_undo_manager()
+        if undo_manager and undo_manager.isUndoPossible():
+            undo_manager.undo()
+
+    def handle_redo(self):
+        """Trigger redo via the document's undo manager"""
+        undo_manager = self._get_undo_manager()
+        if undo_manager and undo_manager.isRedoPossible():
+            undo_manager.redo()
+
     def remove_selected_shape(self):
         """Remove the currently selected shape from the diagram"""
         if self.get_controller().get_diagram() is not None:
@@ -980,6 +992,10 @@ class TreeKeyHandler(unohelper.Base, XKeyListener):
             elif event.KeyCode == Key.V and (event.Modifiers & KeyModifier.MOD1):
                 self.dialog_handler.paste_to_selected_item()
                 return
+            elif event.KeyCode == Key.Z and (event.Modifiers & KeyModifier.MOD1):
+                self.dialog_handler.handle_undo()
+            elif event.KeyCode == Key.Y and (event.Modifiers & KeyModifier.MOD1):
+                self.dialog_handler.handle_redo()
 
             navigation_keys = [
                 Key.UP,
