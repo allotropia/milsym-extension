@@ -890,11 +890,7 @@ class AddShapeUndoAction(unohelper.Base, XUndoAction):
         self.dialog_handler = dialog_handler
         self.added_shape = added_shape
         self.parent_tree_item = parent_tree_item
-        self._title = "Add Shape"
-
-    def getTitle(self):
-        """Return the title of this undo action"""
-        return self._title
+        self.Title = "Add Shape"
 
     def undo(self):
         """Undo the add shape operation by removing the added shape"""
@@ -960,6 +956,7 @@ class AddShapeUndoAction(unohelper.Base, XUndoAction):
         self.dialog_handler = None
         self.added_shape = None
         self.parent_tree_item = None
+
 
 class TreeKeyHandler(unohelper.Base, XKeyListener):
     """Handle keyboard events on tree control for navigation selection"""
