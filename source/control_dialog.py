@@ -162,6 +162,21 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
         except Exception as ex:
             print(f"Error copying item: {ex}")
 
+    def _get_selected_tree_item(self):
+        """Get the tree item for the currently selected shape"""
+        try:
+            controller = self.get_controller()
+            selection = controller._x_controller.getSelection()
+            if selection and selection.getCount() > 0:
+                selected_shape = selection.getByIndex(0)
+                # Find the tree item for this shape
+                for tree_item in self._node_to_tree_item_map.values():
+                    if tree_item.get_rectangle_shape() == selected_shape:
+                        return tree_item
+        except Exception as e:
+            print(f"Error getting selected tree item: {e}")
+        return None
+
     def _serialize_tree_item(self, tree_item):
         """Recursively serialize a tree item and all its descendants to ClipboardItem"""
         if tree_item is None:
@@ -200,6 +215,18 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
         """Remove the currently selected shape from the diagram"""
         if self.get_controller().get_diagram() is not None:
             self.get_controller().remove_selection_listener()
+
+            undo_manager = self._get_undo_manager()
+            tree_item_to_remove = self._get_selected_tree_item()
+            parent_tree_item = (
+                tree_item_to_remove.get_dad() if tree_item_to_remove else None
+            )
+            serialized_data = (
+                self._serialize_tree_item(tree_item_to_remove)
+                if tree_item_to_remove
+                else None
+            )
+
             if self.get_controller().get_group_type() == self.get_controller().ORGANIGROUP:
                 org_chart = self.get_controller().get_diagram()
                 if org_chart.is_error_in_tree():
@@ -214,6 +241,15 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
                 self.get_controller().get_diagram().refresh_diagram()
                 # Refresh tree after removing shape
                 self.refresh_tree()
+
+            if undo_manager and serialized_data and parent_tree_item:
+                try:
+                    undo_action = RemoveShapeUndoAction(
+                        self, serialized_data, parent_tree_item
+                    )
+                    undo_manager.addUndoAction(undo_action)
+                except Exception as e:
+                    print(f"Failed to register undo action: {e}")
             self.get_controller().add_selection_listener()
 
     # XTopWindowListener methods
@@ -893,6 +929,71 @@ class ClipboardItem:
     def __init__(self, attributes, children=None):
         self.attributes = attributes    # Shape attributes (MilSymCode, etc.)
         self.children = children if children is not None else []
+
+class RemoveShapeUndoAction(unohelper.Base, XUndoAction):
+    """Undo action for removing a shape from the diagram"""
+
+    def __init__(self, dialog_handler, serialized_data, parent_tree_item):
+        self.dialog_handler = dialog_handler
+        self.serialized_data = (
+            serialized_data  # ClipboardItem with attributes & children
+        )
+        self.parent_tree_item = parent_tree_item
+        self.Title = "Remove Shape"
+        self._restored_shape = None  # Track restored shape for redo
+
+    def undo(self):
+        """Undo the remove by re-adding the shape using paste_subtree"""
+        try:
+            controller = self.dialog_handler.get_controller()
+            diagram = controller.get_diagram()
+
+            if diagram is None:
+                return
+
+            controller.remove_selection_listener()
+
+            # Use paste_subtree to restore the shape (same as paste functionality)
+            success = diagram.paste_subtree(
+                self.parent_tree_item, self.serialized_data, self.dialog_handler.script
+            )
+
+            if success:
+                diagram.refresh_diagram()
+                self.dialog_handler.refresh_tree()
+
+                # Find and store the restored shape for redo
+                self._restored_shape = self.dialog_handler._find_newly_added_shape(
+                    self.parent_tree_item
+                )
+
+            controller.add_selection_listener()
+        except Exception as e:
+            print(f"Error during undo remove shape: {e}")
+
+    def redo(self):
+        """Redo the remove by removing the restored shape"""
+        try:
+            if self._restored_shape is None:
+                return
+
+            controller = self.dialog_handler.get_controller()
+            diagram = controller.get_diagram()
+
+            if diagram is None:
+                return
+
+            controller.remove_selection_listener()
+
+            # Select and remove the restored shape
+            controller.set_selected_shape(self._restored_shape)
+            diagram.remove_shape()
+            diagram.refresh_diagram()
+            self.dialog_handler.refresh_tree()
+
+            controller.add_selection_listener()
+        except Exception as e:
+            print(f"Error during redo remove shape: {e}")
 
 
 class AddShapeUndoAction(unohelper.Base, XUndoAction):
