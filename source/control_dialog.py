@@ -154,6 +154,16 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
                 if success:
                     diagram.refresh_diagram()
                     self.refresh_tree()
+                    undo_manager = self._get_undo_manager()
+                    pasted_shape = self._find_newly_added_shape(target_tree_item)
+                    if undo_manager and pasted_shape:
+                        try:
+                            undo_action = PasteShapeUndoAction(
+                                self, self._clipboard, target_tree_item, pasted_shape
+                            )
+                            undo_manager.addUndoAction(undo_action)
+                        except Exception as e:
+                            print(f"Failed to register paste undo action: {e}")
                 controller.add_selection_listener()
 
         except Exception as ex:
@@ -1109,6 +1119,82 @@ class RemoveShapeUndoAction(unohelper.Base, XUndoAction):
             controller.add_selection_listener()
         except Exception as e:
             print(f"Error during redo remove shape: {e}")
+
+class PasteShapeUndoAction(unohelper.Base, XUndoAction):
+    """Undo action for pasting a shape (or subtree) into the diagram"""
+
+    def __init__(self, dialog_handler, clipboard_data, parent_tree_item, pasted_shape):
+        self.dialog_handler = dialog_handler
+        self.clipboard_data = clipboard_data
+        self.parent_tree_item = parent_tree_item
+        self.pasted_shape = pasted_shape
+        self.Title = "Paste Shape"
+
+    def undo(self):
+        """Undo the paste by removing the pasted shape and its entire subtree"""
+        try:
+            if self.pasted_shape is None:
+                return
+            controller = self.dialog_handler.get_controller()
+            diagram = controller.get_diagram()
+            if diagram is None:
+                return
+            controller.remove_selection_listener()
+            pasted_tree_item = self._find_tree_item_for_shape(self.pasted_shape)
+
+            if pasted_tree_item:
+                self._remove_subtree(diagram, controller, pasted_tree_item)
+
+            diagram.refresh_diagram()
+            self.dialog_handler.refresh_tree()
+            controller.add_selection_listener()
+        except Exception as e:
+            print(f"Error during undo paste shape: {e}")
+
+    def _remove_subtree(self, diagram, controller, tree_item):
+        """Recursively remove a tree item and all its descendants (depth-first)"""
+        if tree_item is None:
+            return
+
+        # First, recursively remove all children
+        child = tree_item.get_first_child()
+        while child is not None:
+            next_sibling = child.get_first_sibling()  # Save before removal
+            self._remove_subtree(diagram, controller, child)
+            child = next_sibling
+
+        shape = tree_item.get_rectangle_shape()
+        if shape:
+            controller.set_selected_shape(shape)
+            diagram.remove_shape()
+
+    def _find_tree_item_for_shape(self, shape):
+        """Find the tree item corresponding to a shape"""
+        for tree_item in self.dialog_handler._node_to_tree_item_map.values():
+            if tree_item.get_rectangle_shape() == shape:
+                return tree_item
+        return None
+
+    def redo(self):
+        """Redo the paste by re-pasting the clipboard data"""
+        try:
+            controller = self.dialog_handler.get_controller()
+            diagram = controller.get_diagram()
+            if diagram is None:
+                return
+            controller.remove_selection_listener()
+            success = diagram.paste_subtree(
+                self.parent_tree_item, self.clipboard_data, self.dialog_handler.script
+            )
+            if success:
+                diagram.refresh_diagram()
+                self.dialog_handler.refresh_tree()
+                self.pasted_shape = self.dialog_handler._find_newly_added_shape(
+                    self.parent_tree_item
+                )
+            controller.add_selection_listener()
+        except Exception as e:
+            print(f"Error during redo paste shape: {e}")
 
 
 class AddShapeUndoAction(unohelper.Base, XUndoAction):
