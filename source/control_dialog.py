@@ -26,7 +26,7 @@ from com.sun.star.datatransfer.dnd.DNDConstants import ACTION_MOVE
 from com.sun.star.datatransfer import XTransferable, DataFlavor
 from com.sun.star.beans import NamedValue
 from com.sun.star.document import XUndoAction, XUndoManager
-from utils import extractGraphicAttributes, getExtensionBasePath, generate_icon_svg
+from utils import extractGraphicAttributes, getExtensionBasePath, generate_icon_svg, insertGraphicAttributes
 from unohelper import systemPathToFileUrl
 import tempfile
 
@@ -85,9 +85,26 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
             self.remove_selected_shape()
             return True
         elif methodName == "OnEdit":
+            selected_shape = self.get_controller().get_diagram().get_last_shape()
+            if selected_shape is None:
+                return True
+
+            original_attributes = extractGraphicAttributes(selected_shape)
             self.dialog.execute_properties_dialog()
+            edited_attributes = extractGraphicAttributes(selected_shape)
+
+            if original_attributes != edited_attributes:
+                undo_manager = self._get_undo_manager()
+                if undo_manager:
+                    try:
+                        undo_action = EditShapeUndoAction(
+                            self, selected_shape, original_attributes, edited_attributes
+                        )
+                        undo_manager.addUndoAction(undo_action)
+                    except Exception as e:
+                        print(f"Failed to register edit undo action: {e}")
+
             self.get_controller().get_diagram().refresh_diagram()
-            # Refresh tree after editing (properties might affect display)
             self.refresh_tree()
             return True
         else:
@@ -611,7 +628,7 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
                 return
 
             attributes = extractGraphicAttributes(shape)
-            if attributes and "MilSymCode" in attributes:
+            if attributes and attributes.get("MilSymCode"):
                 svg_data = generate_icon_svg(self.script, attributes, 14.0)
                 if svg_data:
                     svg_url = self._save_svg_to_temp_and_get_url(svg_data, name)
@@ -945,6 +962,88 @@ class ClipboardItem:
     def __init__(self, attributes, children=None):
         self.attributes = attributes    # Shape attributes (MilSymCode, etc.)
         self.children = children if children is not None else []
+
+class EditShapeUndoAction(unohelper.Base, XUndoAction):
+    """Undo action for editing a shape in the diagram"""
+
+    def __init__(self, dialog_handler, shape, original_attributes, edited_attributes):
+        self.dialog_handler = dialog_handler
+        self.original_attributes = original_attributes
+        self.edited_attributes = edited_attributes
+        self.shape = shape
+        self.Title = "Edit Shape"
+
+    def undo(self):
+        """Undo the edit by restoring original attributes"""
+        try:
+            self._apply_attributes(self.original_attributes)
+        except Exception as e:
+            print(f"Error during undo edit shape: {e}")
+
+    def redo(self):
+        """Redo the edit by restoring edited attributes"""
+        try:
+            self._apply_attributes(self.edited_attributes)
+        except Exception as e:
+            print(f"Error during redo edit shape: {e}")
+
+    def _apply_attributes(self, attributes):
+        """Apply attributes to the shape and regenerate its graphic"""
+        if self.shape is None or self.dialog_handler is None:
+            return
+        controller = self.dialog_handler.get_controller()
+        if controller is None:
+            return
+        controller.remove_selection_listener()
+
+        diagram = controller.get_diagram()
+        if diagram is None:
+            return
+
+        if len(attributes) == 0:
+            insertGraphicAttributes(self.shape, [""])  # Empty SIDC code, no other attrs
+            diagram.set_shape_properties(self.shape, diagram.DIAGRAM_SHAPE_TYPE)
+            diagram.refresh_diagram()
+        else:
+            params = self._attributes_to_params(attributes)
+            insertGraphicAttributes(self.shape, params)
+
+            # Regenerate SVG and update graphic
+            svg_data = generate_icon_svg(self.dialog_handler.script, attributes, 32.0)
+            if svg_data:
+                diagram.set_new_shape_properties(
+                    self.shape, diagram.DIAGRAM_SHAPE_TYPE, svg_data
+                )
+                diagram.refresh_diagram()
+
+        self.dialog_handler.refresh_tree()
+        controller.add_selection_listener()
+
+    def _attributes_to_params(self, attributes):
+        """Convert attributes dict to params list format for insertGraphicAttributes
+
+        Input format (from extractGraphicAttributes):
+            {"MilSymCode": "...", "MilSymStack": "...", "MilSymReinforced": "...", ...}
+
+        Output format (for insertGraphicAttributes):
+            [sidc_code, NamedValue("stack", "..."), NamedValue("reinforced", "..."), ...]
+        """
+        params = []
+
+        sidc_code = attributes.get("MilSymCode", "")
+        params.append(sidc_code)
+
+        # Convert remaining MilSym* attributes to NamedValue objects
+        for key, value in attributes.items():
+            if key == "MilSymCode":
+                continue  # Already handled
+            if key.startswith("MilSym"):
+                # Convert "MilSymStack" -> "stack", "MilSymReinforced" -> "reinforced"
+                attr_name = key[6:]  # Remove prefix
+                attr_name = attr_name[0].lower() + attr_name[1:]  # lowercase first char
+                params.append(NamedValue(attr_name, value))
+
+        return params
 
 class RemoveShapeUndoAction(unohelper.Base, XUndoAction):
     """Undo action for removing a shape from the diagram"""
