@@ -475,6 +475,7 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
                 child_num = 1
                 while child_item is not None:
                     child_name = self._get_tree_node_display_name(child_item, child_num)
+                    child_name = self._make_unique_display_name(child_name)
                     self._populate_tree_node(data_model, parent_node, child_item, child_name)
 
                     # Move to next sibling
@@ -484,6 +485,20 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
 
         except Exception as e:
             print(f"Error populating tree children: {e}")
+
+    def _make_unique_display_name(self, base_name):
+        """Ensure display name is unique by appending suffix if needed"""
+        if not hasattr(self, "_node_to_tree_item_map"):
+            return base_name
+
+        if base_name not in self._node_to_tree_item_map:
+            return base_name
+
+        # Name exists, append suffix to make unique
+        counter = 2
+        while f"{base_name} #{counter}" in self._node_to_tree_item_map:
+            counter += 1
+        return f"{base_name} #{counter}"
 
     def _populate_tree_node(self, data_model, parent_node, tree_item, display_name):
         """Recursively populate tree nodes from organization chart tree items"""
@@ -510,6 +525,7 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
                 child_num = 1
                 while child_item is not None:
                     child_name = self._get_tree_node_display_name(child_item, child_num)
+                    child_name = self._make_unique_display_name(child_name)
                     self._populate_tree_node(data_model, node, child_item, child_name)
 
                     # Move to next sibling
