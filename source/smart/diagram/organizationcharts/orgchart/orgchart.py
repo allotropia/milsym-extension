@@ -301,9 +301,18 @@ class OrgChart(OrganizationChart):
         finally:
             self._paste_script = None
 
+    def _calculate_actual_level(self, tree_item):
+        """Calculate actual tree level by traversing up to root via _dad chain"""
+        level = 0
+        current = tree_item
+        while current is not None and current.get_dad() is not None:
+            level += 1
+            current = current.get_dad()
+        return level
+
     def _paste_item_recursive(self, parent_tree_item, clipboard_item):
         """Recursively paste a ClipboardItem and its children"""
-        top_shape_id = self.get_top_shape_id()
+        top_shape_id = self.get_top_shape_id() + 1
         x_new_shape = self.create_shape(Diagram.DIAGRAM_SHAPE_TYPE, top_shape_id)
         self._x_shapes.add(x_new_shape)
         self._diagram_tree.add_to_rectangles(x_new_shape)
@@ -341,7 +350,11 @@ class OrgChart(OrganizationChart):
         self._diagram_tree.add_to_connectors(x_connector_shape)
 
         end_shape_conn_pos = 0
-        if parent_tree_item.get_level() + 1 > OrgChartTree.LAST_HOR_LEVEL:
+
+        # Calculate actual level by traversing up the tree (parent's level + 1)
+        parent_actual_level = self._calculate_actual_level(parent_tree_item)
+        new_item_level = parent_actual_level + 1
+        if new_item_level > OrgChartTree.LAST_HOR_LEVEL:
             end_shape_conn_pos = 3
 
         self.set_connector_shape_props(
