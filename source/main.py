@@ -17,16 +17,17 @@ if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
 
 from symbol_dialog import open_symbol_dialog
-from utils import insertSvgGraphic, getExtensionBasePath
 from smart.controller import Controller
 from smart.diagram.data_of_diagram import DataOfDiagram
 from sidebar import SidebarFactory
 
-from com.sun.star.beans import NamedValue
 from com.sun.star.task import XJobExecutor, XJob
 from com.sun.star.view import XSelectionChangeListener
 from com.sun.star.util import XCloseListener
-
+from com.sun.star.ui import XContextMenuInterceptor
+from com.sun.star.ui.ContextMenuInterceptorAction import EXECUTE_MODIFIED
+from com.sun.star.ui.ContextMenuInterceptorAction import IGNORED
+from translator import Translator
 
 class DocumentCloseListener(unohelper.Base, XCloseListener):
     def __init__(self, model):
@@ -48,6 +49,7 @@ class ListenerRegistry:
     def __init__(self):
         self._map = {}
         self._registered = set()
+        self._interceptors = {}
         self.selected_shape = None
 
     @classmethod
@@ -62,6 +64,9 @@ class ListenerRegistry:
     def register(self, model, xcontroller, listener):
         self._registered.add(xcontroller)
         self._map[model] = (xcontroller, listener)
+
+    def register_interceptor(self, xcontroller, interceptor):
+        self._interceptors[xcontroller] = interceptor
 
     def unregister(self, model):
         if model in self._map:
@@ -153,6 +158,56 @@ class ControllerManager:
             print(f"Error checking shapes: {e}")
         return False
 
+class ContextMenuInterceptor(unohelper.Base, XContextMenuInterceptor):
+    """Intercepts context menu to add 'Edit Military Symbol' option"""
+
+    def __init__(self, ctx):
+        self.ctx = ctx
+
+    def notifyContextMenuExecute(self, event):
+        """Called when a context menu is about to be displayed"""
+        try:
+            shape = ListenerRegistry.instance().get_selected_shape()
+
+            if shape is None:
+                return IGNORED
+
+            try:
+                attrs = shape.UserDefinedAttributes
+                if not attrs or not attrs.hasByName("MilSymCode"):
+                    return IGNORED
+            except:
+                return IGNORED
+
+            menu_container = event.ActionTriggerContainer
+            self._insert_menu_item(menu_container)
+
+            return EXECUTE_MODIFIED
+
+        except Exception as e:
+            print(f"ContextMenuInterceptor error: {e}")
+            return IGNORED
+
+    def _insert_menu_item(self, menu_container):
+        """Insert 'Edit Military Symbol' menu item"""
+        try:
+            menu_item = menu_container.createInstance("com.sun.star.ui.ActionTrigger")
+
+            translator = Translator(self.ctx)
+            menu_text = translator.translate("ContextMenu.EditMilitarySymbol")
+            menu_item.setPropertyValue("Text", menu_text)
+            menu_item.setPropertyValue(
+                "CommandURL", "service:com.collabora.milsymbol.do?symbolDialog"
+            )
+
+            separator = menu_container.createInstance(
+                "com.sun.star.ui.ActionTriggerSeparator"
+            )
+
+            menu_container.insertByIndex(0, separator)
+            menu_container.insertByIndex(0, menu_item)
+        except Exception as e:
+            print(f"_insert_menu_item error: {e}")
 
 class StartupJob(unohelper.Base, XJob, XSelectionChangeListener):
     """Job that runs on document events to initialize controllers"""
@@ -204,6 +259,9 @@ class StartupJob(unohelper.Base, XJob, XSelectionChangeListener):
                             xcontroller.addSelectionChangeListener(self)
                             ListenerRegistry.instance().register(model, xcontroller, self)
                             model.addCloseListener(DocumentCloseListener(model))
+                            interceptor = ContextMenuInterceptor(self.ctx)
+                            xcontroller.registerContextMenuInterceptor(interceptor)
+                            ListenerRegistry.instance().register_interceptor(xcontroller, interceptor)
 
                     try:
                         controller_manager.get_or_create_controller(self.ctx, frame)
