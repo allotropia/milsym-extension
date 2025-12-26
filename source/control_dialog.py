@@ -80,6 +80,8 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
                 self.refresh_tree()
                 self._select_newly_added_child()
                 self.get_controller().add_selection_listener()
+                if self.tree_control is not None:
+                    self.tree_control.setFocus()
             return True
         elif methodName == "OnRemove":
             self.remove_selected_shape()
@@ -106,6 +108,8 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
 
             self.get_controller().get_diagram().refresh_diagram()
             self.refresh_tree()
+            if self.tree_control is not None:
+                self.tree_control.setFocus()
             return True
         else:
             return False
@@ -278,6 +282,9 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
                 except Exception as e:
                     print(f"Failed to register undo action: {e}")
             self.get_controller().add_selection_listener()
+            if self.tree_control is not None:
+                self.tree_control.setFocus()
+
 
     # XTopWindowListener methods
     def windowClosing(self, event):
