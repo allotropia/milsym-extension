@@ -7,6 +7,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import os
+import re
 import sys
 import uno
 import unohelper
@@ -24,8 +25,13 @@ from data import country_data
 from data.help_content import HELP_CONTENT
 from utils import insertSvgGraphic, insertGraphicAttributes, getExtensionBasePath, create_graphic_from_svg
 from translator import Translator
+from com.sun.star.view.SelectionType import SINGLE
+from com.sun.star.awt import XMouseListener, XFocusListener, XKeyListener
+from com.sun.star.awt.Key import UP, DOWN, LEFT, RIGHT, RETURN
+from collections import defaultdict
 
 class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
+    TREES_CACHE = {}
 
     def __init__(self, ctx, model, controller, dialog, sidebar_panel, selected_shape, selected_node_value):
         self.ctx = ctx
@@ -34,8 +40,8 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         self.dialog = dialog
         self.sidebar_panel = sidebar_panel
         self.sidc_options = {}
-        self.listbox_values = {}
-        self.disable_callHandler = False
+        self.tree_values = {}
+        self.ignore_event = False
         self.is_editing = False
         self.color = None
         self.hex_color = None
@@ -43,6 +49,8 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         self.final_svg_args = None
         self.sidebar_symbol_svg_data = None
         self.tree_category_name = None
+        self.current_symbolSet_index = None
+        self.active_tree_ctrl = None
         self.selected_node_value = selected_node_value
         self.selected_shape = selected_shape
         self.translator = Translator(self.ctx)
@@ -55,49 +63,16 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
     def init_dialog_controls(self):
         self.init_textboxes()
         self.dialog.Model.Step = 1
+        self.init_tree_controls()
 
         has_selected_item = False
         if self.selected_shape or self.selected_node_value:
             has_selected_item = self.init_selected_shape_params(self.dialog, self.selected_shape, self.selected_node_value)
 
         if not has_selected_item:
-            self.init_listbox(self.dialog)
             self.init_buttons()
+            self.init_default_values()
             self.updatePreview()
-
-    def init_buttons(self, is_reset=False):
-        if not is_reset:
-            self.dialog.getControl("btReality").getModel().State = 1
-            self.dialog.getControl("btFriend").getModel().State = 1
-            self.context = symbols_data.BUTTONS["CONTEXT"]["btReality"]
-            self.affiliation= symbols_data.BUTTONS["AFFILIATION"]["btFriend"]
-
-        self.dialog.getControl("btPresent").getModel().State = 1
-        self.dialog.getControl("btNotApplicableReinReduc").getModel().State = 1
-        self.dialog.getControl("btStack1").getModel().State = 1
-        self.dialog.getControl("btLight").getModel().State = 1
-        self.dialog.getControl("btTarget").getModel().State = 1
-        self.dialog.getControl("btNotApplicableSignature").getModel().State = 1
-
-        self.version = symbols_data.VERSION
-        self.status = symbols_data.BUTTONS["STATUS"]["btPresent"]
-        self.reinforced = symbols_data.BUTTONS["REINFORCED_REDUCED"]["btNotApplicableReinReduc"]
-        self.stack = symbols_data.BUTTONS["STACK"]["btStack1"]
-        self.color = symbols_data.BUTTONS["COLOR"]["btLight"]
-        self.signature = symbols_data.BUTTONS["SIGNATURE"]["btNotApplicableSignature"]
-        self.engagement = symbols_data.BUTTONS["ENGAGEMENT"]["btTarget"]
-
-    def init_listbox(self, dialog, selected_index = 4):
-        self.populate_symbol_listboxes(dialog, selected_index)
-
-        self.listbox_map = {
-            "ltbMainIcon":        "mainIcon",
-            "ltbFirstIcon":       "firstIcon",
-            "ltbSecondIcon":      "secondIcon",
-            "ltbHeadTaskDummy":   "headquartersTaskforceDummy",
-            "ltbEchelonMobility": "echelonMobility",
-            "ltbCountry":         "country"
-        }
 
     def init_textboxes(self):
         # Mapping of dialog textbox control names to their corresponding option names
@@ -126,6 +101,285 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         }
         self.reverse_textbox_map = {value: key for key, value in self.textbox_map.items()}
 
+        tbSearch_ctrl = self.dialog.getControl("tbSearch")
+        self.search_placeholder = tbSearch_ctrl.Text
+
+        search_textbox_focus_listener = SearchTextBoxFocusListener(self)
+        tbSearch_ctrl.addFocusListener(search_textbox_focus_listener)
+
+        tbSearch_key_listener = SearchTextboxKeyListener(self, self.ctx)
+        tbSearch_ctrl.addKeyListener(tbSearch_key_listener)
+
+    def init_buttons(self, is_reset=False):
+        if not is_reset:
+            self.dialog.getControl("btReality").getModel().State = 1
+            self.dialog.getControl("btFriend").getModel().State = 1
+            self.context = symbols_data.BUTTONS["CONTEXT"]["btReality"]
+            self.affiliation= symbols_data.BUTTONS["AFFILIATION"]["btFriend"]
+
+        self.dialog.getControl("btPresent").getModel().State = 1
+        self.dialog.getControl("btNotApplicableReinReduc").getModel().State = 1
+        self.dialog.getControl("btStack1").getModel().State = 1
+        self.dialog.getControl("btLight").getModel().State = 1
+        self.dialog.getControl("btTarget").getModel().State = 1
+        self.dialog.getControl("btNotApplicableSignature").getModel().State = 1
+
+        self.version = symbols_data.VERSION
+        self.status = symbols_data.BUTTONS["STATUS"]["btPresent"]
+        self.reinforced = symbols_data.BUTTONS["REINFORCED_REDUCED"]["btNotApplicableReinReduc"]
+        self.stack = symbols_data.BUTTONS["STACK"]["btStack1"]
+        self.color = symbols_data.BUTTONS["COLOR"]["btLight"]
+        self.signature = symbols_data.BUTTONS["SIGNATURE"]["btNotApplicableSignature"]
+        self.engagement = symbols_data.BUTTONS["ENGAGEMENT"]["btTarget"]
+
+    def tree_mapping(self):
+        tree_names = (
+            "treeSymbolSet",
+            "treeMainIcon",
+            "treeFirstIcon",
+            "treeSecondIcon",
+            "treeHeadTaskDummy",
+            "treeEchelonMobility",
+            "treeCountry",
+            "treeSearch"
+        )
+
+        self.tree_map = {
+            name: name[4].lower() + name[5:]
+            for name in tree_names
+        }
+
+        self.tree_ctrls = {
+            name: self.dialog.getControl(name)
+            for name in tree_names
+        }
+
+    def init_tree_controls(self):
+        self.tree_mapping()
+
+        treeSearch_ctrl = self.tree_ctrls["treeSearch"]
+        treeSearch_ctrl.setVisible(False)
+
+        treeSearch_mosuse_listener = SearchTreeMouseListener(self)
+        treeSearch_ctrl.addMouseListener(treeSearch_mosuse_listener)
+
+        for name, tree_ctrl in self.tree_ctrls.items():
+            if name == "treeSearch":
+                continue
+
+            tree_ctrl.setVisible(False)
+
+            suffix = name.removeprefix("tree")
+            listbox_ctrl = self.dialog.getControl(f"ltb{suffix}")
+            ltb_mouse_listener = ListboxMouseListener(self, tree_ctrl)
+            listbox_ctrl.addMouseListener(ltb_mouse_listener)
+
+            tree_mosuse_listener = TreeMouseListener(self, listbox_ctrl)
+            tree_ctrl.addMouseListener(tree_mosuse_listener)
+
+            tree_key_listener = TreeKeyListener(self, listbox_ctrl)
+            tree_ctrl.addKeyListener(tree_key_listener)
+
+    def init_default_values(self, selected_index = 4):
+        label = self.translator.translate(symbols_data.SYMBOLS[selected_index]["label"])
+        listbox_control = self.dialog.getControl("ltbSymbolSet")
+        listbox_control.addItems([label], 0)
+        listbox_control.selectItemPos(0, True)
+        self.symbolSet = symbols_data.SYMBOLS[selected_index]["value"]
+
+        current_symbol = self.get_current_symbol(selected_index)
+
+        label = self.translator.translate(current_symbol["MainIcon"][0]["label"])
+        listbox_control = self.dialog.getControl("ltbMainIcon")
+        listbox_control.addItems([label], 0)
+        listbox_control.selectItemPos(0, True)
+        self.mainIcon = current_symbol["MainIcon"][0]["value"]
+
+        label = self.translator.translate(current_symbol["FirstIconModifier"][0]["label"])
+        listbox_control = self.dialog.getControl("ltbFirstIcon")
+        listbox_control.addItems([label], 0)
+        listbox_control.selectItemPos(0, True)
+        self.firstIcon = current_symbol["FirstIconModifier"][0]["value"]
+
+        label = self.translator.translate(current_symbol["SecondIconModifier"][0]["label"])
+        listbox_control = self.dialog.getControl("ltbSecondIcon")
+        listbox_control.addItems([label], 0)
+        listbox_control.selectItemPos(0, True)
+        self.secondIcon = current_symbol["SecondIconModifier"][0]["value"]
+
+        label = self.translator.translate(current_symbol["EchelonMobility"][0]["label"])
+        listbox_control = self.dialog.getControl("ltbEchelonMobility")
+        listbox_control.addItems([label], 0)
+        listbox_control.selectItemPos(0, True)
+        self.echelonMobility = current_symbol["EchelonMobility"][0]["value"]
+
+        label = self.translator.translate(current_symbol["HeadquartersTaskforceDummy"][0]["label"])
+        listbox_control = self.dialog.getControl("ltbHeadTaskDummy")
+        listbox_control.addItems([label], 0)
+        listbox_control.selectItemPos(0, True)
+        self.headTaskDummy = current_symbol["HeadquartersTaskforceDummy"][0]["value"]
+
+        label = self.translator.translate(country_data.COUNTRY_CODES[0]["label"])
+        listbox_control = self.dialog.getControl("ltbCountry")
+        listbox_control.addItems([label], 0)
+        listbox_control.selectItemPos(0, True)
+        self.country = country_data.COUNTRY_CODES[0]["value"]
+
+    def populate_symbol_tree(self, selected_index, update_listbox = True):
+        self.current_symbolSet_index = selected_index
+        current_symbol = self.get_current_symbol(selected_index)
+
+        self.symbolSet = self.fill_tree_control(
+            "treeSymbolSet", "ltbSymbolSet", symbols_data.SYMBOLS, update_listbox,  selected_index
+        )
+        self.mainIcon = self.fill_tree_control(
+            "treeMainIcon", "ltbMainIcon", current_symbol["MainIcon"], update_listbox
+        )
+        self.firstIcon = self.fill_tree_control(
+            "treeFirstIcon", "ltbFirstIcon", current_symbol["FirstIconModifier"], update_listbox
+        )
+        self.secondIcon = self.fill_tree_control(
+            "treeSecondIcon", "ltbSecondIcon", current_symbol["SecondIconModifier"], update_listbox
+        )
+        self.echelonMobility = self.fill_tree_control(
+            "treeEchelonMobility", "ltbEchelonMobility", current_symbol["EchelonMobility"], update_listbox
+        )
+        self.headTaskDummy = self.fill_tree_control(
+            "treeHeadTaskDummy", "ltbHeadTaskDummy", current_symbol["HeadquartersTaskforceDummy"], update_listbox
+        )
+        self.country = self.fill_tree_control(
+            "treeCountry", "ltbCountry", country_data.COUNTRY_CODES, update_listbox
+        )
+
+    def fill_tree_control(self, tree_name, listbox_name, items, update_listbox, selected_index = 0):
+        root_node = None
+        tree_control = self.tree_ctrls[tree_name]
+        tree_model = tree_control.getModel()
+
+        symbolset_index = self.current_symbolSet_index
+        if symbolset_index not in SymbolDialogHandler.TREES_CACHE:
+            SymbolDialogHandler.TREES_CACHE[symbolset_index] = {}
+
+        cached_model = SymbolDialogHandler.TREES_CACHE[symbolset_index].get(tree_name)
+        if cached_model:
+            tree_model.setPropertyValue("DataModel", cached_model)
+        else:
+            smgr = self.ctx.ServiceManager
+            mutable_tree_data_model = smgr.createInstanceWithContext(
+                "com.sun.star.awt.tree.MutableTreeDataModel", self.ctx
+            )
+
+            tree_model.setPropertyValue("SelectionType", SINGLE)
+            tree_model.setPropertyValue("RootDisplayed", False)
+            tree_model.setPropertyValue("ShowsHandles", False)
+            tree_model.setPropertyValue("ShowsRootHandles", False)
+            tree_model.setPropertyValue("Editable", False)
+
+            root_node = mutable_tree_data_model.createNode("root_node", False)
+            mutable_tree_data_model.setRoot(root_node)
+
+            BASE_ICON_URL = "vnd.sun.star.extension://com.collabora.milsymbol/img/preview"
+            DEFAULT_ICON = "sample"
+            for idx, item in enumerate(items):
+                img_file = item.get("img") or DEFAULT_ICON
+                icon_url = f"{BASE_ICON_URL}/{img_file}.png"
+
+                label = self.translator.translate(item["label"])
+                node = mutable_tree_data_model.createNode(label, False)
+                node.DataValue = idx
+                node.setCollapsedGraphicURL(icon_url)
+                root_node.appendChild(node)
+
+            tree_model.setPropertyValue("DataModel", mutable_tree_data_model)
+            SymbolDialogHandler.TREES_CACHE[symbolset_index][tree_name] = mutable_tree_data_model
+
+        if root_node is None:
+            root_node = tree_control.getModel().DataModel.getRoot()
+
+        selected_node = root_node.getChildAt(selected_index)
+        node_name = selected_node.getDisplayValue()
+
+        if update_listbox:
+            listbox_control = self.dialog.getControl(listbox_name)
+            listbox_control.addItems([node_name], 0)
+            listbox_control.selectItemPos(0, True)
+
+        tree_control.select(selected_node)
+
+        self.tree_values[tree_name] = [item["value"] for item in items]
+
+        return items[selected_index]["value"]
+
+    def update_symbolSet_tree(self, selected_index):
+        if selected_index == self.current_symbolSet_index:
+            return
+
+        self.current_symbolSet_index = selected_index
+        self.populate_symbol_tree(selected_index)
+
+        self.updatePreview()
+
+    def update_tree_value_by_index(self, tree_control, selected_index):
+        control_name = tree_control.getModel().Name
+
+        attr_name = self.tree_map.get(control_name)
+        values = self.tree_values[control_name]
+        value = values[selected_index]
+        setattr(self, attr_name, value)
+
+        self.updatePreview()
+
+    def handle_search_tree_node_click(self, node_name):
+        tbSearch_ctrl = self.dialog.getControl("tbSearch")
+        tbSearch_ctrl.Text = self.translator.translate(node_name)
+
+        for symbolSet_index, groups in enumerate(symbols_data.SYMBOL_DETAILS.values()):
+            labels = groups.get("MainIcon", [])
+
+            mainIcon_index = next(
+                (
+                    index
+                    for index, item in enumerate(labels)
+                    if isinstance(item, dict)
+                    and self.translator.translate(item.get("label")) == node_name
+                ),
+                None
+            )
+            if mainIcon_index is not None:
+                self.populate_symbol_tree(symbolSet_index)
+
+                treeMainIcon_ctrl = self.tree_ctrls["treeMainIcon"]
+                self.update_tree_value_by_index(treeMainIcon_ctrl, mainIcon_index)
+
+                root_node = treeMainIcon_ctrl.getModel().DataModel.getRoot()
+                mainIcon_node= root_node.getChildAt(mainIcon_index)
+                treeMainIcon_ctrl.select(mainIcon_node)
+
+                ltbMainIcon_ctrl = self.dialog.getControl("ltbMainIcon")
+                ltbMainIcon_ctrl.addItems([node_name], 0)
+                ltbMainIcon_ctrl.selectItemPos(0, True)
+                break
+
+    def apply_tree_selection(self, node, tree_ctrl, listbox_ctrl):
+        tree_ctrl.setVisible(False)
+        listbox_ctrl.getPeer().setFocus()
+
+        node_name = node.getDisplayValue()
+        label = self.translator.translate(node_name)
+
+        count = listbox_ctrl.ItemCount
+        if count > 0:
+            listbox_ctrl.removeItems(0, count)
+
+        listbox_ctrl.addItems([label], 0)
+        listbox_ctrl.selectItemPos(0, True)
+
+        if tree_ctrl.getModel().Name == "treeSymbolSet":
+            self.update_symbolSet_tree(node.DataValue)
+        else:
+            selected_index = node.DataValue
+            self.update_tree_value_by_index(tree_ctrl, selected_index)
+
     def get_current_symbol(self, selected_index):
         symbol_meta = symbols_data.SYMBOLS[selected_index]
         symbol_id = symbol_meta["id"]
@@ -133,24 +387,17 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         self.tree_category_name=self.translator.translate(symbol_meta["label"])
         return current_symbol
 
-    def fill_listbox(self, dialog, control_name, items, selected_index):
-        labels = [self.translator.translate(item["label"]) for item in items]
+    def update_ui_state(self):
+        if self.active_tree_ctrl:
+            self.active_tree_ctrl.setVisible(False)
 
-        listbox = dialog.getControl(control_name)
-        listbox.removeItems(0, listbox.getItemCount())
-        listbox.addItems(labels, 0)
-        self.disable_callHandler = True
-        listbox.selectItemPos(selected_index, True)
-        self.disable_callHandler = False
-        listbox.getModel().LineCount = 12
-
-        self.listbox_values[control_name] = [item["value"] for item in items]
-        return items[selected_index]["value"]
+        tbSearch_ctrl = self.dialog.getControl("tbSearch")
+        if tbSearch_ctrl.getPeer().hasFocus():
+            tbSearch_ctrl.Text = self.search_placeholder
+            treeSearch_ctrl = self.tree_ctrls["treeSearch"]
+            treeSearch_ctrl.getPeer().setFocus()
 
     def callHandlerMethod(self, dialog, eventObject, methodName):
-        if getattr(self, "disable_callHandler", False):
-            return
-
         # Generic help button handler - handles any button with id "btHelp<FieldName>"
         if methodName.startswith("btHelp"):
             field_name = methodName[6:]
@@ -162,34 +409,23 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
                 self.hex_color = hex_color
                 self.button_handler(dialog, methodName)
             return True
-        elif methodName.startswith("ltb"): # listboxes
-            self.listbox_handler(dialog, eventObject, methodName)
+        elif methodName.startswith("focus"): # textboxes
+            if self.active_tree_ctrl:
+                self.active_tree_ctrl.setVisible(False)
             return True
         elif methodName.startswith("tb"): # textboxes
             self.textbox_handler(dialog, methodName)
             return True
-        elif methodName.startswith(("click_tb", "click_ltb")):
-            selected_value = dialog.getControl("tbSearch").Text
-            self.update_listbox_value(dialog, selected_value)
-        elif methodName.startswith("search"):
-            self.search_box_handler(dialog, methodName)
-            return True
         elif methodName.startswith("tabbed"):
+            self.update_ui_state()
             self.tabbed_button_switch_handler(dialog, methodName)
             return True
-        elif methodName == "action_ltbSearch":
-            selected_index = eventObject.Source.getSelectedItemPos()
-            selected_value = dialog.getControl("ltbSearch").getItem(selected_index)
-            self.update_listbox_value(dialog, selected_value)
-            return True
-        elif methodName == "click_Search":
-            self.apply_search_selection(dialog, eventObject)
+        elif methodName.startswith("bt"):
+            self.update_ui_state()
+            self.button_handler(dialog, methodName)
             return True
         elif methodName == "click_dialog":
-            selected_value = dialog.getControl("tbSearch").Text
-            self.update_listbox_value(dialog, selected_value)
-            return True
-        elif self.button_handler(dialog, methodName):
+            self.update_ui_state()
             return True
         elif methodName == "dialog_btSave":
             if self.controller is not None:
@@ -225,51 +461,23 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         pass
 
     def reset_symbol(self, dialog):
-        self.disable_callHandler = True
+        self.ignore_event = True
         for textbox, option_name in self.textbox_map.items():
-                dialog.getControl(textbox).Text = ""
-                self.sidc_options[option_name] = ""
-        self.disable_callHandler = False
+            dialog.getControl(textbox).Text = ""
+            self.sidc_options[option_name] = ""
+        self.ignore_event = False
 
         symbolSet_item = next((item for item in symbols_data.SYMBOLS
                                if item["value"] == self.symbolSet),None)
+
         index = symbols_data.SYMBOLS.index(symbolSet_item)
-        self.init_listbox(self.dialog, index)
+
+        self.populate_symbol_tree(index)
 
         self.init_buttons(True)
         self.update_buttons_state(dialog)
 
         self.updatePreview()
-
-    def listbox_handler(self, dialog, eventObject, methodName):
-        if methodName == "ltbSymbolSet":
-            self.update_symbolSet_listbox(dialog, eventObject)
-        else:
-            target_attr = self.listbox_map.get(methodName)
-            selected_index = eventObject.Source.getSelectedItemPos()
-            self.update_listbox_value_by_index(selected_index, methodName, target_attr)
-
-    def update_listbox_value_by_index(self, selected_index, control_name, attr_name):
-        values = self.listbox_values[control_name]
-        value = values[selected_index]
-        setattr(self, attr_name, value)
-        self.updatePreview()
-
-    def update_symbolSet_listbox(self, dialog, eventObject):
-        selected_index = eventObject.Source.getSelectedItemPos()
-        self.populate_symbol_listboxes(dialog, selected_index)
-        self.updatePreview()
-
-    def populate_symbol_listboxes(self, dialog, selected_index):
-        current_symbol = self.get_current_symbol(selected_index)
-
-        self.symbolSet =                  self.fill_listbox(dialog, "ltbSymbolSet",       symbols_data.SYMBOLS, selected_index)
-        self.mainIcon =                   self.fill_listbox(dialog, "ltbMainIcon",        current_symbol["MainIcon"], 0)
-        self.firstIcon =                  self.fill_listbox(dialog, "ltbFirstIcon",       current_symbol["FirstIconModifier"], 0)
-        self.secondIcon =                 self.fill_listbox(dialog, "ltbSecondIcon",      current_symbol["SecondIconModifier"], 0)
-        self.echelonMobility =            self.fill_listbox(dialog, "ltbEchelonMobility", current_symbol["EchelonMobility"], 0)
-        self.headquartersTaskforceDummy = self.fill_listbox(dialog, "ltbHeadTaskDummy",   current_symbol["HeadquartersTaskforceDummy"], 0)
-        self.country =                    self.fill_listbox(dialog, "ltbCountry",         country_data.COUNTRY_CODES, 0)
 
     def pick_custom_color(self, init_color=2938211):
         smgr = self.ctx.getServiceManager()
@@ -321,6 +529,9 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         msgbox.execute()
 
     def textbox_handler(self, dialog, methodName):
+        if getattr(self, "ignore_event", False):
+            return
+
         options_name = self.textbox_map.get(methodName)
         text = dialog.getControl(methodName).Text
 
@@ -331,111 +542,16 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
         self.updatePreview()
 
-    # Update listbox value after search
-    def update_listbox_value(self, dialog, selected_value):
-        valid_value = False
-        for symbolSet_index, groups in enumerate(symbols_data.SYMBOL_DETAILS.values()):
-            labels = groups.get("MainIcon", [])
-
-            mainIcon_index = next(
-               (i for i, item in enumerate(labels)
-                if isinstance(item, dict) and self.translator.translate(item.get("label")) == selected_value),
-               None
-            )
-
-            if mainIcon_index is not None:
-                dialog.getControl("ltbSymbolSet").selectItemPos(symbolSet_index, True)
-                dialog.getControl("ltbMainIcon").selectItemPos(mainIcon_index, True)
-                valid_value = True
-                break
-
-        if not valid_value:
-            self.disable_callHandler = True
-            dialog.getControl("tbSearch").Text = " Type to search..."
-            self.disable_callHandler = False
-
-        dialog.getControl("ltbSearch").setVisible(False)
-
-    def search_box_handler(self, dialog, methodName):
-        if methodName == "search_click":
-            self.disable_callHandler = True
-            dialog.getControl("tbSearch").Text = ""
-            self.disable_callHandler = False
-        elif methodName == "search_change":
-            search_text = dialog.getControl("tbSearch").Text
-            search_listbox = dialog.getControl("ltbSearch")
-            if search_text:
-                matches = []
-                search = search_text.lower()
-
-                for data in symbols_data.SYMBOL_DETAILS.values():
-                    for icon in data.get("MainIcon", []):
-                        label = self.translator.translate(icon.get("label", ""))
-                        label_to_search = label.split("-")[0].strip()
-                        label_lower = label_to_search.lower()
-                        if search in label_lower:
-                            matches.append(label)
-
-                search_listbox.removeItems(0, search_listbox.getItemCount())
-                for item in matches:
-                    search_listbox.addItem(item, search_listbox.getItemCount())
-
-                item_height = 10
-                max_visible_items = 5
-                visible_rows = min(len(matches), max_visible_items)
-                search_listbox.getModel().Height = visible_rows * item_height
-
-            if search_text and search_text.strip() != "Type to search...":
-                search_listbox.setVisible(True)
-            else:
-                search_listbox.setVisible(False)
-
-            search_listbox.selectItemPos(0, True)
-
-    def search_box_listbox_handler(self, dialog, eventObject):
-        selected_index = eventObject.Source.getSelectedItemPos()
-        selected_value = dialog.getControl("ltbSearch").getItem(selected_index)
-        symbolSet_name = None
-        for symbolSet, groups in symbols_data.SYMBOL_DETAILS.items():
-            labels = groups.get("MainIcon", [])
-
-            self.mainIcon = next(
-                (item.get("value") for item in labels
-                 if isinstance(item, dict) and self.translator.translate(item.get("label")) == selected_value),
-                None
-            )
-
-            if self.mainIcon is not None:
-                symbolSet_name = symbolSet
-                break
-
-        self.symbolSet = next(
-            (item.get("value") for item in symbols_data.SYMBOLS
-             if item.get("id") == symbolSet_name),
-            None
-        )
-
-        self.disable_callHandler = True
-        self.updatePreview()
-        dialog.getControl("tbSearch").Text = selected_value
-        self.disable_callHandler = False
-
-    def apply_search_selection(self, dialog, eventObject):
-        search_listbox = dialog.getControl("ltbSearch")
-        pos = search_listbox.getSelectedItemPos()
-        if pos >= 0:
-            self.search_box_listbox_handler(dialog, eventObject)
-
     def tabbed_button_switch_handler(self, dialog, methodName):
         # Handling tabbed page buttons
         if methodName == "tabbed_btBasic":
             dialog.Model.Step = 1
+            for tree_ctrl in self.tree_ctrls.values():
+                tree_ctrl.setVisible(False)
+
         elif methodName == "tabbed_btAdvance":
             dialog.Model.Step = 2
-
-        selected_value = dialog.getControl("tbSearch").Text
-        self.update_listbox_value(dialog, selected_value)
-        dialog.getControl("ltbSearch").setVisible(False)
+            self.tree_ctrls["treeCountry"].setVisible(False)
 
     def button_handler(self, dialog, active_button_id, updatePreview = True):
         group_name = None
@@ -505,7 +621,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             self.affiliation,
             self.symbolSet,
             self.status,
-            self.headquartersTaskforceDummy,
+            self.headTaskDummy,
             self.echelonMobility,
             self.mainIcon,
             self.firstIcon[-2:],
@@ -516,6 +632,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             "000" # Country flag
         ]
         self.sidc = ''.join(sidc)
+
         return self.sidc
 
     def get_tree_node_svg_data(self):
@@ -576,7 +693,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         return name[6:][0].lower() + name[6:][1:]
 
     def init_selected_shape_params(self, dialog, shape, tree_node_value):
-        attrs, listbox_attrs = self.get_attrs(shape, tree_node_value)
+        attrs, tree_attrs = self.get_attrs(shape, tree_node_value)
 
         if not attrs:
             return False
@@ -588,9 +705,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             textbox = self.reverse_textbox_map.get(name)
             if textbox:
                 self.sidc_options[name] = " " + value
-                self.disable_callHandler = True
                 self.dialog.getControl(textbox).Text = value
-                self.disable_callHandler = False
             else:
                 if element   == "MilSymStack":          self.stack      = value
                 elif element == "MilSymReinforced":     self.reinforced = value
@@ -605,22 +720,22 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             else:
                 self.color = "NoFill"
 
-        self.update_listboxes(dialog, listbox_attrs)
+        self.update_tree_controls(dialog, tree_attrs)
         self.update_buttons_state(dialog)
 
         self.updatePreview()
 
         return True
 
-    def update_listboxes(self, dialog, listbox_attrs):
+    def update_tree_controls(self, dialog, tree_attrs):
         symbolSet_item = next(
             (item for item in symbols_data.SYMBOLS
              if item["value"] == self.symbolSet),None)
 
         index = symbols_data.SYMBOLS.index(symbolSet_item)
-        self.init_listbox(self.dialog, index)
+        self.populate_symbol_tree(index)
 
-        for attr, value in listbox_attrs.items():
+        for attr, value in tree_attrs.items():
             setattr(self, attr, value)
 
         symbol_id = self.translator.translate(symbolSet_item["id"])
@@ -629,38 +744,56 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         mainIcon_item = next(
             (item for item in current_symbol["MainIcon"]
              if item["value"] == self.mainIcon), None)
-        self.set_selected_shapes_listbox_item(dialog, mainIcon_item, "ltbMainIcon")
+        self.set_selected_shapes_tree_item(dialog, mainIcon_item, "treeMainIcon", "ltbMainIcon")
 
         firstIcon_item = next(
             (item for item in current_symbol["FirstIconModifier"]
              if item["value"] == self.firstIcon), None)
-        self.set_selected_shapes_listbox_item(dialog, firstIcon_item, "ltbFirstIcon")
+        self.set_selected_shapes_tree_item(dialog, firstIcon_item, "treeFirstIcon", "ltbFirstIcon")
 
         secondIcon_item = next(
             (item for item in current_symbol["SecondIconModifier"]
              if item["value"] == self.secondIcon), None)
-        self.set_selected_shapes_listbox_item(dialog, secondIcon_item, "ltbSecondIcon")
+        self.set_selected_shapes_tree_item(dialog, secondIcon_item, "treeSecondIcon", "ltbSecondIcon")
 
         echelonMobility_item = next(
             (item for item in current_symbol["EchelonMobility"]
              if item["value"] == self.echelonMobility), None)
-        self.set_selected_shapes_listbox_item(dialog, echelonMobility_item, "ltbEchelonMobility")
+        self.set_selected_shapes_tree_item(dialog, echelonMobility_item, "treeEchelonMobility", "ltbEchelonMobility")
 
-        headquartersTaskforceDummy_item = next(
+        headTaskDummy_item = next(
             (item for item in current_symbol["HeadquartersTaskforceDummy"]
-             if item["value"] == self.headquartersTaskforceDummy), None)
-        self.set_selected_shapes_listbox_item(dialog, headquartersTaskforceDummy_item, "ltbHeadTaskDummy")
+             if item["value"] == self.headTaskDummy), None)
+        self.set_selected_shapes_tree_item(dialog, headTaskDummy_item, "treeHeadTaskDummy", "ltbHeadTaskDummy")
 
-    def set_selected_shapes_listbox_item(self, dialog, item, listbox_control):
-        if item:
-            target_label = self.translator.translate(item["label"])
-            listbox = dialog.getControl(listbox_control)
-            labels = listbox.getItems()
-            if target_label in labels:
-                index = labels.index(target_label)
-                self.disable_callHandler = True
-                listbox.selectItemPos(index, True)
-                self.disable_callHandler = False
+    def set_selected_shapes_tree_item(self, dialog, item, tree, listbox):
+        if not item:
+            return
+
+        label = self.translator.translate(item["label"])
+        tree_ctrl = self.tree_ctrls[tree]
+        listbox_ctrl = dialog.getControl(listbox)
+
+        root_node = tree_ctrl.getModel().DataModel.getRoot()
+
+        self.find_and_select(tree_ctrl, root_node, label)
+
+        listbox_ctrl.addItems([label], 0)
+        listbox_ctrl.selectItemPos(0, True)
+
+    def find_and_select(self, tree_ctrl, root_node, label):
+        node_name = root_node.getDisplayValue()
+        if node_name == label:
+            tree_ctrl.select(root_node)
+            return True
+
+        for i in range(root_node.getChildCount()):
+            child = root_node.getChildAt(i)
+
+            if self.find_and_select(tree_ctrl, child, label):
+                return True
+
+        return False
 
     def update_buttons_state(self, dialog):
         self.set_button_state(dialog, self.stack,       "STACK")
@@ -681,7 +814,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
     def get_attrs(self, shape, tree_node_value):
         attrs = {}
-        listbox_attrs = {}
+        tree_attrs = {}
         other_attrs = {}
 
         if shape is not None:
@@ -703,13 +836,301 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
                 self.affiliation = value[3]
                 self.symbolSet = value[4:6]
                 self.status = value[6]
-                listbox_attrs["headquartersTaskforceDummy"] = value[7]
-                listbox_attrs["echelonMobility"] = value[8:10]
-                listbox_attrs["mainIcon"] = value[10:16]
-                listbox_attrs["firstIcon"] = value[16:18]
-                listbox_attrs["secondIcon"] = value[18:20]
+                tree_attrs["headTaskDummy"] = value[7]
+                tree_attrs["echelonMobility"] = value[8:10]
+                tree_attrs["mainIcon"] = value[10:16]
+                tree_attrs["firstIcon"] = value[16:18]
+                tree_attrs["secondIcon"] = value[18:20]
                 # others value[20:]
             else:
                 attrs[element] = value
 
-        return attrs, listbox_attrs
+        return attrs, tree_attrs
+
+class SearchTreeMouseListener(unohelper.Base, XMouseListener):
+    def __init__(self, dialog_handler):
+        self.dialog_handler = dialog_handler
+        self.tbSearch_ctrl = dialog_handler.dialog.getControl("tbSearch")
+        self.pressed_node = None
+
+    def mousePressed(self, event):
+        x, y = event.X, event.Y
+        node = event.Source.getNodeForLocation(x, y)
+        if not node:
+            return
+
+        self.pressed_node = node
+        event.Source.select(node)
+        event.Source.makeNodeVisible(node)
+
+    def mouseReleased(self, event):
+        if not self.pressed_node:
+            return
+
+        node_name = self.pressed_node.getDisplayValue()
+        self.dialog_handler.handle_search_tree_node_click(node_name)
+        self.tbSearch_ctrl.Text = node_name
+
+        event.Source.setVisible(False)
+
+    def mouseEntered(self, event):
+        pass
+
+    def mouseExited(self, event):
+        pass
+
+    def disposing(self, event):
+        pass
+
+
+class SearchTextboxKeyListener(unohelper.Base, XKeyListener):
+    cached_prefix_index = None
+
+    def __init__(self, dialog_handler, ctx):
+        self.ctx = ctx
+        self.dialog_handler = dialog_handler
+        self.treeSearch_ctrl = dialog_handler.dialog.getControl("treeSearch")
+        self.index = None
+
+        self.tree_model = self.treeSearch_ctrl.getModel()
+        self.tree_model.setPropertyValue("SelectionType", SINGLE)
+        self.tree_model.setPropertyValue("RootDisplayed", False)
+        self.tree_model.setPropertyValue("ShowsHandles", False)
+        self.tree_model.setPropertyValue("ShowsRootHandles", False)
+        self.tree_model.setPropertyValue("Editable", False)
+
+    def ensure_search_index(self):
+        if SearchTextboxKeyListener.cached_prefix_index is None:
+            SearchTextboxKeyListener.cached_prefix_index = self.build_token_index()
+
+        self.index = SearchTextboxKeyListener.cached_prefix_index
+
+    def build_token_index(self):
+        index = defaultdict(set)
+        TOKEN_SPLIT = re.compile(r'[ /-]+').split
+        translate = self.dialog_handler.translator.translate
+
+        for data in symbols_data.SYMBOL_DETAILS.values():
+            for icon in data.get("MainIcon", []):
+                raw = icon.get("label", "")
+                label = translate(raw)
+                main_part = label.split(" - ", 1)[0].lower()
+                for token in TOKEN_SPLIT(main_part):
+                    if token:
+                        index[token].add(label)
+
+        return index
+
+    def keyPressed(self, event):
+        if event.KeyCode in (UP, DOWN, LEFT, RIGHT):
+            self.handle_tree_navigation(event)
+            return
+
+        if event.KeyCode == RETURN:
+            node = self.treeSearch_ctrl.getSelection()
+            if not node:
+                return
+            self.treeSearch_ctrl.getPeer().setFocus()
+            node_name = node.getDisplayValue()
+            self.dialog_handler.handle_search_tree_node_click(node_name)
+
+            self.treeSearch_ctrl.setVisible(False)
+
+    def keyReleased(self, event):
+        if event.KeyCode in (UP, DOWN, LEFT, RIGHT, RETURN):
+            return
+
+        text = event.Source.getText().strip().lower()
+        if not text:
+            self.treeSearch_ctrl.setVisible(False)
+            return
+
+        matches = self.run_search(text)
+        self.treeSearch_ctrl.setVisible(bool(matches))
+        self.rebuild_tree(matches)
+
+    def handle_tree_navigation(self, event):
+        root = self.tree_model.DataModel.getRoot()
+        selection = self.treeSearch_ctrl.getSelection()
+
+        if not selection and root.getChildCount() > 0:
+            selection = root.getChildAt(0)
+            self.treeSearch_ctrl.select(selection)
+            return
+
+        idx = selection.DataValue
+
+        if event.KeyCode == DOWN and idx + 1 < root.getChildCount():
+            node = root.getChildAt(idx + 1)
+            self.treeSearch_ctrl.select(node)
+            self.treeSearch_ctrl.makeNodeVisible(node)
+
+        elif event.KeyCode == UP and idx > 0:
+            node = root.getChildAt(idx - 1)
+            self.treeSearch_ctrl.select(node)
+            self.treeSearch_ctrl.makeNodeVisible(node)
+
+    def run_search(self, text):
+        self.ensure_search_index()
+
+        words = text.lower().split()
+        if not words:
+            return []
+
+        matches = set()
+        first_word = words[0]
+        for token, labels in self.index.items():
+            if token.startswith(first_word):
+                matches |= labels
+
+        if not matches:
+            return []
+
+        for i, word in enumerate(words[1:], start=1):
+            tmp_matches = set()
+            for label in matches:
+                parts = label.lower().split()
+                for start in range(len(parts)):
+                    if parts[start].startswith(first_word):
+                        pos = start + i
+                        if pos < len(parts) and parts[pos].startswith(word):
+                            tmp_matches.add(label)
+                        break
+
+            matches = tmp_matches
+            if not matches:
+                return []
+
+        return list(matches)
+
+    def rebuild_tree(self, labels):
+        mutable_tree_data_model = self.ctx.getServiceManager().createInstanceWithContext(
+            "com.sun.star.awt.tree.MutableTreeDataModel", self.ctx)
+
+        root_node = mutable_tree_data_model.createNode("root_node", False)
+        mutable_tree_data_model.setRoot(root_node)
+
+        BASE_ICON_URL = "vnd.sun.star.extension://com.collabora.milsymbol/img/preview"
+        DEFAULT_ICON = "sample.png"
+
+        for idx, label in enumerate(labels):
+            node = mutable_tree_data_model.createNode(label, False)
+            node.DataValue = idx
+            icon_url = f"{BASE_ICON_URL}/{DEFAULT_ICON}"
+            node.setCollapsedGraphicURL(icon_url)
+            root_node.appendChild(node)
+
+        self.tree_model.setPropertyValue("DataModel", mutable_tree_data_model)
+
+        self.tree_model.Height = min(root_node.getChildCount() * 9, 90)
+
+        self.dialog_handler.active_tree_ctrl = self.treeSearch_ctrl
+
+    def disposing(self, event):
+        pass
+
+
+class SearchTextBoxFocusListener(unohelper.Base, XFocusListener):
+    def __init__(self, dialog_handler):
+        self.dialog_handler = dialog_handler
+        self.tree_ctrl = dialog_handler.dialog.getControl("treeSearch")
+
+    def focusGained(self, event):
+        event.Source.Text = ""
+
+        if self.dialog_handler.active_tree_ctrl:
+            self.dialog_handler.active_tree_ctrl.setVisible(False)
+
+    def focusLost(self, event):
+        if not self.tree_ctrl.getPeer().hasFocus():
+            event.Source.Text = self.dialog_handler.search_placeholder
+
+    def disposing(self, event):
+        pass
+
+
+class ListboxMouseListener(unohelper.Base, XMouseListener):
+    def __init__(self, dialog_handler, tree_ctrl):
+        self.dialog_handler = dialog_handler
+        self.tree_ctrl = tree_ctrl
+
+    def mousePressed(self, event):
+        data_model = self.tree_ctrl.getModel().DataModel
+        if not data_model:
+            self.dialog_handler.populate_symbol_tree(4, False)
+
+        self.tree_ctrl.getPeer().setFocus()
+        self.tree_ctrl.setVisible(not self.tree_ctrl.isVisible())
+
+        if (self.dialog_handler.active_tree_ctrl
+            and self.dialog_handler.active_tree_ctrl != self.tree_ctrl
+        ):
+            self.dialog_handler.active_tree_ctrl.setVisible(False)
+
+    def mouseReleased(self, event):
+        node = self.tree_ctrl.getSelection()
+        self.tree_ctrl.makeNodeVisible(node)
+        self.dialog_handler.active_tree_ctrl = self.tree_ctrl
+
+    def mouseEntered(self, event):
+        pass
+
+    def mouseExited(self, event):
+        pass
+
+    def disposing(self, event):
+        pass
+
+
+class TreeKeyListener(unohelper.Base, XKeyListener):
+    def __init__(self, dialog_handler, current_listbox):
+        self.dialog_handler = dialog_handler
+        self.current_listbox = current_listbox
+
+    def keyPressed(self, event):
+        if event.KeyCode == RETURN:
+            node = event.Source.getSelection()
+            if not node:
+                return
+
+            self.dialog_handler.apply_tree_selection(
+                node, event.Source, self.current_listbox
+            )
+
+    def keyReleased(self, event): pass
+
+    def disposing(self, event):
+        pass
+
+
+class TreeMouseListener(unohelper.Base, XMouseListener):
+    def __init__(self, dialog_handler, current_listbox):
+        self.dialog_handler = dialog_handler
+        self.current_listbox = current_listbox
+        self.pressed_node = None
+
+    def mousePressed(self, event):
+        x, y = event.X, event.Y
+        node = event.Source.getNodeForLocation(x, y)
+        if not node:
+            return
+
+        event.Source.makeNodeVisible(node)
+        self.pressed_node = node
+
+    def mouseReleased(self, event):
+        if not self.pressed_node:
+            return
+
+        self.dialog_handler.apply_tree_selection(
+            self.pressed_node, event.Source, self.current_listbox
+        )
+
+    def mouseEntered(self, event):
+        pass
+
+    def mouseExited(self, event):
+        pass
+
+    def disposing(self, event):
+        pass
