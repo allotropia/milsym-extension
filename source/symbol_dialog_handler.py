@@ -278,7 +278,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             root_node = mutable_tree_data_model.createNode("root_node", False)
             mutable_tree_data_model.setRoot(root_node)
 
-            BASE_ICON_URL = "vnd.sun.star.extension://com.collabora.milsymbol/img/preview"
+            BASE_ICON_URL = "vnd.sun.star.extension://com.collabora.milsymbol/img/preview/symbols"
             DEFAULT_ICON = "sample"
             for idx, item in enumerate(items):
                 img_file = item.get("img") or DEFAULT_ICON
@@ -1010,7 +1010,7 @@ class SearchTextboxKeyListener(unohelper.Base, XKeyListener):
         root_node = mutable_tree_data_model.createNode("root_node", False)
         mutable_tree_data_model.setRoot(root_node)
 
-        BASE_ICON_URL = "vnd.sun.star.extension://com.collabora.milsymbol/img/preview"
+        BASE_ICON_URL = "vnd.sun.star.extension://com.collabora.milsymbol/img/preview/symbols"
         DEFAULT_ICON = "sample.png"
 
         for idx, label in enumerate(labels):
