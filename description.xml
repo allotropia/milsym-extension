@@ -4,7 +4,7 @@
   xmlns:dep="http://openoffice.org/extensions/description/2006"
   xmlns:xlink="http://www.w3.org/1999/xlink">
     <identifier value="com.collabora.milsymbol"/>
-    <version value="0.2.0-beta1"/>
+    <version value="0.9.0-beta2"/>
     <publisher>
         <name xlink:href="https://www.collaboraonline.com">Collabora Productivity</name>
     </publisher>
