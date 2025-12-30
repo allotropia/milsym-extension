@@ -50,20 +50,29 @@ class Gui:
 
         # Check if we need to recreate dialog for a different diagram
         need_new_dialog = False
-        if ((self.get_controller().get_last_diagram_type() != -1 or
-             self.get_controller().get_last_diagram_id() != -1) and
-            (self.get_controller().get_last_diagram_type() != self.get_controller().get_diagram_type() or
-             self.get_controller().get_last_diagram_id() != new_diagram_id)):
-            need_new_dialog = True
+        if Gui._global_listener is not None:
+            try:
+                global_controller = Gui._global_listener.get_controller()
+                if global_controller != self.get_controller():
+                    need_new_dialog = True  # Different document, need new dialog
+            except Exception:
+                need_new_dialog = True  # Can't get controller, recreate dialog
 
-        # Create or recreate dialog if needed
-        if self._x_control_dialog is None or need_new_dialog:
+        if not need_new_dialog:
+            if ((self.get_controller().get_last_diagram_type() != -1 or
+                self.get_controller().get_last_diagram_id() != -1) and
+                (self.get_controller().get_last_diagram_type() != self.get_controller().get_diagram_type() or
+                self.get_controller().get_last_diagram_id() != new_diagram_id)):
+                need_new_dialog = True
+
+        if Gui._global_control_dialog is None or need_new_dialog:
             if need_new_dialog:
-                # Properly dispose the old dialog before creating a new one
                 self.close_and_dispose_control_dialog()
-            else:
-                pass
             self.create_control_dialog()
+
+        # Sync instance reference from global
+        self._x_control_dialog = Gui._global_control_dialog
+        self._o_listener = Gui._global_listener
 
         if self._x_control_dialog is not None:
             if visible:
@@ -119,6 +128,8 @@ class Gui:
         if Gui._global_control_dialog is not None:
             try:
                 if Gui._global_listener is not None:
+                    if hasattr(Gui._global_listener, 'cleanup'):
+                        Gui._global_listener.cleanup()
                     Gui._global_control_dialog.removeTopWindowListener(Gui._global_listener)
                 Gui._global_control_dialog.setVisible(False)
 

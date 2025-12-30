@@ -41,6 +41,8 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
         self._populate_tree_on_show = True
         self._parent_before_add = None
         self._temp_dir: str | None = None
+        self._clipboard = None
+        self._node_to_tree_item_map = {}
         factory = self.x_context.getServiceManager().createInstanceWithContext(
             "com.sun.star.script.provider.MasterScriptProviderFactory", self.x_context
         )
@@ -292,12 +294,7 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
         if event.Source == self.get_gui()._x_control_dialog:
             self.get_gui().set_visible_control_dialog(False)
 
-        # Delete tmp preview directory
-        if self._temp_dir is None:
-            return
-
-        shutil.rmtree(self._temp_dir, ignore_errors=True)
-        self._temp_dir = None
+        self.cleanup()
 
     def windowOpened(self, event):
         """Handle window opened event"""
@@ -973,6 +970,44 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
         except Exception as e:
             print(f"Error finding newly added shape: {e}")
         return None
+
+    def cleanup(self):
+        """Clean up all resources before dialog disposal"""
+        try:
+            if (
+                hasattr(self, "_selection_listener")
+                and self._selection_listener is not None
+            ):
+                try:
+                    self.get_controller()._x_controller.removeSelectionChangeListener(
+                        self._selection_listener
+                    )
+                except Exception:
+                    pass
+                self._selection_listener = None
+
+            if hasattr(self, "_node_to_tree_item_map"):
+                self._node_to_tree_item_map.clear()
+
+            if hasattr(self, "_clipboard"):
+                self._clipboard = None
+
+            if hasattr(self, "_drag_handler"):
+                self._drag_handler = None
+            if hasattr(self, "_drop_handler"):
+                self._drop_handler = None
+
+            self.tree_control = None
+
+            # Clean up temp directory
+            if self._temp_dir is not None:
+                shutil.rmtree(self._temp_dir, ignore_errors=True)
+                self._temp_dir = None
+
+            self._populate_tree_on_show = True
+
+        except Exception as e:
+            print(f"Error during ControlDlgHandler cleanup: {e}")
 
 class ClipboardItem:
     """Stores data for a copied tree item and its children"""
