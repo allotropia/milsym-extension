@@ -263,9 +263,9 @@ class OrgChart(OrganizationChart):
                 shape_id = self.get_controller().get_shape_id(self.get_shape_name(x_selected_shape))
                 self.set_color_prop(self._ORG_CHART_COLORS[(shape_id - 1) % 8])
 
-    def init_diagram(self):
+    def init_diagram(self, diagram_id=None):
         """Initialize diagram"""
-        super().init_diagram()
+        super().init_diagram(diagram_id)
 
         if self._diagram_tree is None:
             self._diagram_tree = OrgChartTree(self)

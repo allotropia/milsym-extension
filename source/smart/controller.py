@@ -381,6 +381,8 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                 if (self._last_diagram_name == "" or
                     self._last_diagram_name != new_diagram_name):
 
+                    diagram_id = int(''.join(c for c in new_diagram_name if c.isdigit()) or '0')
+
                     # Set diagram types based on shape name
                     if selected_shape_name.startswith("OrganizationDiagram"):
                         self.set_group_type(self.ORGANIGROUP)
@@ -390,7 +392,7 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                     self.instantiate_diagram()
                     self._last_diagram_name = new_diagram_name
 
-                    self.get_diagram().init_diagram()
+                    self.get_diagram().init_diagram(diagram_id)
                     self.get_diagram().init_properties()
 
                     self._gui.set_visible_control_dialog(True)
