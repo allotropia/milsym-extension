@@ -66,6 +66,24 @@ class Controller(unohelper.Base, XSelectionChangeListener):
         self._gui = Gui(self, self._x_context, self._x_frame)
         self.add_selection_listener()
 
+    def dispose(self):
+        """Dispose controller and all associated resources"""
+        try:
+            self.remove_selection_listener()
+
+            if self._gui is not None:
+                self._gui.close_and_dispose_control_dialog()
+                self._gui = None
+
+            self._diagram = None
+
+            self._x_controller = None
+            self._x_frame = None
+            self._x_selection_supplier = None
+
+        except Exception as e:
+            print(f"Error disposing controller: {e}")
+
     def is_smart_diagram_shape(self, shape_name):
         """Check if shape is a smart diagram shape"""
         return shape_name.startswith("OrganizationDiagram")
@@ -322,6 +340,10 @@ class Controller(unohelper.Base, XSelectionChangeListener):
             self._x_selection_supplier.select(obj)
         except Exception as ex:
             print(f"Error setting selected shape: {ex}")
+
+    def disposing(self, event):
+        """Handle disposing event from XEventListener"""
+        pass
 
     def selectionChanged(self, event):
         """Handle selection change events - XSelectionChangeListener implementation"""

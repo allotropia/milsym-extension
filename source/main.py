@@ -30,11 +30,13 @@ from com.sun.star.ui.ContextMenuInterceptorAction import IGNORED
 from translator import Translator
 
 class DocumentCloseListener(unohelper.Base, XCloseListener):
-    def __init__(self, model):
+    def __init__(self, model, frame):
         self.model = model
+        self.frame = frame
 
     def notifyClosing(self, event):
         ListenerRegistry.instance().unregister(self.model)
+        ControllerManager().remove_controller(self.frame)
 
     def queryClosing(self, event, getsOwnership):
         return True
@@ -112,12 +114,13 @@ class ControllerManager:
         return self._controllers.get(frame)
 
     def remove_controller(self, frame):
-        """Remove controller for frame"""
+        """Remove controller for frame and dispose it properly"""
         if frame in self._controllers:
+            controller = self._controllers[frame]
             try:
-                self._controllers[frame].remove_selection_listener()
-            except:
-                pass
+                controller.dispose()
+            except Exception as e:
+                print(f"Error disposing controller: {e}")
             del self._controllers[frame]
 
     def document_has_smart_diagrams(self, model):
@@ -238,6 +241,10 @@ class StartupJob(unohelper.Base, XJob, XSelectionChangeListener):
         except Exception as e:
             print(f"Error document selection listener: {e}")
 
+    def disposing(self, event):
+        """Handle disposing event from XEventListener"""
+        pass
+
     def initialize_controllers(self):
         """Initialize controllers for documents with smart diagrams"""
         try:
@@ -258,7 +265,7 @@ class StartupJob(unohelper.Base, XJob, XSelectionChangeListener):
                             model = xcontroller.getModel()
                             xcontroller.addSelectionChangeListener(self)
                             ListenerRegistry.instance().register(model, xcontroller, self)
-                            model.addCloseListener(DocumentCloseListener(model))
+                            model.addCloseListener(DocumentCloseListener(model, frame))
                             interceptor = ContextMenuInterceptor(self.ctx)
                             xcontroller.registerContextMenuInterceptor(interceptor)
                             ListenerRegistry.instance().register_interceptor(xcontroller, interceptor)
@@ -301,8 +308,21 @@ class MainJob(unohelper.Base, XJobExecutor):
     def onOrgChart(self):
         """Create a simple organization chart"""
 
-        # Create controller and GUI instances (stub implementations)
-        controller = Controller(None, self.ctx, self.desktop.getCurrentFrame())
+        frame = self.desktop.getCurrentFrame()
+
+        controller_manager = ControllerManager(self.ctx)
+
+        if frame in controller_manager._controllers:
+            controller = controller_manager._controllers[frame]
+        else:
+            controller = Controller(None, self.ctx, frame)
+            controller_manager._controllers[frame] = controller
+
+            xcontroller = frame.getController()
+            model = xcontroller.getModel()
+            registry = ListenerRegistry.instance()
+            if not registry.has(xcontroller):
+                model.addCloseListener(DocumentCloseListener(model, frame))
 
         # Create hierarchical data
         data = DataOfDiagram()
