@@ -1718,15 +1718,14 @@ class TreeMouseHandler(unohelper.Base, XMouseListener):
         pass
 
     def mouseReleased(self, event):
-        """Handle mouse released events - detect clicks for shape selection
+        """Handle mouse released events - sync selection to document shapes
 
         Supports:
         - Normal click: Select single item (replaces selection)
-        - Shift+click: Add item to selection
+        - Shift+click: Range selection
         - Ctrl+click: Toggle item selection
         """
         try:
-            # Skip during drag operations
             if getattr(self.dialog_handler, "_is_dragging", False):
                 return
 
@@ -1735,23 +1734,15 @@ class TreeMouseHandler(unohelper.Base, XMouseListener):
                 if not tree_control:
                     return
 
-                clicked_node = tree_control.getNodeForLocation(event.X, event.Y)
-                if not clicked_node:
-                    return
-
                 is_shift = bool(event.Modifiers & KeyModifier.SHIFT)
                 is_ctrl = bool(event.Modifiers & KeyModifier.MOD1)
 
                 if is_shift or is_ctrl:
-                    # Multi-selection mode
-                    if is_ctrl and self.dialog_handler._is_node_selected(clicked_node):
-                        tree_control.removeSelection(clicked_node)
-                    else:
-                        tree_control.addSelection(clicked_node)
                     self.dialog_handler.sync_all_selected_shapes_to_document()
                 else:
-                    # Normal click: Single selection
-                    self.dialog_handler.handle_tree_selection(clicked_node)
+                    clicked_node = tree_control.getNodeForLocation(event.X, event.Y)
+                    if clicked_node:
+                        self.dialog_handler.handle_tree_selection(clicked_node)
 
         except Exception as e:
             print(f"Error in mouseReleased: {e}")
