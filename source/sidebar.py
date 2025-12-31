@@ -72,7 +72,7 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
         self.selected_node_name = None
         self.removed_nodes = []
 
-        self.sidebar_tree = SidebarTree(ctx)
+        self.sidebar_tree = SidebarTree(ctx, self)
 
         self.favorites_dir_path = self.get_favorites_dir_path(ctx)
 
@@ -174,13 +174,12 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
             values = ("myTree",)
             treeCtrl = self.createControl(self.ctx, "com.sun.star.awt.tree.TreeControl", "com.sun.star.awt.tree.TreeControlModel", x, y, width, height, names, values)
             self.tree_control = treeCtrl
-            self.sidebar_tree.set_tree_control(treeCtrl)
 
-            mouse_listener = TreeMouseListener(self.ctx, treeCtrl, self, self.favorites_dir_path)
+            mouse_listener = TreeMouseListener(self.ctx, self, self.sidebar_tree)
             treeCtrl.addMouseListener(mouse_listener)
             treeCtrl.addMouseMotionListener(mouse_listener)
 
-            key_listener =  TreeKeyListener(self, self.favorites_dir_path)
+            key_listener = TreeKeyListener(self, self.sidebar_tree)
             treeCtrl.addKeyListener(key_listener)
 
             selection_listener = TreeSelectionChangeListener(self)
@@ -194,7 +193,7 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
 
             # Setup native drag and drop after adding controls to container
             # This ensures the tree control's peer is properly initialized
-            drag_handler = TreeDragDropHandler(self.ctx, treeCtrl, self, self.favorites_dir_path)
+            drag_handler = TreeDragDropHandler(self.ctx, treeCtrl, self)
 
             # Add drag gesture recognizer for native drag support
             try:
@@ -239,11 +238,10 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
 
         os.makedirs(favorites_dir_path, exist_ok=True)
 
-        self.sidebar_tree.set_favorites_dir_path(favorites_dir_path)
-
         return favorites_dir_path
 
     def import_json_data(self, file_name, category_path):
+        order_indexes = []
         symbol_params = []
         symbol_name = os.path.splitext(file_name)[0]
         json_path = os.path.join(category_path, symbol_name + ".json")
@@ -257,7 +255,9 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
                     symbol_params.append(str(sidc_value))
 
                     for key, value in json_data.items():
-                        if key == "sidc":
+                        if key in ("sidc", "order_index"):
+                            if key == "order_index":
+                                order_indexes.append((value, symbol_name + ".svg"))
                             continue
 
                         nv = uno.createUnoStruct("com.sun.star.beans.NamedValue")
@@ -268,7 +268,20 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
             except Exception as e:
                 print("JSON read error:", e)
 
-        return symbol_params
+        return order_indexes, symbol_params
+
+    def get_ordered_symbols(self, category_path):
+        ordered_symbols = []
+
+        for file_name in sorted(os.listdir(category_path)):
+            if file_name.lower().endswith(".json"):
+                order_indexes, symbol_params = self.import_json_data(file_name, category_path)
+                order_indexes, svg_name = order_indexes[0]
+                ordered_symbols.append((order_indexes, svg_name, symbol_params))
+
+        ordered_symbols.sort(key=lambda x: x[0])
+
+        return ordered_symbols
 
     def init_favorites_sidebar(self):
         smgr = self.ctx.ServiceManager
@@ -286,25 +299,24 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
         self.root_node = self.mutable_tree_data_model.createNode("Favorites", True)
         self.mutable_tree_data_model.setRoot(self.root_node)
 
-        for category_name in os.listdir(self.favorites_dir_path):
-            category_path = os.path.join(self.favorites_dir_path, category_name)
-
+        for category_name in sorted(os.listdir(self.favorites_dir_path)):
             category_node = self.mutable_tree_data_model.createNode(category_name, True)
             self.root_node.appendChild(category_node)
 
-            for file_name in os.listdir(category_path):
-                if file_name.lower().endswith(".svg"):
-                    file_path = os.path.join(category_path, file_name)
-                    file_url = systemPathToFileUrl(file_path)
+            category_path = os.path.join(self.favorites_dir_path, category_name)
+            ordered_symbols = self.get_ordered_symbols(category_path)
+            for _, file_name, symbol_params in ordered_symbols:
+                file_path = os.path.join(category_path, file_name)
+                file_url = systemPathToFileUrl(file_path)
 
-                    symbol_node = self.mutable_tree_data_model.createNode(
-                        os.path.splitext(file_name)[0],
-                        False
-                    )
-                    symbol_params = self.import_json_data(file_name, category_path)
-                    symbol_node.DataValue = symbol_params
-                    symbol_node.setNodeGraphicURL(file_url)
-                    category_node.appendChild(symbol_node)
+                symbol_node = self.mutable_tree_data_model.createNode(
+                    os.path.splitext(file_name)[0],
+                    False
+                )
+
+                symbol_node.DataValue = symbol_params
+                symbol_node.setNodeGraphicURL(file_url)
+                category_node.appendChild(symbol_node)
 
         tree_model.setPropertyValue("DataModel", self.mutable_tree_data_model)
 
@@ -544,11 +556,10 @@ class ImportButtonListener(unohelper.Base, XActionListener):
 class TreeDragDropHandler(unohelper.Base, XDragGestureListener, XDragSourceListener):
     """Native drag and drop handler for tree control"""
 
-    def __init__(self, ctx, tree_control, sidebar_panel, favorites_dir_path):
+    def __init__(self, ctx, tree_control, sidebar_panel):
         self.ctx = ctx
         self.tree_control = tree_control
         self.sidebar_panel = sidebar_panel
-        self.favorites_dir_path = favorites_dir_path
 
     def dragGestureRecognized(self, event):
         """Handle drag gesture recognition"""
@@ -557,7 +568,7 @@ class TreeDragDropHandler(unohelper.Base, XDragGestureListener, XDragSourceListe
             node = self.tree_control.getNodeForLocation(event.DragOriginX, event.DragOriginY)
             if node and node.getChildCount() == 0:  # Only leaf nodes are draggable
                 # Create transferable data
-                transferable = SymbolTransferable(self.ctx, node, self.favorites_dir_path)
+                transferable = SymbolTransferable(self.ctx, node, self.sidebar_panel.favorites_dir_path)
 
                 # Start the drag operation
                 drag_source = event.DragSource
@@ -689,13 +700,13 @@ class ExportButtonListener(unohelper.Base, XActionListener):
 
             all_data = {}
             favorites_dir = self.sidebar.favorites_dir_path
-            for category_name in os.listdir(favorites_dir):
+            for category_name in sorted(os.listdir(favorites_dir)):
                 category_path = os.path.join(favorites_dir, category_name)
                 if not os.path.isdir(category_path):
                     continue
 
                 all_data[category_name] = {}
-                for file_name in os.listdir(category_path):
+                for file_name in sorted(os.listdir(category_path)):
                     if file_name.endswith(".json"):
                         file_base = os.path.splitext(file_name)[0]
 
