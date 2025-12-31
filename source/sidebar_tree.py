@@ -272,6 +272,7 @@ class TreeKeyListener(unohelper.Base, XKeyListener):
                 self.sidebar_tree.reorder_symbols(category_path)
 
             self.sidebar_panel.selected_node = None
+            self.sidebar_panel.update_export_button_state()
 
         except Exception as e:
             print("Delete node error:", e)

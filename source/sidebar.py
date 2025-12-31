@@ -86,6 +86,7 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
         if self.toolpanel is None:
             self.toolpanel = self.getOrCreatePanelRootWindow()
             self.init_favorites_sidebar()
+            self.update_export_button_state()
         return self
 
     # XToolPanel
@@ -228,6 +229,8 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
                                       category_name, svg_data, svg_args, is_editing,
                                       self.selected_node)
 
+        self.update_export_button_state()
+
     def get_favorites_dir_path(self, ctx):
         ps = ctx.getByName("/singletons/com.sun.star.util.thePathSettings")
         user_config = ps.UserConfig
@@ -327,6 +330,10 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
 
     def rename_symbol(self):
         RenameDialog(self.ctx, self.selected_node, self.favorites_dir_path).run()
+
+    def update_export_button_state(self):
+        has_symbol = bool(os.listdir(self.favorites_dir_path))
+        self.toolpanel.getControl("btExport").getModel().State = 0 if has_symbol else 1
 
     def get_symbol_path(self, symbol_name):
         category_name = self.selected_node.getParent().getDisplayValue()
@@ -545,6 +552,7 @@ class ImportButtonListener(unohelper.Base, XActionListener):
                         f.write(symbol_content["svg"])
 
             self.sidebar.init_favorites_sidebar()
+            self.sidebar.update_export_button_state()
 
         except Exception as e:
             print("File opening error:", e)
@@ -681,6 +689,10 @@ class ExportButtonListener(unohelper.Base, XActionListener):
 
     def actionPerformed(self, event):
         try:
+            state = event.Source.getModel().State
+            if state == 1:
+                return
+
             file_picker = self.ctx.getServiceManager().createInstanceWithContext("com.sun.star.ui.dialogs.FilePicker", self.ctx)
             file_picker.initialize((FILESAVE_AUTOEXTENSION,))
             file_picker.setDefaultName("sidebar_data.json")
