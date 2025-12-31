@@ -6,6 +6,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import json
 import os
 import sys
 import uno
@@ -62,6 +63,7 @@ class ControlDlgHandler(
         self._clipboard = None
         self._node_to_tree_item_map = {}
         self._syncing_selection = False
+        self._is_dragging = False
         factory = self.x_context.getServiceManager().createInstanceWithContext(
             "com.sun.star.script.provider.MasterScriptProviderFactory", self.x_context
         )
@@ -1030,42 +1032,75 @@ class ControlDlgHandler(
         except Exception as e:
             return None
 
-    def move_tree_item(self, source_node_name, target_node_name, drop_position):
-        """Move a tree item to a new position and update the diagram"""
+    def move_tree_item(self, source_node_names, target_node_name, drop_position):
+        """Move tree item(s) to a new position and update the diagram
+
+        Args:
+            source_node_names: Single node name (str) or list of node names
+            target_node_name: Target node name to move items to
+            drop_position: 'child' or 'sibling'
+        """
         try:
             if not hasattr(self, "_node_to_tree_item_map"):
                 return False
 
-            source_tree_item = self._node_to_tree_item_map.get(source_node_name)
-            target_tree_item = self._node_to_tree_item_map.get(target_node_name)
+            # Normalize to list
+            if isinstance(source_node_names, str):
+                source_node_names = [source_node_names]
 
-            if not source_tree_item or not target_tree_item:
-                print(f"Could not find tree items for move operation")
+            target_tree_item = self._node_to_tree_item_map.get(target_node_name)
+            if not target_tree_item:
+                print("Could not find target tree item")
                 return False
 
-            # Get the diagram and perform the move operation
+            # Get all source tree items
+            source_items = []
+            for name in source_node_names:
+                item = self._node_to_tree_item_map.get(name)
+                if item:
+                    source_items.append(item)
+
+            if not source_items:
+                print("Could not find source tree items")
+                return False
+
+            # if parent selected, don't process child separately
+            source_items = self._filter_out_descendants(source_items)
+
+            for source_item in source_items:
+                if source_item == target_tree_item:
+                    print("Cannot move item to itself")
+                    return False
+                if self._is_descendant_of(target_tree_item, source_item):
+                    print("Cannot move item to its descendant")
+                    return False
+
             controller = self.get_controller()
             diagram = controller.get_diagram()
 
-            if diagram and hasattr(diagram, "move_tree_item"):
-                # Call diagram's move method
+            if not diagram or not hasattr(diagram, "move_tree_item"):
+                print("Diagram does not support move operations")
+                return False
+
+            # Move each item
+            all_success = True
+            for source_item in source_items:
                 success = diagram.move_tree_item(
-                    source_tree_item, target_tree_item, drop_position
+                    source_item, target_tree_item, drop_position
                 )
-                if success:
-                    # Refresh the diagram and tree view
-                    diagram.refresh_diagram()
-                    self.refresh_tree()
-                    return True
-                else:
-                    print(f"Failed to move tree item in diagram")
-                    return False
+                if not success:
+                    all_success = False
+
+            if all_success:
+                diagram.refresh_diagram()
+                self.refresh_tree()
+                return True
             else:
-                print(f"Diagram does not support move operations")
+                print("Some move operations failed")
                 return False
 
         except Exception as e:
-            print(f"Error moving tree item: {e}")
+            print(f"Error moving tree items: {e}")
             return False
 
     def _store_selection_before_add(self):
@@ -1665,6 +1700,10 @@ class TreeMouseHandler(unohelper.Base, XMouseListener):
         - Ctrl+click: Toggle item selection
         """
         try:
+            # Skip during drag operations
+            if getattr(self.dialog_handler, "_is_dragging", False):
+                return
+
             if event.Buttons == MouseButton.LEFT and event.ClickCount == 1:
                 tree_control = self.dialog_handler.tree_control
                 if not tree_control:
@@ -1717,6 +1756,10 @@ class TreeSelectionListener(unohelper.Base, XSelectionChangeListener):
             if getattr(self.dialog_handler, "_syncing_selection", False):
                 return
 
+            # Skip if we're currently dragging
+            if getattr(self.dialog_handler, "_is_dragging", False):
+                return
+
             # Get the selected shapes
             selection = event.Source.getSelection()
             if selection and selection.getCount() > 0:
@@ -1739,39 +1782,55 @@ class TreeDragHandler(unohelper.Base, XDragGestureListener, XDragSourceListener)
 
     def __init__(self, dialog_handler):
         self.dialog_handler = dialog_handler
-        self.dragged_node_name = None
+        self.dragged_node_names = None
 
     def dragGestureRecognized(self, event):
         """Handle drag gesture recognition"""
         try:
             tree_control = self.dialog_handler.tree_control
-            if tree_control:
-                # Get the node at the drag point
-                try:
-                    node = tree_control.getNodeForLocation(
-                        event.DragOriginX, event.DragOriginY
-                    )
+            if not tree_control:
+                return
+
+            # Get the node at the drag point
+            origin_node = tree_control.getNodeForLocation(
+                event.DragOriginX, event.DragOriginY
+            )
+            if not origin_node or not hasattr(origin_node, "getDisplayValue"):
+                return
+
+            origin_name = origin_node.getDisplayValue()
+
+            # Don't allow dragging the root node
+            if origin_name == "Root" or "Diagram Structure" in origin_name:
+                return
+
+            # Check if origin node is part of current selection
+            dragged_names = []
+            if self.dialog_handler._is_node_selected(origin_node):
+                # Drag all selected nodes
+                enum = tree_control.createSelectionEnumeration()
+                while enum.hasMoreElements():
+                    node = enum.nextElement()
                     if node and hasattr(node, "getDisplayValue"):
-                        self.dragged_node_name = node.getDisplayValue()
+                        name = node.getDisplayValue()
+                        if name != "Root" and "Diagram Structure" not in name:
+                            dragged_names.append(name)
+            else:
+                # Drag only the origin node (not in selection)
+                dragged_names = [origin_name]
 
-                        # Don't allow dragging the root node
-                        if (
-                            self.dragged_node_name == "Root"
-                            or "Diagram Structure" in self.dragged_node_name
-                        ):
-                            return
+            if not dragged_names:
+                return
 
-                        # Create transferable data
-                        transferable = TreeNodeTransferable(self.dragged_node_name)
+            # Store for reference and set dragging flag
+            self.dragged_node_names = dragged_names
+            self.dialog_handler._is_dragging = True
 
-                        # Start drag operation
-                        event.DragSource.startDrag(
-                            event, ACTION_MOVE, 0, 0, transferable, self
-                        )
-                        print(f"Started drag for node: {self.dragged_node_name}")
+            # Create transferable with all names
+            transferable = TreeNodeTransferable(dragged_names)
 
-                except Exception as e:
-                    print(f"Error getting drag node: {e}")
+            event.DragSource.startDrag(event, ACTION_MOVE, 0, 0, transferable, self)
+
         except Exception as e:
             print(f"Error in drag gesture: {e}")
 
@@ -1793,10 +1852,42 @@ class TreeDragHandler(unohelper.Base, XDragGestureListener, XDragSourceListener)
 
     def dragDropEnd(self, event):
         """Handle drag drop end"""
+        self.dialog_handler._is_dragging = False
+
         if event.DropSuccess:
-            print(f"Drag operation completed successfully")
+            pass
         else:
-            print(f"Drag operation failed")
+            if self.dragged_node_names:
+                self._restore_selection(self.dragged_node_names)
+
+        self.dragged_node_names = None
+
+    def _restore_selection(self, node_names):
+        """Restore tree selection to the given node names"""
+        try:
+            tree_control = self.dialog_handler.tree_control
+            if not tree_control:
+                return
+
+            tree_model = tree_control.getModel()
+            data_model = tree_model.getPropertyValue("DataModel")
+            if not data_model:
+                return
+
+            root_node = data_model.getRoot()
+
+            # Find and select each node
+            first = True
+            for name in node_names:
+                node = self.dialog_handler._find_node_by_name(root_node, name)
+                if node:
+                    if first:
+                        tree_control.select(node)
+                        first = False
+                    else:
+                        tree_control.addSelection(node)
+        except Exception as e:
+            print(f"Error restoring selection: {e}")
 
     def disposing(self, event):
         """Handle disposing"""
@@ -1812,77 +1903,72 @@ class TreeDropHandler(unohelper.Base, XDropTargetListener):
     def drop(self, event):
         """Handle drop operation"""
         try:
-            # Accept the drop
             event.Source.acceptDrop(ACTION_MOVE)
 
-            # Get the transferable data
             transferable = event.Transferable
-            if transferable:
-                # Get the dragged node name
-                try:
-                    data_flavor = TreeNodeTransferable.get_data_flavor()
-                    if transferable.isDataFlavorSupported(data_flavor):
-                        data = transferable.getTransferData(data_flavor)  # Doesn't work
-                        data = uno.invoke(
-                            transferable, "getTransferData", (data_flavor,)
-                        )  # Doesn't work either
-                        print("Received drop data:", data)
-                        dragged_node_name = None
-                        if data:
-                            # Extract string from uno.Any if needed
-                            if hasattr(data, "value"):
-                                dragged_node_name = str(data.value)
-                            else:
-                                dragged_node_name = str(data)
-
-                        if dragged_node_name is None:
-                            event.Source.dropComplete(False)
-                            return
-
-                        # Get the drop target node
-                        tree_control = self.dialog_handler.tree_control
-                        if tree_control:
-                            target_node = tree_control.getNodeForLocation(
-                                event.LocationX, event.LocationY
-                            )
-                            if target_node and hasattr(target_node, "getDisplayValue"):
-                                target_node_name = target_node.getDisplayValue()
-
-                                # Don't allow dropping on the root node or on itself
-                                if (
-                                    target_node_name == "Root"
-                                    or "Diagram Structure" in target_node_name
-                                    or dragged_node_name == target_node_name
-                                ):
-                                    event.Source.rejectDrop()
-                                    return
-
-                                # Determine drop position (before, after, or as child)
-                                # For simplicity, we'll treat all drops as "move as sibling"
-                                drop_position = "child"
-
-                                # Perform the move operation
-                                success = self.dialog_handler.move_tree_item(
-                                    dragged_node_name, target_node_name, drop_position
-                                )
-
-                                if success:
-                                    event.Source.dropComplete(True)
-                                else:
-                                    event.Source.dropComplete(False)
-                                return
-
-                        event.Source.dropComplete(False)
-
-                except Exception as e:
-                    print(f"Error processing drop data: {e}")
-                    event.Source.dropComplete(False)
-            else:
+            if not transferable:
                 event.Source.dropComplete(False)
+                return
+
+            data_flavor = TreeNodeTransferable.get_data_flavor()
+            if not transferable.isDataFlavorSupported(data_flavor):
+                event.Source.dropComplete(False)
+                return
+
+            data = uno.invoke(transferable, "getTransferData", (data_flavor,))
+
+            dragged_node_names = None
+            if data:
+                raw = str(data.value) if hasattr(data, "value") else str(data)
+                try:
+                    dragged_node_names = json.loads(raw)
+                except json.JSONDecodeError:
+                    # Fallback: single name (backward compatibility)
+                    dragged_node_names = [raw]
+
+            if not dragged_node_names:
+                event.Source.dropComplete(False)
+                return
+
+            # Get the drop target node
+            tree_control = self.dialog_handler.tree_control
+            if not tree_control:
+                event.Source.dropComplete(False)
+                return
+
+            target_node = tree_control.getNodeForLocation(
+                event.LocationX, event.LocationY
+            )
+            if not target_node or not hasattr(target_node, "getDisplayValue"):
+                event.Source.dropComplete(False)
+                return
+
+            target_node_name = target_node.getDisplayValue()
+
+            # Don't allow dropping on root or on any of the dragged nodes
+            if (
+                target_node_name == "Root"
+                or "Diagram Structure" in target_node_name
+                or target_node_name in dragged_node_names
+            ):
+                event.Source.rejectDrop()
+                return
+
+            drop_position = "child"
+
+            # Perform the move operation with all dragged nodes
+            success = self.dialog_handler.move_tree_item(
+                dragged_node_names, target_node_name, drop_position
+            )
+
+            event.Source.dropComplete(success)
 
         except Exception as e:
-            print(f"Error in drop operation: {e}")
-            event.Source.rejectDrop()
+            print(f"Error handling drop: {e}")
+            try:
+                event.Source.dropComplete(False)
+            except:
+                pass
 
     def dragEnter(self, event):
         """Handle drag enter over drop target"""
@@ -1924,15 +2010,19 @@ class TreeDropHandler(unohelper.Base, XDropTargetListener):
 class TreeNodeTransferable(unohelper.Base, XTransferable):
     """Transferable data for tree node drag & drop"""
 
-    def __init__(self, node_name):
-        self.node_name = node_name
+    def __init__(self, node_names):
+        # Accept single name (str) or list of names
+        if isinstance(node_names, str):
+            self.node_names = [node_names]
+        else:
+            self.node_names = list(node_names)
         self._data_flavor = self._create_data_flavor()
 
     def getTransferData(self, flavor):
         """Get transfer data for the given flavor"""
         if self.isDataFlavorSupported(flavor):
-            # Return the node name as a string
-            return self.node_name
+            # Return as JSON string for multi-node support
+            return json.dumps(self.node_names)
         return None
 
     def getTransferDataFlavors(self):
