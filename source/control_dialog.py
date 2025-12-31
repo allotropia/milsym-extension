@@ -166,16 +166,20 @@ class ControlDlgHandler(
             if self.tree_control is None:
                 return
 
-            # Handle multi-selection: get the first selected item as paste target
-            selection_count = self.tree_control.getSelectionCount()
-            if selection_count == 0:
+            selection = self.tree_control.getSelection()
+            if selection is None:
                 return
 
-            enum = self.tree_control.createSelectionEnumeration()
-            if not enum.hasMoreElements():
+            selected_node = None
+            if hasattr(selection, "getDisplayValue"):
+                # Single node selected
+                selected_node = selection
+            elif hasattr(selection, "__len__") and len(selection) > 0:
+                # Sequence of nodes - get first one
+                selected_node = selection[0]
+            else:
                 return
 
-            selected_node = enum.nextElement()
             if selected_node is None or not hasattr(selected_node, "getDisplayValue"):
                 return
 
@@ -219,17 +223,20 @@ class ControlDlgHandler(
             if self.tree_control is None:
                 return
 
-            # Handle multi-selection: get the first selected item
-            selection_count = self.tree_control.getSelectionCount()
-            if selection_count == 0:
+            selection = self.tree_control.getSelection()
+            if selection is None:
                 return
 
-            # Get the first selected node from the enumeration
-            enum = self.tree_control.createSelectionEnumeration()
-            if not enum.hasMoreElements():
+            selected_node = None
+            if hasattr(selection, "getDisplayValue"):
+                # Single node selected
+                selected_node = selection
+            elif hasattr(selection, "__len__") and len(selection) > 0:
+                # Sequence of nodes - get first one
+                selected_node = selection[0]
+            else:
                 return
 
-            selected_node = enum.nextElement()
             if selected_node is None or not hasattr(selected_node, "getDisplayValue"):
                 return
 
@@ -265,13 +272,23 @@ class ControlDlgHandler(
             if self.tree_control is None:
                 return tree_items
 
-            selection_count = self.tree_control.getSelectionCount()
-            if selection_count == 0:
+            selection = self.tree_control.getSelection()
+            if selection is None:
                 return tree_items
 
-            enum = self.tree_control.createSelectionEnumeration()
-            while enum.hasMoreElements():
-                node = enum.nextElement()
+            # Handle both single node and sequence of nodes
+            nodes = []
+            if hasattr(selection, "getDisplayValue"):
+                # Single node selected
+                nodes = [selection]
+            elif hasattr(selection, "__len__"):
+                # Sequence of nodes
+                nodes = list(selection)
+            elif hasattr(selection, "__iter__"):
+                # Iterable
+                nodes = list(selection)
+
+            for node in nodes:
                 if node is not None and hasattr(node, "getDisplayValue"):
                     node_name = node.getDisplayValue()
                     tree_item = self._node_to_tree_item_map.get(node_name)
@@ -289,11 +306,20 @@ class ControlDlgHandler(
             if self.tree_control is None or node is None:
                 return False
 
-            enum = self.tree_control.createSelectionEnumeration()
-            while enum.hasMoreElements():
-                selected_node = enum.nextElement()
-                if selected_node == node:
-                    return True
+            selection = self.tree_control.getSelection()
+            if selection is None:
+                return False
+
+            if hasattr(selection, "getDisplayValue"):
+                # Single node - direct comparison
+                return selection == node
+            elif hasattr(selection, "__len__"):
+                # Sequence of nodes
+                return node in selection
+            elif hasattr(selection, "__iter__"):
+                # Iterable
+                return node in list(selection)
+
             return False
         except Exception:
             return False
@@ -1659,17 +1685,17 @@ class TreeKeyHandler(unohelper.Base, XKeyListener):
             if event.KeyCode in navigation_keys:
                 try:
                     tree_control = event.Source
-                    # Use XMultiSelectionSupplier interface for consistent multi-selection handling
-                    selection_count = tree_control.getSelectionCount()
-                    if selection_count > 0:
+                    selection = tree_control.getSelection()
+                    if selection is not None:
                         # Get the first selected node for syncing to document
-                        enum = tree_control.createSelectionEnumeration()
-                        if enum.hasMoreElements():
-                            selected_node = enum.nextElement()
-                            if selected_node and hasattr(
-                                selected_node, "getDisplayValue"
-                            ):
-                                self.dialog_handler.handle_tree_selection(selected_node)
+                        selected_node = None
+                        if hasattr(selection, "getDisplayValue"):
+                            selected_node = selection
+                        elif hasattr(selection, "__len__") and len(selection) > 0:
+                            selected_node = selection[0]
+
+                        if selected_node and hasattr(selected_node, "getDisplayValue"):
+                            self.dialog_handler.handle_tree_selection(selected_node)
                 except Exception as e:
                     print(f"Error getting tree selection after key navigation: {e}")
 
@@ -1807,14 +1833,22 @@ class TreeDragHandler(unohelper.Base, XDragGestureListener, XDragSourceListener)
             # Check if origin node is part of current selection
             dragged_names = []
             if self.dialog_handler._is_node_selected(origin_node):
-                # Drag all selected nodes
-                enum = tree_control.createSelectionEnumeration()
-                while enum.hasMoreElements():
-                    node = enum.nextElement()
-                    if node and hasattr(node, "getDisplayValue"):
-                        name = node.getDisplayValue()
-                        if name != "Root" and "Diagram Structure" not in name:
-                            dragged_names.append(name)
+                selection = tree_control.getSelection()
+                if selection is not None:
+                    # Handle both single node and sequence of nodes
+                    nodes = []
+                    if hasattr(selection, "getDisplayValue"):
+                        nodes = [selection]
+                    elif hasattr(selection, "__len__"):
+                        nodes = list(selection)
+                    elif hasattr(selection, "__iter__"):
+                        nodes = list(selection)
+
+                    for node in nodes:
+                        if node and hasattr(node, "getDisplayValue"):
+                            name = node.getDisplayValue()
+                            if name != "Root" and "Diagram Structure" not in name:
+                                dragged_names.append(name)
             else:
                 # Drag only the origin node (not in selection)
                 dragged_names = [origin_name]
