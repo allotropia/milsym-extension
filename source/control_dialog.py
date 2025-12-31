@@ -16,9 +16,20 @@ base_dir = os.path.dirname(__file__)
 if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
 
-from com.sun.star.awt import KeyModifier, XDialogEventHandler, XTopWindowListener, XMouseListener, XKeyListener, Key, XWindowListener
+from com.sun.star.awt import (
+    KeyModifier,
+    XDialogEventHandler,
+    XTopWindowListener,
+    XMouseListener,
+    XKeyListener,
+    Key,
+    XWindowListener,
+)
 from com.sun.star.awt import MouseButton
-from com.sun.star.view.SelectionType import SINGLE as SELECTION_TYPE_SINGLE
+from com.sun.star.view.SelectionType import (
+    SINGLE as SELECTION_TYPE_SINGLE,
+    MULTI as SELECTION_TYPE_MULTI,
+)
 from com.sun.star.view import XSelectionChangeListener
 from com.sun.star.datatransfer.dnd import XDragGestureListener, XDropTargetListener
 from com.sun.star.datatransfer.dnd import XDragSourceListener
@@ -26,12 +37,19 @@ from com.sun.star.datatransfer.dnd.DNDConstants import ACTION_MOVE
 from com.sun.star.datatransfer import XTransferable, DataFlavor
 from com.sun.star.beans import NamedValue
 from com.sun.star.document import XUndoAction, XUndoManager
-from utils import extractGraphicAttributes, getExtensionBasePath, generate_icon_svg, insertGraphicAttributes
+from utils import (
+    extractGraphicAttributes,
+    getExtensionBasePath,
+    generate_icon_svg,
+    insertGraphicAttributes,
+)
 from unohelper import systemPathToFileUrl
 import tempfile
 
 
-class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener, XWindowListener):
+class ControlDlgHandler(
+    unohelper.Base, XDialogEventHandler, XTopWindowListener, XWindowListener
+):
     buttons = ["addShape", "removeShape", "editShape"]
 
     def __init__(self, dialog, x_context, model):
@@ -43,6 +61,7 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
         self._temp_dir: str | None = None
         self._clipboard = None
         self._node_to_tree_item_map = {}
+        self._syncing_selection = False
         factory = self.x_context.getServiceManager().createInstanceWithContext(
             "com.sun.star.script.provider.MasterScriptProviderFactory", self.x_context
         )
@@ -73,7 +92,9 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
                 # Create and register undo action if we have an undo manager
                 if undo_manager and added_shape and parent_tree_item:
                     try:
-                        undo_action = AddShapeUndoAction(self, added_shape, parent_tree_item)
+                        undo_action = AddShapeUndoAction(
+                            self, added_shape, parent_tree_item
+                        )
                         undo_manager.addUndoAction(undo_action)
                     except Exception as e:
                         print(f"Failed to register undo action: {e}")
@@ -140,8 +161,20 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
             return
 
         try:
-            selected_node = self.tree_control.getSelection()
-            if selected_node is None:
+            if self.tree_control is None:
+                return
+
+            # Handle multi-selection: get the first selected item as paste target
+            selection_count = self.tree_control.getSelectionCount()
+            if selection_count == 0:
+                return
+
+            enum = self.tree_control.createSelectionEnumeration()
+            if not enum.hasMoreElements():
+                return
+
+            selected_node = enum.nextElement()
+            if selected_node is None or not hasattr(selected_node, "getDisplayValue"):
                 return
 
             node_name = selected_node.getDisplayValue()
@@ -176,13 +209,26 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
             print(f"Error pasting: {ex}")
 
     def copy_selected_item(self):
-        """Copy the currently selected item and its subtree"""
+        """Copy the currently selected item and its subtree.
+
+        When multiple items are selected, copies only the first one.
+        """
         try:
             if self.tree_control is None:
                 return
 
-            selected_node = self.tree_control.getSelection()
-            if selected_node is None:
+            # Handle multi-selection: get the first selected item
+            selection_count = self.tree_control.getSelectionCount()
+            if selection_count == 0:
+                return
+
+            # Get the first selected node from the enumeration
+            enum = self.tree_control.createSelectionEnumeration()
+            if not enum.hasMoreElements():
+                return
+
+            selected_node = enum.nextElement()
+            if selected_node is None or not hasattr(selected_node, "getDisplayValue"):
                 return
 
             node_name = selected_node.getDisplayValue()
@@ -209,6 +255,76 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
         except Exception as e:
             print(f"Error getting selected tree item: {e}")
         return None
+
+    def _get_selected_tree_items(self):
+        """Get all tree items for currently selected nodes (supports multi-selection)"""
+        tree_items = []
+        try:
+            if self.tree_control is None:
+                return tree_items
+
+            selection_count = self.tree_control.getSelectionCount()
+            if selection_count == 0:
+                return tree_items
+
+            enum = self.tree_control.createSelectionEnumeration()
+            while enum.hasMoreElements():
+                node = enum.nextElement()
+                if node is not None and hasattr(node, "getDisplayValue"):
+                    node_name = node.getDisplayValue()
+                    tree_item = self._node_to_tree_item_map.get(node_name)
+                    if tree_item is not None:
+                        tree_items.append(tree_item)
+
+        except Exception as e:
+            print(f"Error getting selected tree items: {e}")
+
+        return tree_items
+
+    def _is_node_selected(self, node):
+        """Check if a tree node is currently selected"""
+        try:
+            if self.tree_control is None or node is None:
+                return False
+
+            enum = self.tree_control.createSelectionEnumeration()
+            while enum.hasMoreElements():
+                selected_node = enum.nextElement()
+                if selected_node == node:
+                    return True
+            return False
+        except Exception:
+            return False
+
+    def _filter_out_descendants(self, tree_items):
+        """Filter out items that are descendants of other items in the list.
+
+        If both a parent and child are selected, only keep the parent since
+        removing/moving the parent affects children automatically.
+        """
+        if len(tree_items) <= 1:
+            return tree_items
+
+        filtered = []
+        for item in tree_items:
+            is_descendant = False
+            for other in tree_items:
+                if item != other and self._is_descendant_of(item, other):
+                    is_descendant = True
+                    break
+            if not is_descendant:
+                filtered.append(item)
+
+        return filtered
+
+    def _is_descendant_of(self, item, potential_ancestor):
+        """Check if item is a descendant of potential_ancestor"""
+        current = item.get_dad()
+        while current is not None:
+            if current == potential_ancestor:
+                return True
+            current = current.get_dad()
+        return False
 
     def _serialize_tree_item(self, tree_item):
         """Recursively serialize a tree item and all its descendants to ClipboardItem"""
@@ -245,48 +361,58 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
             undo_manager.redo()
 
     def remove_selected_shape(self):
-        """Remove the currently selected shape from the diagram"""
-        if self.get_controller().get_diagram() is not None:
-            self.get_controller().remove_selection_listener()
+        """Remove the currently selected shape(s) from the diagram"""
+        if self.get_controller().get_diagram() is None:
+            return
 
+        self.get_controller().remove_selection_listener()
+
+        try:
+            # Get all selected tree items
+            selected_items = self._get_selected_tree_items()
+            if not selected_items:
+                self.get_controller().add_selection_listener()
+                return
+
+            # Collect data for undo before removal
             undo_manager = self._get_undo_manager()
-            tree_item_to_remove = self._get_selected_tree_item()
-            parent_tree_item = (
-                tree_item_to_remove.get_dad() if tree_item_to_remove else None
-            )
-            serialized_data = (
-                self._serialize_tree_item(tree_item_to_remove)
-                if tree_item_to_remove
-                else None
-            )
+            removal_data = []  # List of (serialized_data, parent_tree_item)
 
-            if self.get_controller().get_group_type() == self.get_controller().ORGANIGROUP:
-                org_chart = self.get_controller().get_diagram()
-                if org_chart.is_error_in_tree():
-                    self.get_gui().ask_user_for_repair(org_chart)
-                else:
+            for tree_item in selected_items:
+                parent = tree_item.get_dad()
+                serialized = self._serialize_tree_item(tree_item)
+                if serialized and parent:
+                    removal_data.append((serialized, parent))
+
+            # Remove shapes (order: process items with deeper levels first to avoid
+            # invalidating parent references)
+            selected_items.sort(key=lambda x: -x.get_level())
+
+            for tree_item in selected_items:
+                shape = tree_item.get_rectangle_shape()
+                if shape:
+                    self.get_controller().set_selected_shape(shape)
                     self.get_controller().get_diagram().remove_shape()
-                    self.get_controller().get_diagram().refresh_diagram()
-                    # Refresh tree after removing shape
-                    self.refresh_tree()
-            else:
-                self.get_controller().get_diagram().remove_shape()
-                self.get_controller().get_diagram().refresh_diagram()
-                # Refresh tree after removing shape
-                self.refresh_tree()
 
-            if undo_manager and serialized_data and parent_tree_item:
+            self.get_controller().get_diagram().refresh_diagram()
+            self.refresh_tree()
+
+            if undo_manager and removal_data:
                 try:
-                    undo_action = RemoveShapeUndoAction(
-                        self, serialized_data, parent_tree_item
-                    )
+                    if len(removal_data) == 1:
+                        undo_action = RemoveShapeUndoAction(
+                            self, removal_data[0][0], removal_data[0][1]
+                        )
+                    else:
+                        undo_action = BatchRemoveShapeUndoAction(self, removal_data)
                     undo_manager.addUndoAction(undo_action)
                 except Exception as e:
                     print(f"Failed to register undo action: {e}")
+
+        finally:
             self.get_controller().add_selection_listener()
             if self.tree_control is not None:
                 self.tree_control.setFocus()
-
 
     # XTopWindowListener methods
     def windowClosing(self, event):
@@ -368,8 +494,20 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
             margin_bottom = 3
 
             # Calculate new tree control size
-            new_tree_width = event.Width - event.LeftInset - event.RightInset - margin_left - margin_right
-            new_tree_height = event.Height - event.TopInset - event.BottomInset - margin_top - margin_bottom
+            new_tree_width = (
+                event.Width
+                - event.LeftInset
+                - event.RightInset
+                - margin_left
+                - margin_right
+            )
+            new_tree_height = (
+                event.Height
+                - event.TopInset
+                - event.BottomInset
+                - margin_top
+                - margin_bottom
+            )
 
             # Set new tree control size
             tree_model = self.tree_control.getModel()
@@ -400,7 +538,7 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
 
             # Configure tree control properties
             tree_model = self.tree_control.getModel()
-            tree_model.setPropertyValue("SelectionType", SELECTION_TYPE_SINGLE)
+            tree_model.setPropertyValue("SelectionType", SELECTION_TYPE_MULTI)
             tree_model.setPropertyValue("RootDisplayed", True)
             tree_model.setPropertyValue("ShowsHandles", True)
             tree_model.setPropertyValue("ShowsRootHandles", True)
@@ -425,7 +563,8 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
 
             service_manager = self.x_context.getServiceManager()
             data_model = service_manager.createInstanceWithContext(
-                    "com.sun.star.awt.tree.MutableTreeDataModel", self.x_context)
+                "com.sun.star.awt.tree.MutableTreeDataModel", self.x_context
+            )
 
             if data_model is None:
                 print("Could not create tree data model")
@@ -446,7 +585,9 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
                 if temp_diagram_tree:
                     temp_root_item = temp_diagram_tree.get_root_item()
                     if temp_root_item:
-                        root_node_name = self._get_tree_node_display_name(temp_root_item, 1)
+                        root_node_name = self._get_tree_node_display_name(
+                            temp_root_item, 1
+                        )
             except:
                 pass
 
@@ -507,7 +648,9 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
                 while child_item is not None:
                     child_name = self._get_tree_node_display_name(child_item, child_num)
                     child_name = self._make_unique_display_name(child_name)
-                    self._populate_tree_node(data_model, parent_node, child_item, child_name)
+                    self._populate_tree_node(
+                        data_model, parent_node, child_item, child_name
+                    )
 
                     # Move to next sibling
                     child_item = child_item.get_first_sibling()
@@ -542,7 +685,7 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
             parent_node.appendChild(node)
 
             # Store reference to tree item in a class attribute for later selection
-            if not hasattr(self, '_node_to_tree_item_map'):
+            if not hasattr(self, "_node_to_tree_item_map"):
                 self._node_to_tree_item_map = {}
             self._node_to_tree_item_map[display_name] = tree_item
 
@@ -738,17 +881,26 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
             return f"Item {item_number}"
 
     def handle_tree_selection(self, selected_node):
-        """Handle tree node selection"""
-        try:
-            if selected_node is not None:
-                node_name = selected_node.getDisplayValue()
+        """Handle tree node selection - syncs tree selection to document
 
-                # Get the tree item associated with this node
-                tree_item = self._node_to_tree_item_map.get(node_name)
-                if tree_item:
-                    shape = tree_item.get_rectangle_shape()
-                    if shape:
-                        # Select the shape in the document
+        Args:
+            selected_node: Single tree node (XTreeNode)
+        """
+        try:
+            if selected_node is None:
+                return
+
+            # Get the node name - handle single node only
+            if not hasattr(selected_node, "getDisplayValue"):
+                return
+
+            node_name = selected_node.getDisplayValue()
+            tree_item = self._node_to_tree_item_map.get(node_name)
+            if tree_item:
+                shape = tree_item.get_rectangle_shape()
+                if shape:
+                    self._syncing_selection = True
+                    try:
                         controller = self.get_controller()
                         try:
                             controller.set_selected_shape(shape)
@@ -756,10 +908,57 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
                             try:
                                 controller._x_controller.select(shape)
                             except:
-                                print("Could not select shape through controller")
+                                pass
+                    finally:
+                        self._syncing_selection = False
 
         except Exception as e:
             print(f"Error handling tree selection: {e}")
+
+    def sync_all_selected_shapes_to_document(self):
+        """Sync all selected tree items' shapes to document selection"""
+        try:
+            self._syncing_selection = True
+
+            tree_items = self._get_selected_tree_items()
+            if not tree_items:
+                return
+
+            shapes = []
+            for tree_item in tree_items:
+                shape = tree_item.get_rectangle_shape()
+                if shape:
+                    shapes.append(shape)
+
+            if shapes:
+                self._select_shapes_in_document(shapes)
+        except Exception as e:
+            print(f"Error syncing selected shapes: {e}")
+        finally:
+            self._syncing_selection = False
+
+    def _select_shapes_in_document(self, shapes):
+        """Select multiple shapes in the document"""
+        try:
+            if not shapes:
+                return
+
+            controller = self.get_controller()
+
+            if len(shapes) == 1:
+                controller.set_selected_shape(shapes[0])
+            else:
+                # Create a ShapeCollection for multiple shapes
+                service_manager = self.x_context.getServiceManager()
+                shape_collection = service_manager.createInstanceWithContext(
+                    "com.sun.star.drawing.ShapeCollection", self.x_context
+                )
+                for shape in shapes:
+                    shape_collection.add(shape)
+
+                controller._x_controller.select(shape_collection)
+        except Exception as e:
+            print(f"Error selecting shapes in document: {e}")
 
     def _setup_selection_listener(self):
         """Set up selection change listener for shape-to-tree selection"""
@@ -808,12 +1007,8 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
                 target_node = self._find_node_by_name(root_node, node_name)
 
                 if target_node:
-                    # Select the node in the tree
-                    try:
-                        selection = self.tree_control.getSelection()
-                        selection.select(target_node)
-                    except:
-                        self.tree_control.select(target_node)
+                    # Select the node in the tree using the tree control directly
+                    self.tree_control.select(target_node)
 
         except Exception as e:
             print(f"Error selecting tree node by name: {e}")
@@ -938,12 +1133,12 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
         """Get the document's undo manager"""
         try:
             controller = self.get_controller()
-            if controller and hasattr(controller, '_x_controller'):
+            if controller and hasattr(controller, "_x_controller"):
                 # Get the document model from the controller
                 model = controller._x_controller.getModel()
-                if model and hasattr(model, 'getUndoManager'):
+                if model and hasattr(model, "getUndoManager"):
                     return model.getUndoManager()
-                elif hasattr(model, 'UndoManager'):
+                elif hasattr(model, "UndoManager"):
                     return model.UndoManager
         except Exception as e:
             print(f"Could not get undo manager: {e}")
@@ -1009,11 +1204,14 @@ class ControlDlgHandler(unohelper.Base, XDialogEventHandler, XTopWindowListener,
         except Exception as e:
             print(f"Error during ControlDlgHandler cleanup: {e}")
 
+
 class ClipboardItem:
     """Stores data for a copied tree item and its children"""
+
     def __init__(self, attributes, children=None):
-        self.attributes = attributes    # Shape attributes (MilSymCode, etc.)
+        self.attributes = attributes  # Shape attributes (MilSymCode, etc.)
         self.children = children if children is not None else []
+
 
 class EditShapeUndoAction(unohelper.Base, XUndoAction):
     """Undo action for editing a shape in the diagram"""
@@ -1097,6 +1295,7 @@ class EditShapeUndoAction(unohelper.Base, XUndoAction):
 
         return params
 
+
 class RemoveShapeUndoAction(unohelper.Base, XUndoAction):
     """Undo action for removing a shape from the diagram"""
 
@@ -1161,6 +1360,76 @@ class RemoveShapeUndoAction(unohelper.Base, XUndoAction):
             controller.add_selection_listener()
         except Exception as e:
             print(f"Error during redo remove shape: {e}")
+
+
+class BatchRemoveShapeUndoAction(unohelper.Base, XUndoAction):
+    """Undo action for removing multiple shapes from the diagram"""
+
+    def __init__(self, dialog_handler, removal_data):
+        """
+        Args:
+            dialog_handler: Reference to ControlDlgHandler
+            removal_data: List of (serialized_data, parent_tree_item) tuples
+        """
+        self.dialog_handler = dialog_handler
+        self.removal_data = removal_data  # List of (ClipboardItem, parent)
+        self.Title = f"Remove {len(removal_data)} Shape(s)"
+        self._restored_shapes = []  # Track restored shapes for redo
+
+    def undo(self):
+        """Undo the removal by re-adding all shapes"""
+        try:
+            controller = self.dialog_handler.get_controller()
+            diagram = controller.get_diagram()
+            if diagram is None:
+                return
+
+            controller.remove_selection_listener()
+            self._restored_shapes = []
+
+            # Restore in reverse order (to maintain correct tree structure)
+            for serialized_data, parent_tree_item in reversed(self.removal_data):
+                success = diagram.paste_subtree(
+                    parent_tree_item, serialized_data, self.dialog_handler.script
+                )
+                if success:
+                    restored = self.dialog_handler._find_newly_added_shape(
+                        parent_tree_item
+                    )
+                    if restored:
+                        self._restored_shapes.append(restored)
+
+            diagram.refresh_diagram()
+            self.dialog_handler.refresh_tree()
+            controller.add_selection_listener()
+        except Exception as e:
+            print(f"Error during undo batch remove: {e}")
+
+    def redo(self):
+        """Redo the removal by removing the restored shapes"""
+        try:
+            if not self._restored_shapes:
+                return
+
+            controller = self.dialog_handler.get_controller()
+            diagram = controller.get_diagram()
+            if diagram is None:
+                return
+
+            controller.remove_selection_listener()
+
+            for shape in self._restored_shapes:
+                if shape:
+                    controller.set_selected_shape(shape)
+                    diagram.remove_shape()
+
+            diagram.refresh_diagram()
+            self.dialog_handler.refresh_tree()
+            self._restored_shapes = []
+            controller.add_selection_listener()
+        except Exception as e:
+            print(f"Error during redo batch remove: {e}")
+
 
 class PasteShapeUndoAction(unohelper.Base, XUndoAction):
     """Undo action for pasting a shape (or subtree) into the diagram"""
@@ -1354,9 +1623,18 @@ class TreeKeyHandler(unohelper.Base, XKeyListener):
 
             if event.KeyCode in navigation_keys:
                 try:
-                    selection = event.Source.getSelection()
-                    if selection:
-                        self.dialog_handler.handle_tree_selection(selection)
+                    tree_control = event.Source
+                    # Use XMultiSelectionSupplier interface for consistent multi-selection handling
+                    selection_count = tree_control.getSelectionCount()
+                    if selection_count > 0:
+                        # Get the first selected node for syncing to document
+                        enum = tree_control.createSelectionEnumeration()
+                        if enum.hasMoreElements():
+                            selected_node = enum.nextElement()
+                            if selected_node and hasattr(
+                                selected_node, "getDisplayValue"
+                            ):
+                                self.dialog_handler.handle_tree_selection(selected_node)
                 except Exception as e:
                     print(f"Error getting tree selection after key navigation: {e}")
 
@@ -1379,23 +1657,39 @@ class TreeMouseHandler(unohelper.Base, XMouseListener):
         pass
 
     def mouseReleased(self, event):
-        """Handle mouse released events - detect single-clicks for shape selection"""
+        """Handle mouse released events - detect clicks for shape selection
+
+        Supports:
+        - Normal click: Select single item (replaces selection)
+        - Shift+click: Add item to selection
+        - Ctrl+click: Toggle item selection
+        """
         try:
             if event.Buttons == MouseButton.LEFT and event.ClickCount == 1:
-                # Single-click detected, get selected node and select shape
                 tree_control = self.dialog_handler.tree_control
-                if tree_control:
-                    try:
-                        selected_node = tree_control.getNodeForLocation(
-                            event.X, event.Y
-                        )
-                        if selected_node:
-                            self.dialog_handler.handle_tree_selection(selected_node)
+                if not tree_control:
+                    return
 
-                    except Exception as inner_e:
-                        print(f"Error getting selected node: {inner_e}")
+                clicked_node = tree_control.getNodeForLocation(event.X, event.Y)
+                if not clicked_node:
+                    return
+
+                is_shift = bool(event.Modifiers & KeyModifier.SHIFT)
+                is_ctrl = bool(event.Modifiers & KeyModifier.MOD1)
+
+                if is_shift or is_ctrl:
+                    # Multi-selection mode
+                    if is_ctrl and self.dialog_handler._is_node_selected(clicked_node):
+                        tree_control.removeSelection(clicked_node)
+                    else:
+                        tree_control.addSelection(clicked_node)
+                    self.dialog_handler.sync_all_selected_shapes_to_document()
+                else:
+                    # Normal click: Single selection
+                    self.dialog_handler.handle_tree_selection(clicked_node)
+
         except Exception as e:
-            print(f"Error handling tree single-click: {e}")
+            print(f"Error in mouseReleased: {e}")
 
     def mouseEntered(self, event):
         """Handle mouse entered events"""
@@ -1419,6 +1713,10 @@ class TreeSelectionListener(unohelper.Base, XSelectionChangeListener):
     def selectionChanged(self, event):
         """Handle selection change events from the document"""
         try:
+            # Skip if we're currently syncing from tree to document
+            if getattr(self.dialog_handler, "_syncing_selection", False):
+                return
+
             # Get the selected shapes
             selection = event.Source.getSelection()
             if selection and selection.getCount() > 0:
