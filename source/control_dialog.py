@@ -1356,6 +1356,13 @@ class EditShapeUndoAction(unohelper.Base, XUndoAction):
 
         return params
 
+    def disposing(self, event):
+        """Handle disposing event"""
+        self.dialog_handler = None
+        self.shape = None
+        self.original_attributes = None
+        self.edited_attributes = None
+
 
 class RemoveShapeUndoAction(unohelper.Base, XUndoAction):
     """Undo action for removing a shape from the diagram"""
@@ -1418,9 +1425,19 @@ class RemoveShapeUndoAction(unohelper.Base, XUndoAction):
             diagram.refresh_diagram()
             self.dialog_handler.refresh_tree()
 
+            # Clear reference to removed shape to prevent memory leak
+            self._restored_shape = None
+
             controller.add_selection_listener()
         except Exception as e:
             print(f"Error during redo remove shape: {e}")
+
+    def disposing(self, event):
+        """Handle disposing event"""
+        self.dialog_handler = None
+        self.serialized_data = None
+        self.parent_tree_item = None
+        self._restored_shape = None
 
 
 class BatchRemoveShapeUndoAction(unohelper.Base, XUndoAction):
@@ -1491,6 +1508,12 @@ class BatchRemoveShapeUndoAction(unohelper.Base, XUndoAction):
         except Exception as e:
             print(f"Error during redo batch remove: {e}")
 
+    def disposing(self, event):
+        """Handle disposing event"""
+        self.dialog_handler = None
+        self.removal_data = None
+        self._restored_shapes = None
+
 
 class PasteShapeUndoAction(unohelper.Base, XUndoAction):
     """Undo action for pasting a shape (or subtree) into the diagram"""
@@ -1516,6 +1539,9 @@ class PasteShapeUndoAction(unohelper.Base, XUndoAction):
 
             if pasted_tree_item:
                 self._remove_subtree(diagram, controller, pasted_tree_item)
+
+            # Clear reference to removed shape to prevent memory leak
+            self.pasted_shape = None
 
             diagram.refresh_diagram()
             self.dialog_handler.refresh_tree()
@@ -1568,6 +1594,13 @@ class PasteShapeUndoAction(unohelper.Base, XUndoAction):
         except Exception as e:
             print(f"Error during redo paste shape: {e}")
 
+    def disposing(self, event):
+        """Handle disposing event"""
+        self.dialog_handler = None
+        self.clipboard_data = None
+        self.parent_tree_item = None
+        self.pasted_shape = None
+
 
 class AddShapeUndoAction(unohelper.Base, XUndoAction):
     """Undo action for adding a shape to the diagram"""
@@ -1593,6 +1626,9 @@ class AddShapeUndoAction(unohelper.Base, XUndoAction):
                     # Remove the shape using the diagram's remove method
                     controller.get_diagram().remove_shape()
                     controller.get_diagram().refresh_diagram()
+
+                    # Clear reference to removed shape to prevent memory leak
+                    self.added_shape = None
 
                     # Refresh the tree view
                     self.dialog_handler.refresh_tree()
@@ -1626,6 +1662,11 @@ class AddShapeUndoAction(unohelper.Base, XUndoAction):
                     # Add the shape again
                     controller.get_diagram().add_shape()
                     controller.get_diagram().refresh_diagram()
+
+                    # Store reference to newly added shape for subsequent undo
+                    self.added_shape = self.dialog_handler._find_newly_added_shape(
+                        self.parent_tree_item
+                    )
 
                     # Refresh tree and select newly added shape
                     self.dialog_handler.refresh_tree()
