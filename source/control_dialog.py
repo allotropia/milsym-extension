@@ -890,19 +890,39 @@ class ControlDlgHandler(
                 level_info = ""
                 try:
                     level = tree_item.get_level()
-                    level_info = f" (L{level})"
+                    level_info = f" L{level}"
                 except:
                     pass
 
-                # Build display name
-                if shape_text and shape_text.strip():
-                    return f"{shape_text.strip()}{level_info}"
-                elif shape_name and shape_name.strip():
-                    return f"Shape: {shape_name}{level_info}"
-                else:
-                    return f"Item {item_number}{level_info}"
+                # Try to get MilSym information
+                milsym_code = ""
+                attributes = extractGraphicAttributes(shape)
+                if attributes and attributes.get("MilSymCode"):
+                    milsym_code = attributes.get("MilSymCode").rstrip("0")
 
-            return f"Node {item_number}"
+                # Try to get MilSym unique designation, headquarters and higher formation
+                milsym_hier = ""
+                if attributes and attributes.get("MilSymSpecialHeadquarters"):
+                    milsym_hier += attributes.get("MilSymSpecialHeadquarters") + " "
+                if attributes and attributes.get("MilSymHigherFormation"):
+                    milsym_hier += attributes.get("MilSymHigherFormation") + " "
+                if attributes and attributes.get("MilSymUniqueDesignation"):
+                    milsym_hier += attributes.get("MilSymUniqueDesignation")
+
+                # Build display name
+                if milsym_code.strip() and milsym_hier.strip():
+                    return f"Unit {milsym_hier} {shape_text.strip()} - (code {milsym_code}, level {level_info})"
+                elif shape_text and shape_text.strip():
+                    return f"Unit ({milsym_code}) - {shape_text.strip()}({level_info})"
+                elif shape_name and shape_name.strip():
+                    if milsym_code.strip():
+                        return f"Unit ({milsym_code}): {shape_name}({level_info})"
+                    else:
+                        return f"Placeholder unit: {shape_name} (level: {level_info})"
+                else:
+                    return f"Code {milsym_code} - item {item_number} {level_info}"
+
+            return f"Unit {item_number}"
 
         except Exception as e:
             print(f"Error getting tree node display name: {e}")
