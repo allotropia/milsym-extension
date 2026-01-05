@@ -1272,6 +1272,15 @@ class ControlDlgHandler(
                 print("Diagram does not support move operations")
                 return False
 
+            # Capture original positions for undo before moving
+            move_data = []
+            for source_item in source_items:
+                original_parent = source_item.get_dad()
+                original_prev_sibling = diagram.get_diagram_tree().get_previous_sibling(
+                    source_item
+                )
+                move_data.append((source_item, original_parent, original_prev_sibling))
+
             # Move each item
             all_success = True
             for source_item in source_items:
@@ -1284,6 +1293,17 @@ class ControlDlgHandler(
             if all_success:
                 diagram.refresh_diagram()
                 self.refresh_tree()
+
+                undo_manager = self._get_undo_manager()
+                if undo_manager and move_data:
+                    try:
+                        undo_action = DragDropUndoAction(
+                            self, move_data, target_tree_item, drop_position
+                        )
+                        undo_manager.addUndoAction(undo_action)
+                    except Exception as e:
+                        print(f"Failed to register drag and drop undo action: {e}")
+
                 return True
             else:
                 print("Some move operations failed")
@@ -1953,6 +1973,78 @@ class AddShapeUndoAction(unohelper.Base, XUndoAction):
         self.dialog_handler = None
         self.added_shape = None
         self.parent_tree_item = None
+
+
+class DragDropUndoAction(unohelper.Base, XUndoAction):
+    """Undo action for moving shape(s) via drag and drop"""
+
+    def __init__(self, dialog_handler, move_data, target_tree_item, drop_position):
+        """
+        Args:
+            dialog_handler: Reference to ControlDlgHandler
+            move_data: List of tuples (source_tree_item, original_parent, original_prev_sibling)
+            target_tree_item: The target where items were moved to
+            drop_position: "child" or "sibling"
+        """
+        self.dialog_handler = dialog_handler
+        self.move_data = move_data
+        self.target_tree_item = target_tree_item
+        self.drop_position = drop_position
+
+        count = len(move_data)
+        if count == 1:
+            self.Title = "Drag and Drop"
+        else:
+            self.Title = f"Drag and Drop ({count} items)"
+
+    def undo(self):
+        """Undo by moving all items back to their original positions"""
+        try:
+            controller = self.dialog_handler.get_controller()
+            diagram = controller.get_diagram()
+            if diagram is None:
+                return
+
+            controller.remove_selection_listener()
+
+            # Restore in reverse order to maintain tree structure
+            for source_item, original_parent, _ in reversed(self.move_data):
+                if source_item and original_parent:
+                    diagram.move_tree_item(source_item, original_parent, "child")
+
+            diagram.refresh_diagram()
+            self.dialog_handler.refresh_tree()
+            controller.add_selection_listener()
+        except Exception as e:
+            print(f"Error during undo drag and drop: {e}")
+
+    def redo(self):
+        """Redo by moving all items to the target again"""
+        try:
+            controller = self.dialog_handler.get_controller()
+            diagram = controller.get_diagram()
+            if diagram is None:
+                return
+
+            controller.remove_selection_listener()
+
+            for source_item, _, _ in self.move_data:
+                if source_item and self.target_tree_item:
+                    diagram.move_tree_item(
+                        source_item, self.target_tree_item, self.drop_position
+                    )
+
+            diagram.refresh_diagram()
+            self.dialog_handler.refresh_tree()
+            controller.add_selection_listener()
+        except Exception as e:
+            print(f"Error during redo drag and drop: {e}")
+
+    def disposing(self, event):
+        """Handle disposing event"""
+        self.dialog_handler = None
+        self.move_data = None
+        self.target_tree_item = None
 
 
 class TreeKeyHandler(unohelper.Base, XKeyListener):
