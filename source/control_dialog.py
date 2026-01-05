@@ -63,6 +63,7 @@ class ControlDlgHandler(
         self._clipboard = None
         self._node_to_tree_item_map = {}
         self._syncing_selection = False
+        self._syncing_from_tree = False
         self._is_dragging = False
         factory = self.x_context.getServiceManager().createInstanceWithContext(
             "com.sun.star.script.provider.MasterScriptProviderFactory", self.x_context
@@ -948,6 +949,7 @@ class ControlDlgHandler(
                 shape = tree_item.get_rectangle_shape()
                 if shape:
                     self._syncing_selection = True
+                    self._syncing_from_tree = True
                     try:
                         controller = self.get_controller()
                         try:
@@ -959,6 +961,7 @@ class ControlDlgHandler(
                                 pass
                     finally:
                         self._syncing_selection = False
+                        # Note: _syncing_from_tree cleared in selectionChanged handler
 
         except Exception as e:
             print(f"Error handling tree selection: {e}")
@@ -967,6 +970,7 @@ class ControlDlgHandler(
         """Sync all selected tree items' shapes to document selection"""
         try:
             self._syncing_selection = True
+            self._syncing_from_tree = True
 
             tree_items = self._get_selected_tree_items()
             if not tree_items:
@@ -984,6 +988,7 @@ class ControlDlgHandler(
             print(f"Error syncing selected shapes: {e}")
         finally:
             self._syncing_selection = False
+            # Note: _syncing_from_tree cleared in selectionChanged handler
 
     def _select_shapes_in_document(self, shapes):
         """Select multiple shapes in the document"""
@@ -1039,6 +1044,67 @@ class ControlDlgHandler(
 
         except Exception as e:
             print(f"Error selecting tree node for shape: {e}")
+
+    def sync_document_selection_to_tree(self, selection):
+        """Sync document shape selection to tree view selection (supports multi-selection)
+
+        Args:
+            selection: XShapes or shape collection from the document
+        """
+        try:
+            if not self.tree_control or not selection:
+                return
+
+            # Collect all matching tree nodes for selected shapes
+            matching_nodes = []
+            shape_count = selection.getCount()
+
+            for i in range(shape_count):
+                try:
+                    shape = selection.getByIndex(i)
+                    if shape:
+                        # Find the tree node for this shape
+                        for node_name, tree_item in self._node_to_tree_item_map.items():
+                            if tree_item.get_rectangle_shape() == shape:
+                                node = self._find_node_in_tree(node_name)
+                                if node:
+                                    matching_nodes.append(node)
+                                break
+                except Exception:
+                    continue
+
+            if not matching_nodes:
+                return
+
+            # Select all matching nodes in tree
+            # First node uses select(), subsequent nodes use addSelection()
+            for i, node in enumerate(matching_nodes):
+                if i == 0:
+                    self.tree_control.select(node)
+                else:
+                    self.tree_control.addSelection(node)
+
+        except Exception as e:
+            print(f"Error syncing document selection to tree: {e}")
+
+    def _find_node_in_tree(self, node_name):
+        """Find a tree node by name in the current tree model
+
+        Args:
+            node_name: Display name of the node to find
+
+        Returns:
+            Tree node or None if not found
+        """
+        try:
+            tree_model = self.tree_control.getModel()
+            data_model = tree_model.getPropertyValue("DataModel")
+            if data_model:
+                root_node = data_model.getRoot()
+                return self._find_node_by_name(root_node, node_name)
+        except Exception:
+            pass
+        return None
 
     def _select_tree_node_by_name(self, node_name):
         """Select a tree node by its display name"""
@@ -1838,14 +1904,16 @@ class TreeSelectionListener(unohelper.Base, XSelectionChangeListener):
             if getattr(self.dialog_handler, "_is_dragging", False):
                 return
 
-            # Get the selected shapes
+            # If sync was initiated from tree, clear the flag and skip
+            # This handles async event dispatch in Writer
+            if getattr(self.dialog_handler, "_syncing_from_tree", False):
+                self.dialog_handler._syncing_from_tree = False
+                return
+
+            # Get the selected shapes and sync ALL of them to tree
             selection = event.Source.getSelection()
             if selection and selection.getCount() > 0:
-                # Get the first selected shape
-                selected_shape = selection.getByIndex(0)
-                if selected_shape:
-                    # Update tree selection to match
-                    self.dialog_handler.select_tree_node_for_shape(selected_shape)
+                self.dialog_handler.sync_document_selection_to_tree(selection)
         except Exception as e:
             # Silently ignore selection errors to avoid spam
             pass
