@@ -279,9 +279,13 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             mutable_tree_data_model.setRoot(root_node)
 
             BASE_ICON_URL = "vnd.sun.star.extension://com.collabora.milsymbol/img/preview/symbols"
+            if listbox_name == "ltbCountry":
+                BASE_ICON_URL = "vnd.sun.star.extension://com.collabora.milsymbol/img/preview/countries"
             DEFAULT_ICON = "sample"
             for idx, item in enumerate(items):
                 img_file = item.get("img") or DEFAULT_ICON
+                if listbox_name == "ltbCountry":
+                    img_file = item.get("value")
                 icon_url = f"{BASE_ICON_URL}/{img_file}.png"
 
                 label = self.translator.translate(item["label"])
