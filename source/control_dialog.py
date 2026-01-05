@@ -158,9 +158,20 @@ class ControlDlgHandler(
         return self.dialog.get_controller()
 
     def paste_to_selected_item(self):
-        """Paste clipboard contents to currently selected item"""
+        """Paste clipboard contents to currently selected item.
 
+        All copied items become children of the selected target node.
+        After paste, all newly pasted items are selected.
+        """
         if self._clipboard is None:
+            return
+
+        # Normalize clipboard to list format (for backward compatibility)
+        clipboard_items = self._clipboard
+        if not isinstance(clipboard_items, list):
+            clipboard_items = [clipboard_items]
+
+        if not clipboard_items:
             return
 
         try:
@@ -194,62 +205,90 @@ class ControlDlgHandler(
 
             if diagram:
                 controller.remove_selection_listener()
-                success = diagram.paste_subtree(
-                    target_tree_item, self._clipboard, self.script
-                )
-                if success:
+
+                # Paste all clipboard items and track pasted shapes
+                pasted_shapes = []
+                any_success = False
+
+                for clipboard_item in clipboard_items:
+                    success = diagram.paste_subtree(
+                        target_tree_item, clipboard_item, self.script
+                    )
+                    if success:
+                        any_success = True
+                        # Find the newly added shape for this paste
+                        pasted_shape = self._find_newly_added_shape(target_tree_item)
+                        if pasted_shape:
+                            pasted_shapes.append(pasted_shape)
+
+                if any_success:
                     diagram.refresh_diagram()
                     self.refresh_tree()
+
+                    # Register undo action
                     undo_manager = self._get_undo_manager()
-                    pasted_shape = self._find_newly_added_shape(target_tree_item)
-                    if undo_manager and pasted_shape:
+                    if undo_manager and pasted_shapes:
                         try:
-                            undo_action = PasteShapeUndoAction(
-                                self, self._clipboard, target_tree_item, pasted_shape
-                            )
+                            if len(pasted_shapes) == 1:
+                                # Single paste - use existing undo action
+                                undo_action = PasteShapeUndoAction(
+                                    self,
+                                    clipboard_items[0],
+                                    target_tree_item,
+                                    pasted_shapes[0],
+                                )
+                            else:
+                                # Multiple paste - use batch undo action
+                                undo_action = BatchPasteShapeUndoAction(
+                                    self,
+                                    clipboard_items,
+                                    target_tree_item,
+                                    pasted_shapes,
+                                )
                             undo_manager.addUndoAction(undo_action)
                         except Exception as e:
                             print(f"Failed to register paste undo action: {e}")
+
+                    # Select all pasted shapes in the tree
+                    if pasted_shapes:
+                        self._select_tree_nodes_for_shapes(pasted_shapes)
+
                 controller.add_selection_listener()
 
         except Exception as ex:
             print(f"Error pasting: {ex}")
 
     def copy_selected_item(self):
-        """Copy the currently selected item and its subtree.
+        """Copy the currently selected item(s) and their subtrees.
 
-        When multiple items are selected, copies only the first one.
+        When multiple items are selected, copies all of them.
+        If both a parent and child are selected, only the parent is copied
+        (since copying the parent includes the child in its subtree).
         """
         try:
             if self.tree_control is None:
                 return
 
-            selection = self.tree_control.getSelection()
-            if selection is None:
+            # Get all selected tree items
+            tree_items = self._get_selected_tree_items()
+            if not tree_items:
                 return
 
-            selected_node = None
-            if hasattr(selection, "getDisplayValue"):
-                # Single node selected
-                selected_node = selection
-            elif hasattr(selection, "__len__") and len(selection) > 0:
-                # Sequence of nodes - get first one
-                selected_node = selection[0]
-            else:
-                return
+            # Filter out descendants (if parent and child both selected, keep only parent)
+            tree_items = self._filter_out_descendants(tree_items)
 
-            if selected_node is None or not hasattr(selected_node, "getDisplayValue"):
-                return
+            # Serialize each item and store as a list
+            clipboard_items = []
+            for tree_item in tree_items:
+                serialized = self._serialize_tree_item(tree_item)
+                if serialized is not None:
+                    clipboard_items.append(serialized)
 
-            node_name = selected_node.getDisplayValue()
-            tree_item = self._node_to_tree_item_map.get(node_name)
-            if tree_item is None:
-                return
-
-            self._clipboard = self._serialize_tree_item(tree_item)
+            if clipboard_items:
+                self._clipboard = clipboard_items
 
         except Exception as ex:
-            print(f"Error copying item: {ex}")
+            print(f"Error copying item(s): {ex}")
 
     def _get_selected_tree_item(self):
         """Get the tree item for the currently selected shape"""
@@ -1013,6 +1052,45 @@ class ControlDlgHandler(
         except Exception as e:
             print(f"Error selecting shapes in document: {e}")
 
+    def _select_tree_nodes_for_shapes(self, shapes):
+        """Select all tree nodes corresponding to the given shapes.
+
+        Args:
+            shapes: List of shapes to select in the tree view
+        """
+        try:
+            if not self.tree_control or not shapes:
+                return
+
+            # Find matching tree nodes for each shape
+            matching_nodes = []
+            for shape in shapes:
+                if shape is None:
+                    continue
+                for node_name, tree_item in self._node_to_tree_item_map.items():
+                    if tree_item.get_rectangle_shape() == shape:
+                        node = self._find_node_in_tree(node_name)
+                        if node:
+                            matching_nodes.append(node)
+                        break
+
+            if not matching_nodes:
+                return
+
+            # Select all matching nodes in tree
+            # First node uses select(), subsequent nodes use addSelection()
+            for i, node in enumerate(matching_nodes):
+                if i == 0:
+                    self.tree_control.select(node)
+                else:
+                    self.tree_control.addSelection(node)
+
+            # Also select corresponding shapes in document
+            self._select_shapes_in_document(shapes)
+
+        except Exception as e:
+            print(f"Error selecting tree nodes for shapes: {e}")
+
     def _setup_selection_listener(self):
         """Set up selection change listener for shape-to-tree selection"""
         try:
@@ -1686,6 +1764,120 @@ class PasteShapeUndoAction(unohelper.Base, XUndoAction):
         self.clipboard_data = None
         self.parent_tree_item = None
         self.pasted_shape = None
+
+
+class BatchPasteShapeUndoAction(unohelper.Base, XUndoAction):
+    """Undo action for pasting multiple shapes into the diagram"""
+
+    def __init__(
+        self, dialog_handler, clipboard_data_list, parent_tree_item, pasted_shapes
+    ):
+        """
+        Args:
+            dialog_handler: Reference to ControlDlgHandler
+            clipboard_data_list: List of ClipboardItem objects
+            parent_tree_item: Target tree item where shapes were pasted
+            pasted_shapes: List of shapes that were pasted
+        """
+        self.dialog_handler = dialog_handler
+        self.clipboard_data_list = clipboard_data_list
+        self.parent_tree_item = parent_tree_item
+        self.pasted_shapes = list(pasted_shapes) if pasted_shapes else []
+        self.Title = f"Paste {len(self.pasted_shapes)} Shape(s)"
+
+    def undo(self):
+        """Undo the paste by removing all pasted shapes and their subtrees"""
+        try:
+            if not self.pasted_shapes:
+                return
+
+            controller = self.dialog_handler.get_controller()
+            diagram = controller.get_diagram()
+            if diagram is None:
+                return
+
+            controller.remove_selection_listener()
+
+            # Remove shapes in reverse order (last pasted first)
+            for shape in reversed(self.pasted_shapes):
+                if shape is None:
+                    continue
+                pasted_tree_item = self._find_tree_item_for_shape(shape)
+                if pasted_tree_item:
+                    self._remove_subtree(diagram, controller, pasted_tree_item)
+
+            # Clear references to removed shapes
+            self.pasted_shapes = []
+
+            diagram.refresh_diagram()
+            self.dialog_handler.refresh_tree()
+            controller.add_selection_listener()
+        except Exception as e:
+            print(f"Error during undo batch paste: {e}")
+
+    def _remove_subtree(self, diagram, controller, tree_item):
+        """Recursively remove a tree item and all its descendants (depth-first)"""
+        if tree_item is None:
+            return
+
+        # First, recursively remove all children
+        child = tree_item.get_first_child()
+        while child is not None:
+            next_sibling = child.get_first_sibling()  # Save before removal
+            self._remove_subtree(diagram, controller, child)
+            child = next_sibling
+
+        shape = tree_item.get_rectangle_shape()
+        if shape:
+            controller.set_selected_shape(shape)
+            diagram.remove_shape()
+
+    def _find_tree_item_for_shape(self, shape):
+        """Find the tree item corresponding to a shape"""
+        for tree_item in self.dialog_handler._node_to_tree_item_map.values():
+            if tree_item.get_rectangle_shape() == shape:
+                return tree_item
+        return None
+
+    def redo(self):
+        """Redo the paste by re-pasting all clipboard items"""
+        try:
+            controller = self.dialog_handler.get_controller()
+            diagram = controller.get_diagram()
+            if diagram is None:
+                return
+
+            controller.remove_selection_listener()
+
+            self.pasted_shapes = []
+            for clipboard_data in self.clipboard_data_list:
+                success = diagram.paste_subtree(
+                    self.parent_tree_item, clipboard_data, self.dialog_handler.script
+                )
+                if success:
+                    pasted_shape = self.dialog_handler._find_newly_added_shape(
+                        self.parent_tree_item
+                    )
+                    if pasted_shape:
+                        self.pasted_shapes.append(pasted_shape)
+
+            diagram.refresh_diagram()
+            self.dialog_handler.refresh_tree()
+
+            # Select all re-pasted shapes
+            if self.pasted_shapes:
+                self.dialog_handler._select_tree_nodes_for_shapes(self.pasted_shapes)
+
+            controller.add_selection_listener()
+        except Exception as e:
+            print(f"Error during redo batch paste: {e}")
+
+    def disposing(self, event):
+        """Handle disposing event"""
+        self.dialog_handler = None
+        self.clipboard_data_list = None
+        self.parent_tree_item = None
+        self.pasted_shapes = None
 
 
 class AddShapeUndoAction(unohelper.Base, XUndoAction):
