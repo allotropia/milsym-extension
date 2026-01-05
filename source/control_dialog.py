@@ -149,6 +149,28 @@ class ControlDlgHandler(
     def buttonStateHandler(self, methodName):
         pass
 
+    def _update_button_states(self):
+        """Update button enabled states based on current selection.
+
+        The Edit button is disabled when multiple items are selected,
+        since editing only works with a single shape.
+        """
+        try:
+            dialog = self.get_gui()._x_control_dialog
+            if dialog is None:
+                return
+
+            edit_button = dialog.getControl("BtnEdit")
+            if edit_button is None:
+                return
+
+            selected_items = self._get_selected_tree_items()
+            # Enable Edit button only when 0 or 1 item is selected
+            should_enable_edit = len(selected_items) <= 1
+            edit_button.setEnable(should_enable_edit)
+        except Exception as e:
+            print(f"Error updating button states: {e}")
+
     def get_gui(self):
         """Get GUI reference"""
         return self.dialog
@@ -989,6 +1011,8 @@ class ControlDlgHandler(
 
         except Exception as e:
             print(f"Error handling tree selection: {e}")
+        finally:
+            self._update_button_states()
 
     def sync_all_selected_shapes_to_document(self):
         """Sync all selected tree items' shapes to document selection"""
@@ -1013,6 +1037,7 @@ class ControlDlgHandler(
         finally:
             self._syncing_selection = False
             # Note: _syncing_from_tree cleared in selectionChanged handler
+            self._update_button_states()
 
     def _select_shapes_in_document(self, shapes):
         """Select multiple shapes in the document"""
@@ -1149,6 +1174,8 @@ class ControlDlgHandler(
 
         except Exception as e:
             print(f"Error syncing document selection to tree: {e}")
+        finally:
+            self._update_button_states()
 
     def _find_node_in_tree(self, node_name):
         """Find a tree node by name in the current tree model
@@ -2027,6 +2054,8 @@ class TreeSelectionListener(unohelper.Base, XSelectionChangeListener):
         except Exception as e:
             # Silently ignore selection errors to avoid spam
             pass
+        finally:
+            self.dialog_handler._update_button_states()
 
     def disposing(self, event):
         """Handle disposing events"""
