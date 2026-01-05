@@ -276,11 +276,30 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
     def get_ordered_symbols(self, category_path):
         ordered_symbols = []
 
-        for file_name in sorted(os.listdir(category_path)):
+        try:
+            if not os.path.isdir(category_path):
+                print(f"Category path is not a directory: {category_path}")
+                return ordered_symbols
+
+            file_list = sorted(os.listdir(category_path))
+        except Exception as e:
+            print(f"Error listing category path {category_path}: {e}")
+            return ordered_symbols
+
+        for file_name in file_list:
             if file_name.lower().endswith(".json"):
-                order_indexes, symbol_params = self.import_json_data(file_name, category_path)
-                order_indexes, svg_name = order_indexes[0]
-                ordered_symbols.append((order_indexes, svg_name, symbol_params))
+                try:
+                    order_indexes, symbol_params = self.import_json_data(file_name, category_path)
+                    if order_indexes:  # Check if list is not empty
+                        order_index_value, svg_name = order_indexes[0]
+                    else:
+                        # Provide default values if no order_index found in JSON
+                        order_index_value = 0  # Default order
+                        svg_name = os.path.splitext(file_name)[0] + ".svg"  # Construct SVG name from JSON name
+                    ordered_symbols.append((order_index_value, svg_name, symbol_params))
+                except Exception as e:
+                    print(f"Error processing JSON file {file_name}: {e}")
+                    continue
 
         ordered_symbols.sort(key=lambda x: x[0])
 
