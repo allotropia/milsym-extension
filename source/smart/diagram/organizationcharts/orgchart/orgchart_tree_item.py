@@ -267,7 +267,7 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
     def _calculate_size_for_aspect_ratio(self):
         """Calculate size with fixed height and proportional width"""
         default_width = OrgChartTreeItem._shape_width
-        fixed_height = 2000  # Fixed height for all shapes
+        fixed_height = 1000  # Fixed height for all shapes
 
         try:
             if self._x_rectangle_shape.Graphic:
@@ -277,11 +277,20 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
                     # Calculate aspect ratio
                     aspect_ratio = graphic_size.Width / graphic_size.Height
 
-                    # Calculate width based on fixed height and aspect ratio - no width limit
-                    calculated_width = int(fixed_height * aspect_ratio)
+                # Calculate width based on fixed height and aspect ratio
+                calculated_width = int(fixed_height * aspect_ratio)
 
-                    # Return calculated width and fixed height
-                    return calculated_width, fixed_height
+                # Check if width exceeds the maximum allowed width
+                if calculated_width > OrgChartTreeItem._shape_width:
+                    # Scale down proportionally to fit within width constraint
+                    scale_factor = OrgChartTreeItem._shape_width / calculated_width
+                    calculated_width = OrgChartTreeItem._shape_width
+                    calculated_height = int(fixed_height * scale_factor)
+                else:
+                    calculated_height = fixed_height
+
+                # Return calculated width and height
+                return calculated_width, calculated_height
         except Exception as ex:
             print(f"Could not get graphic aspect ratio: {ex}")
 
