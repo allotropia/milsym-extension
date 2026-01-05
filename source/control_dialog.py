@@ -467,12 +467,7 @@ class ControlDlgHandler(
 
             if undo_manager and removal_data:
                 try:
-                    if len(removal_data) == 1:
-                        undo_action = RemoveShapeUndoAction(
-                            self, removal_data[0][0], removal_data[0][1]
-                        )
-                    else:
-                        undo_action = BatchRemoveShapeUndoAction(self, removal_data)
+                    undo_action = RemoveShapeUndoAction(self, removal_data)
                     undo_manager.addUndoAction(undo_action)
                 except Exception as e:
                     print(f"Failed to register undo action: {e}")
@@ -1549,81 +1544,7 @@ class EditShapeUndoAction(unohelper.Base, XUndoAction):
 
 
 class RemoveShapeUndoAction(unohelper.Base, XUndoAction):
-    """Undo action for removing a shape from the diagram"""
-
-    def __init__(self, dialog_handler, serialized_data, parent_tree_item):
-        self.dialog_handler = dialog_handler
-        self.serialized_data = (
-            serialized_data  # ClipboardItem with attributes & children
-        )
-        self.parent_tree_item = parent_tree_item
-        self.Title = "Remove Shape"
-        self._restored_shape = None  # Track restored shape for redo
-
-    def undo(self):
-        """Undo the remove by re-adding the shape using paste_subtree"""
-        try:
-            controller = self.dialog_handler.get_controller()
-            diagram = controller.get_diagram()
-
-            if diagram is None:
-                return
-
-            controller.remove_selection_listener()
-
-            # Use paste_subtree to restore the shape (same as paste functionality)
-            success = diagram.paste_subtree(
-                self.parent_tree_item, self.serialized_data, self.dialog_handler.script
-            )
-
-            if success:
-                diagram.refresh_diagram()
-                self.dialog_handler.refresh_tree()
-
-                # Find and store the restored shape for redo
-                self._restored_shape = self.dialog_handler._find_newly_added_shape(
-                    self.parent_tree_item
-                )
-
-            controller.add_selection_listener()
-        except Exception as e:
-            print(f"Error during undo remove shape: {e}")
-
-    def redo(self):
-        """Redo the remove by removing the restored shape"""
-        try:
-            if self._restored_shape is None:
-                return
-
-            controller = self.dialog_handler.get_controller()
-            diagram = controller.get_diagram()
-
-            if diagram is None:
-                return
-
-            controller.remove_selection_listener()
-
-            diagram.remove_shape(self._restored_shape)
-            diagram.refresh_diagram()
-            self.dialog_handler.refresh_tree()
-
-            # Clear reference to removed shape to prevent memory leak
-            self._restored_shape = None
-
-            controller.add_selection_listener()
-        except Exception as e:
-            print(f"Error during redo remove shape: {e}")
-
-    def disposing(self, event):
-        """Handle disposing event"""
-        self.dialog_handler = None
-        self.serialized_data = None
-        self.parent_tree_item = None
-        self._restored_shape = None
-
-
-class BatchRemoveShapeUndoAction(unohelper.Base, XUndoAction):
-    """Undo action for removing multiple shapes from the diagram"""
+    """Undo action for removing shape(s) from the diagram"""
 
     def __init__(self, dialog_handler, removal_data):
         """
@@ -1632,9 +1553,14 @@ class BatchRemoveShapeUndoAction(unohelper.Base, XUndoAction):
             removal_data: List of (serialized_data, parent_tree_item) tuples
         """
         self.dialog_handler = dialog_handler
-        self.removal_data = removal_data  # List of (ClipboardItem, parent)
-        self.Title = f"Remove {len(removal_data)} Shape(s)"
-        self._restored_shapes = []  # Track restored shapes for redo
+        self.removal_data = removal_data
+        self._restored_shapes = []
+
+        count = len(removal_data)
+        if count == 1:
+            self.Title = "Remove Shape"
+        else:
+            self.Title = f"Remove {count} Shape(s)"
 
     def undo(self):
         """Undo the removal by re-adding all shapes"""
@@ -1647,7 +1573,6 @@ class BatchRemoveShapeUndoAction(unohelper.Base, XUndoAction):
             controller.remove_selection_listener()
             self._restored_shapes = []
 
-            # Restore in reverse order (to maintain correct tree structure)
             for serialized_data, parent_tree_item in reversed(self.removal_data):
                 success = diagram.paste_subtree(
                     parent_tree_item, serialized_data, self.dialog_handler.script
@@ -1663,7 +1588,7 @@ class BatchRemoveShapeUndoAction(unohelper.Base, XUndoAction):
             self.dialog_handler.refresh_tree()
             controller.add_selection_listener()
         except Exception as e:
-            print(f"Error during undo batch remove: {e}")
+            print(f"Error during undo remove shape: {e}")
 
     def redo(self):
         """Redo the removal by removing the restored shapes"""
@@ -1687,7 +1612,7 @@ class BatchRemoveShapeUndoAction(unohelper.Base, XUndoAction):
             self._restored_shapes = []
             controller.add_selection_listener()
         except Exception as e:
-            print(f"Error during redo batch remove: {e}")
+            print(f"Error during redo remove shape: {e}")
 
     def disposing(self, event):
         """Handle disposing event"""
