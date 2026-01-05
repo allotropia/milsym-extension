@@ -1583,9 +1583,7 @@ class RemoveShapeUndoAction(unohelper.Base, XUndoAction):
 
             controller.remove_selection_listener()
 
-            # Select and remove the restored shape
-            controller.set_selected_shape(self._restored_shape)
-            diagram.remove_shape()
+            diagram.remove_shape(self._restored_shape)
             diagram.refresh_diagram()
             self.dialog_handler.refresh_tree()
 
@@ -1662,8 +1660,7 @@ class BatchRemoveShapeUndoAction(unohelper.Base, XUndoAction):
 
             for shape in self._restored_shapes:
                 if shape:
-                    controller.set_selected_shape(shape)
-                    diagram.remove_shape()
+                    diagram.remove_shape(shape)
 
             diagram.refresh_diagram()
             self.dialog_handler.refresh_tree()
@@ -1727,8 +1724,7 @@ class PasteShapeUndoAction(unohelper.Base, XUndoAction):
 
         shape = tree_item.get_rectangle_shape()
         if shape:
-            controller.set_selected_shape(shape)
-            diagram.remove_shape()
+            diagram.remove_shape(shape)
 
     def _find_tree_item_for_shape(self, shape):
         """Find the tree item corresponding to a shape"""
@@ -1829,8 +1825,7 @@ class BatchPasteShapeUndoAction(unohelper.Base, XUndoAction):
 
         shape = tree_item.get_rectangle_shape()
         if shape:
-            controller.set_selected_shape(shape)
-            diagram.remove_shape()
+            diagram.remove_shape(shape)
 
     def _find_tree_item_for_shape(self, shape):
         """Find the tree item corresponding to a shape"""
@@ -1898,11 +1893,8 @@ class AddShapeUndoAction(unohelper.Base, XUndoAction):
                     # Temporarily remove selection listener to avoid conflicts
                     controller.remove_selection_listener()
 
-                    # Select the shape to be removed
-                    controller.set_selected_shape(self.added_shape)
-
                     # Remove the shape using the diagram's remove method
-                    controller.get_diagram().remove_shape()
+                    controller.get_diagram().remove_shape(self.added_shape)
                     controller.get_diagram().refresh_diagram()
 
                     # Clear reference to removed shape to prevent memory leak
