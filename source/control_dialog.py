@@ -229,22 +229,12 @@ class ControlDlgHandler(
                     undo_manager = self._get_undo_manager()
                     if undo_manager and pasted_shapes:
                         try:
-                            if len(pasted_shapes) == 1:
-                                # Single paste - use existing undo action
-                                undo_action = PasteShapeUndoAction(
-                                    self,
-                                    clipboard_items[0],
-                                    target_tree_item,
-                                    pasted_shapes[0],
-                                )
-                            else:
-                                # Multiple paste - use batch undo action
-                                undo_action = BatchPasteShapeUndoAction(
-                                    self,
-                                    clipboard_items,
-                                    target_tree_item,
-                                    pasted_shapes,
-                                )
+                            undo_action = PasteShapeUndoAction(
+                                self,
+                                clipboard_items,
+                                target_tree_item,
+                                pasted_shapes,
+                            )
                             undo_manager.addUndoAction(undo_action)
                         except Exception as e:
                             print(f"Failed to register paste undo action: {e}")
@@ -1622,93 +1612,7 @@ class RemoveShapeUndoAction(unohelper.Base, XUndoAction):
 
 
 class PasteShapeUndoAction(unohelper.Base, XUndoAction):
-    """Undo action for pasting a shape (or subtree) into the diagram"""
-
-    def __init__(self, dialog_handler, clipboard_data, parent_tree_item, pasted_shape):
-        self.dialog_handler = dialog_handler
-        self.clipboard_data = clipboard_data
-        self.parent_tree_item = parent_tree_item
-        self.pasted_shape = pasted_shape
-        self.Title = "Paste Shape"
-
-    def undo(self):
-        """Undo the paste by removing the pasted shape and its entire subtree"""
-        try:
-            if self.pasted_shape is None:
-                return
-            controller = self.dialog_handler.get_controller()
-            diagram = controller.get_diagram()
-            if diagram is None:
-                return
-            controller.remove_selection_listener()
-            pasted_tree_item = self._find_tree_item_for_shape(self.pasted_shape)
-
-            if pasted_tree_item:
-                self._remove_subtree(diagram, controller, pasted_tree_item)
-
-            # Clear reference to removed shape to prevent memory leak
-            self.pasted_shape = None
-
-            diagram.refresh_diagram()
-            self.dialog_handler.refresh_tree()
-            controller.add_selection_listener()
-        except Exception as e:
-            print(f"Error during undo paste shape: {e}")
-
-    def _remove_subtree(self, diagram, controller, tree_item):
-        """Recursively remove a tree item and all its descendants (depth-first)"""
-        if tree_item is None:
-            return
-
-        # First, recursively remove all children
-        child = tree_item.get_first_child()
-        while child is not None:
-            next_sibling = child.get_first_sibling()  # Save before removal
-            self._remove_subtree(diagram, controller, child)
-            child = next_sibling
-
-        shape = tree_item.get_rectangle_shape()
-        if shape:
-            diagram.remove_shape(shape)
-
-    def _find_tree_item_for_shape(self, shape):
-        """Find the tree item corresponding to a shape"""
-        for tree_item in self.dialog_handler._node_to_tree_item_map.values():
-            if tree_item.get_rectangle_shape() == shape:
-                return tree_item
-        return None
-
-    def redo(self):
-        """Redo the paste by re-pasting the clipboard data"""
-        try:
-            controller = self.dialog_handler.get_controller()
-            diagram = controller.get_diagram()
-            if diagram is None:
-                return
-            controller.remove_selection_listener()
-            success = diagram.paste_subtree(
-                self.parent_tree_item, self.clipboard_data, self.dialog_handler.script
-            )
-            if success:
-                diagram.refresh_diagram()
-                self.dialog_handler.refresh_tree()
-                self.pasted_shape = self.dialog_handler._find_newly_added_shape(
-                    self.parent_tree_item
-                )
-            controller.add_selection_listener()
-        except Exception as e:
-            print(f"Error during redo paste shape: {e}")
-
-    def disposing(self, event):
-        """Handle disposing event"""
-        self.dialog_handler = None
-        self.clipboard_data = None
-        self.parent_tree_item = None
-        self.pasted_shape = None
-
-
-class BatchPasteShapeUndoAction(unohelper.Base, XUndoAction):
-    """Undo action for pasting multiple shapes into the diagram"""
+    """Undo action for pasting shape(s) into the diagram"""
 
     def __init__(
         self, dialog_handler, clipboard_data_list, parent_tree_item, pasted_shapes
@@ -1724,7 +1628,12 @@ class BatchPasteShapeUndoAction(unohelper.Base, XUndoAction):
         self.clipboard_data_list = clipboard_data_list
         self.parent_tree_item = parent_tree_item
         self.pasted_shapes = list(pasted_shapes) if pasted_shapes else []
-        self.Title = f"Paste {len(self.pasted_shapes)} Shape(s)"
+
+        count = len(self.pasted_shapes)
+        if count == 1:
+            self.Title = "Paste Shape"
+        else:
+            self.Title = f"Paste {count} Shape(s)"
 
     def undo(self):
         """Undo the paste by removing all pasted shapes and their subtrees"""
@@ -1754,7 +1663,7 @@ class BatchPasteShapeUndoAction(unohelper.Base, XUndoAction):
             self.dialog_handler.refresh_tree()
             controller.add_selection_listener()
         except Exception as e:
-            print(f"Error during undo batch paste: {e}")
+            print(f"Error during undo paste shape: {e}")
 
     def _remove_subtree(self, diagram, controller, tree_item):
         """Recursively remove a tree item and all its descendants (depth-first)"""
@@ -1810,7 +1719,7 @@ class BatchPasteShapeUndoAction(unohelper.Base, XUndoAction):
 
             controller.add_selection_listener()
         except Exception as e:
-            print(f"Error during redo batch paste: {e}")
+            print(f"Error during redo paste shape: {e}")
 
     def disposing(self, event):
         """Handle disposing event"""
