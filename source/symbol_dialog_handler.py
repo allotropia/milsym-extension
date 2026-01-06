@@ -912,6 +912,7 @@ class SearchTextboxKeyListener(unohelper.Base, XKeyListener):
         self.tree_model.setPropertyValue("ShowsHandles", False)
         self.tree_model.setPropertyValue("ShowsRootHandles", False)
         self.tree_model.setPropertyValue("Editable", False)
+        self.tree_model.setPropertyValue("RowHeight", 30)
 
     def ensure_search_index(self):
         if SearchTextboxKeyListener.cached_prefix_index is None:
@@ -924,14 +925,15 @@ class SearchTextboxKeyListener(unohelper.Base, XKeyListener):
         TOKEN_SPLIT = re.compile(r'[ /-]+').split
         translate = self.dialog_handler.translator.translate
 
-        for data in symbols_data.SYMBOL_DETAILS.values():
+        for category_name, data in symbols_data.SYMBOL_DETAILS.items():
             for icon in data.get("MainIcon", []):
                 raw = icon.get("label", "")
                 label = translate(raw)
+                img = icon.get("img", "")
                 main_part = label.split(" - ", 1)[0].lower()
                 for token in TOKEN_SPLIT(main_part):
                     if token:
-                        index[token].add(label)
+                        index[token].add((label, img, category_name))
 
         return index
 
@@ -993,50 +995,50 @@ class SearchTextboxKeyListener(unohelper.Base, XKeyListener):
 
         matches = set()
         first_word = words[0]
-        for token, labels in self.index.items():
+
+        for token, symbol_tuples in self.index.items():
             if token.startswith(first_word):
-                matches |= labels
+                matches |= symbol_tuples
 
         if not matches:
             return []
 
         for i, word in enumerate(words[1:], start=1):
             tmp_matches = set()
-            for label in matches:
+            for label, img, category in matches:
                 parts = label.lower().split()
                 for start in range(len(parts)):
                     if parts[start].startswith(first_word):
                         pos = start + i
                         if pos < len(parts) and parts[pos].startswith(word):
-                            tmp_matches.add(label)
+                            tmp_matches.add((label, img, category))
                         break
-
             matches = tmp_matches
             if not matches:
                 return []
 
         return list(matches)
 
-    def rebuild_tree(self, labels):
+    def rebuild_tree(self, items):
         mutable_tree_data_model = self.ctx.getServiceManager().createInstanceWithContext(
             "com.sun.star.awt.tree.MutableTreeDataModel", self.ctx)
 
         root_node = mutable_tree_data_model.createNode("root_node", False)
         mutable_tree_data_model.setRoot(root_node)
 
-        BASE_ICON_URL = "vnd.sun.star.extension://com.collabora.milsymbol/img/preview/symbols"
-        DEFAULT_ICON = "sample.png"
+        BASE_ICON_URL = "vnd.sun.star.extension://com.collabora.milsymbol/img/preview"
 
-        for idx, label in enumerate(labels):
+        for idx, (label, img, category) in enumerate(items):
             node = mutable_tree_data_model.createNode(label, False)
             node.DataValue = idx
-            icon_url = f"{BASE_ICON_URL}/{DEFAULT_ICON}"
+            category = category.replace(" - ", "_").replace(" ", "_").lower()
+            icon_url = f"{BASE_ICON_URL}/{category}/main_icon/{img}"
             node.setCollapsedGraphicURL(icon_url)
             root_node.appendChild(node)
 
         self.tree_model.setPropertyValue("DataModel", mutable_tree_data_model)
 
-        self.tree_model.Height = min(root_node.getChildCount() * 9, 90)
+        self.tree_model.Height = min(root_node.getChildCount() * 14, 120)
 
         self.dialog_handler.active_tree_ctrl = self.treeSearch_ctrl
 
