@@ -382,10 +382,15 @@ class OrgChart(OrganizationChart):
             attribute_hash[name] = user_attrs
         shape.setPropertyValue("UserDefinedAttributes", attribute_hash)
 
-    def add_shape(self):
-        """Add new shape to diagram"""
+    def add_shape(self, x_selected_shape=None):
+        """Add new shape to diagram
+
+        Args:
+            x_selected_shape: Optional shape to use as parent. If None, uses current selection.
+        """
         if self._diagram_tree is not None:
-            x_selected_shape = self.get_controller().get_selected_shape()
+            if x_selected_shape is None:
+                x_selected_shape = self.get_controller().get_selected_shape()
 
             if x_selected_shape is not None:
                 # Get shape name (in real implementation, would use UNO API)

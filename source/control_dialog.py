@@ -1415,8 +1415,9 @@ class ControlDlgHandler(
                 return None
 
             # Look for the last (newest) child
-            if parent_tree_item.get_first_child():
-                child_item = parent_tree_item.get_first_child()
+            first_child = parent_tree_item.get_first_child()
+            if first_child:
+                child_item = first_child
                 last_child = child_item
 
                 # Find the last sibling (most recently added)
@@ -1825,18 +1826,21 @@ class AddShapeUndoAction(unohelper.Base, XUndoAction):
                     if undo_manager:
                         undo_manager.lock()
                     try:
-                        # Select the parent shape
                         parent_shape = self.parent_tree_item.get_rectangle_shape()
-                        if parent_shape:
-                            controller.set_selected_shape(parent_shape)
 
-                        # Add the shape again
-                        controller.get_diagram().add_shape()
+                        controller.get_diagram().add_shape(parent_shape)
                         controller.get_diagram().refresh_diagram()
+
+                        # Look up the CURRENT tree item from the diagram tree
+                        current_parent_tree_item = (
+                            controller.get_diagram()
+                            .get_diagram_tree()
+                            .get_tree_item(parent_shape)
+                        )
 
                         # Store reference to newly added shape for subsequent undo
                         self.added_shape = self.dialog_handler._find_newly_added_shape(
-                            self.parent_tree_item
+                            current_parent_tree_item
                         )
                     finally:
                         if undo_manager:
