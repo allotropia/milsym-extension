@@ -84,13 +84,20 @@ class ControlDlgHandler(
                 # Get undo manager and create undo action
                 undo_manager = self._get_undo_manager()
                 parent_tree_item = self._parent_before_add
+                added_shape = None
 
-                # Add shape and get reference to newly created shape
-                self.get_controller().get_diagram().add_shape()
-                self.get_controller().get_diagram().refresh_diagram()
+                # Lock undo manager to prevent Writer from creating internal undo records
+                if undo_manager:
+                    undo_manager.lock()
+                try:
+                    self.get_controller().get_diagram().add_shape()
+                    self.get_controller().get_diagram().refresh_diagram()
 
-                # Find the newly added shape for undo tracking
-                added_shape = self._find_newly_added_shape(parent_tree_item)
+                    added_shape = self._find_newly_added_shape(parent_tree_item)
+                finally:
+                    # Always unlock the undo manager
+                    if undo_manager:
+                        undo_manager.unlock()
 
                 # Create and register undo action if we have an undo manager
                 if undo_manager and added_shape and parent_tree_item:
@@ -1774,9 +1781,17 @@ class AddShapeUndoAction(unohelper.Base, XUndoAction):
                     # Temporarily remove selection listener to avoid conflicts
                     controller.remove_selection_listener()
 
-                    # Remove the shape using the diagram's remove method
-                    controller.get_diagram().remove_shape(self.added_shape)
-                    controller.get_diagram().refresh_diagram()
+                    # Lock undo manager to prevent internal undo records during undo
+                    undo_manager = self.dialog_handler._get_undo_manager()
+                    if undo_manager:
+                        undo_manager.lock()
+                    try:
+                        # Remove the shape using the diagram's remove method
+                        controller.get_diagram().remove_shape(self.added_shape)
+                        controller.get_diagram().refresh_diagram()
+                    finally:
+                        if undo_manager:
+                            undo_manager.unlock()
 
                     # Clear reference to removed shape to prevent memory leak
                     self.added_shape = None
@@ -1805,19 +1820,27 @@ class AddShapeUndoAction(unohelper.Base, XUndoAction):
                     # Temporarily remove selection listener
                     controller.remove_selection_listener()
 
-                    # Select the parent shape
-                    parent_shape = self.parent_tree_item.get_rectangle_shape()
-                    if parent_shape:
-                        controller.set_selected_shape(parent_shape)
+                    # Lock undo manager to prevent internal undo records during redo
+                    undo_manager = self.dialog_handler._get_undo_manager()
+                    if undo_manager:
+                        undo_manager.lock()
+                    try:
+                        # Select the parent shape
+                        parent_shape = self.parent_tree_item.get_rectangle_shape()
+                        if parent_shape:
+                            controller.set_selected_shape(parent_shape)
 
-                    # Add the shape again
-                    controller.get_diagram().add_shape()
-                    controller.get_diagram().refresh_diagram()
+                        # Add the shape again
+                        controller.get_diagram().add_shape()
+                        controller.get_diagram().refresh_diagram()
 
-                    # Store reference to newly added shape for subsequent undo
-                    self.added_shape = self.dialog_handler._find_newly_added_shape(
-                        self.parent_tree_item
-                    )
+                        # Store reference to newly added shape for subsequent undo
+                        self.added_shape = self.dialog_handler._find_newly_added_shape(
+                            self.parent_tree_item
+                        )
+                    finally:
+                        if undo_manager:
+                            undo_manager.unlock()
 
                     # Refresh tree and select newly added shape
                     self.dialog_handler.refresh_tree()
