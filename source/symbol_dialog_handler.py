@@ -225,7 +225,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         listbox_control.selectItemPos(0, True)
         self.country = country_data.COUNTRY_CODES[0]["value"]
 
-    def populate_symbol_tree(self, selected_index, update_listbox = True):
+    def populate_symbol_tree(self, selected_index, update_listbox = True, update_country = True):
         self.current_symbolSet_index = selected_index
         current_symbol = self.get_current_symbol(selected_index)
 
@@ -247,9 +247,11 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         self.headTaskDummy = self.fill_tree_control(
             "treeHeadTaskDummy", "ltbHeadTaskDummy", current_symbol["HeadquartersTaskforceDummy"], update_listbox
         )
-        self.country = self.fill_tree_control(
-            "treeCountry", "ltbCountry", country_data.COUNTRY_CODES, update_listbox
-        )
+
+        if update_country:
+            self.country = self.fill_tree_control(
+                "treeCountry", "ltbCountry", country_data.COUNTRY_CODES, update_listbox
+            )
 
     def fill_tree_control(self, tree_name, listbox_name, items, update_listbox, selected_index = 0):
         root_node = None
@@ -326,7 +328,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             return
 
         self.current_symbolSet_index = selected_index
-        self.populate_symbol_tree(selected_index)
+        self.populate_symbol_tree(selected_index, True, False)
 
         self.updatePreview()
 
