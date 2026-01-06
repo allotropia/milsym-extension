@@ -255,6 +255,8 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         root_node = None
         tree_control = self.tree_ctrls[tree_name]
         tree_model = tree_control.getModel()
+        if listbox_name != "ltbCountry":
+            tree_model.setPropertyValue("RowHeight", 30)
 
         symbolset_index = self.current_symbolSet_index
         if symbolset_index not in SymbolDialogHandler.TREES_CACHE:
@@ -278,15 +280,23 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             root_node = mutable_tree_data_model.createNode("root_node", False)
             mutable_tree_data_model.setRoot(root_node)
 
-            BASE_ICON_URL = "vnd.sun.star.extension://com.collabora.milsymbol/img/preview/symbols"
             if listbox_name == "ltbCountry":
                 BASE_ICON_URL = "vnd.sun.star.extension://com.collabora.milsymbol/img/preview/countries"
+            elif listbox_name == "ltbSymbolSet":
+                BASE_ICON_URL = "vnd.sun.star.extension://com.collabora.milsymbol/img/preview/symbol_set"
+            else:
+                category = self.tree_category_name.replace(" - ", "_").replace(" ", "_").lower()
+                sub_category = re.sub(r'(?<!^)(?=[A-Z])', '_', tree_name[4:]).lower()
+                BASE_ICON_URL = f"vnd.sun.star.extension://com.collabora.milsymbol/img/preview/"f"{category}/{sub_category}"
+                
+            print("BASE URL: ", BASE_ICON_URL)
             DEFAULT_ICON = "sample"
             for idx, item in enumerate(items):
                 img_file = item.get("img") or DEFAULT_ICON
                 if listbox_name == "ltbCountry":
-                    img_file = item.get("value")
-                icon_url = f"{BASE_ICON_URL}/{img_file}.png"
+                    img_file = item.get("value") + ".png"
+                icon_url = f"{BASE_ICON_URL}/{img_file}"
+                print("icon_url: ", icon_url)
 
                 label = self.translator.translate(item["label"])
                 node = mutable_tree_data_model.createNode(label, False)
