@@ -288,15 +288,12 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
                 category = self.tree_category_name.replace(" - ", "_").replace(" ", "_").lower()
                 sub_category = re.sub(r'(?<!^)(?=[A-Z])', '_', tree_name[4:]).lower()
                 BASE_ICON_URL = f"vnd.sun.star.extension://com.collabora.milsymbol/img/preview/"f"{category}/{sub_category}"
-                
-            print("BASE URL: ", BASE_ICON_URL)
-            DEFAULT_ICON = "sample"
+
             for idx, item in enumerate(items):
-                img_file = item.get("img") or DEFAULT_ICON
+                img_file = item.get("img")
                 if listbox_name == "ltbCountry":
                     img_file = item.get("value") + ".png"
                 icon_url = f"{BASE_ICON_URL}/{img_file}"
-                print("icon_url: ", icon_url)
 
                 label = self.translator.translate(item["label"])
                 node = mutable_tree_data_model.createNode(label, False)
@@ -343,36 +340,39 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
         self.updatePreview()
 
-    def handle_search_tree_node_click(self, node_name):
+    def handle_search_tree_node_click(self, node_name, category):
         tbSearch_ctrl = self.dialog.getControl("tbSearch")
         tbSearch_ctrl.Text = self.translator.translate(node_name)
 
-        for symbolSet_index, groups in enumerate(symbols_data.SYMBOL_DETAILS.values()):
-            labels = groups.get("MainIcon", [])
+        groups = symbols_data.SYMBOL_DETAILS.get(category, {})
+        labels = groups.get("MainIcon", [])
 
-            mainIcon_index = next(
-                (
-                    index
-                    for index, item in enumerate(labels)
-                    if isinstance(item, dict)
-                    and self.translator.translate(item.get("label")) == node_name
-                ),
-                None
-            )
-            if mainIcon_index is not None:
-                self.populate_symbol_tree(symbolSet_index)
+        mainIcon_index = next(
+            (
+                index
+                for index, item in enumerate(labels)
+                if isinstance(item, dict)
+                and self.translator.translate(item.get("label")) == node_name
+            ),
+            None
+        )
 
-                treeMainIcon_ctrl = self.tree_ctrls["treeMainIcon"]
-                self.update_tree_value_by_index(treeMainIcon_ctrl, mainIcon_index)
+        if mainIcon_index is not None:
+            keys = list(symbols_data.SYMBOL_DETAILS.keys())
+            symbolSet_index = keys.index(category)
 
-                root_node = treeMainIcon_ctrl.getModel().DataModel.getRoot()
-                mainIcon_node= root_node.getChildAt(mainIcon_index)
-                treeMainIcon_ctrl.select(mainIcon_node)
+            self.populate_symbol_tree(symbolSet_index)
 
-                ltbMainIcon_ctrl = self.dialog.getControl("ltbMainIcon")
-                ltbMainIcon_ctrl.addItems([node_name], 0)
-                ltbMainIcon_ctrl.selectItemPos(0, True)
-                break
+            treeMainIcon_ctrl = self.tree_ctrls["treeMainIcon"]
+            self.update_tree_value_by_index(treeMainIcon_ctrl, mainIcon_index)
+
+            root_node = treeMainIcon_ctrl.getModel().DataModel.getRoot()
+            mainIcon_node= root_node.getChildAt(mainIcon_index)
+            treeMainIcon_ctrl.select(mainIcon_node)
+
+            ltbMainIcon_ctrl = self.dialog.getControl("ltbMainIcon")
+            ltbMainIcon_ctrl.addItems([node_name], 0)
+            ltbMainIcon_ctrl.selectItemPos(0, True)
 
     def apply_tree_selection(self, node, tree_ctrl, listbox_ctrl):
         tree_ctrl.setVisible(False)
@@ -882,7 +882,8 @@ class SearchTreeMouseListener(unohelper.Base, XMouseListener):
             return
 
         node_name = self.pressed_node.getDisplayValue()
-        self.dialog_handler.handle_search_tree_node_click(node_name)
+        category = self.pressed_node.DataValue[1]
+        self.dialog_handler.handle_search_tree_node_click(node_name, category)
         self.tbSearch_ctrl.Text = node_name
 
         event.Source.setVisible(False)
@@ -948,7 +949,8 @@ class SearchTextboxKeyListener(unohelper.Base, XKeyListener):
                 return
             self.treeSearch_ctrl.getPeer().setFocus()
             node_name = node.getDisplayValue()
-            self.dialog_handler.handle_search_tree_node_click(node_name)
+            category = node.DataValue[1]
+            self.dialog_handler.handle_search_tree_node_click(node_name, category)
 
             self.treeSearch_ctrl.setVisible(False)
 
@@ -974,7 +976,7 @@ class SearchTextboxKeyListener(unohelper.Base, XKeyListener):
             self.treeSearch_ctrl.select(selection)
             return
 
-        idx = selection.DataValue
+        idx = selection.DataValue[0]
 
         if event.KeyCode == DOWN and idx + 1 < root.getChildCount():
             node = root.getChildAt(idx + 1)
@@ -1030,7 +1032,7 @@ class SearchTextboxKeyListener(unohelper.Base, XKeyListener):
 
         for idx, (label, img, category) in enumerate(items):
             node = mutable_tree_data_model.createNode(label, False)
-            node.DataValue = idx
+            node.DataValue = (idx, category)
             category = category.replace(" - ", "_").replace(" ", "_").lower()
             icon_url = f"{BASE_ICON_URL}/{category}/main_icon/{img}"
             node.setCollapsedGraphicURL(icon_url)
