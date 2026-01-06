@@ -780,6 +780,11 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
              if item["value"] == self.headTaskDummy), None)
         self.set_selected_shapes_tree_item(dialog, headTaskDummy_item, "treeHeadTaskDummy", "ltbHeadTaskDummy")
 
+        country_item = next(
+            (item for item in country_data.COUNTRY_CODES
+             if item["value"] == self.country), None)
+        self.set_selected_shapes_tree_item(dialog, country_item, "treeCountry", "ltbCountry")
+
     def set_selected_shapes_tree_item(self, dialog, item, tree, listbox):
         if not item:
             return
@@ -856,6 +861,8 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
                 tree_attrs["firstIcon"] = value[20] + value[16:18]
                 tree_attrs["secondIcon"] = value[21] + value[18:20]
                 # others value[23:]
+            elif element == "MilSymCountry":
+                tree_attrs["country"] = value
             else:
                 attrs[element] = value
 
