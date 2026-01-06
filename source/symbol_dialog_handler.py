@@ -853,9 +853,9 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
                 tree_attrs["headTaskDummy"] = value[7]
                 tree_attrs["echelonMobility"] = value[8:10]
                 tree_attrs["mainIcon"] = value[10:16]
-                tree_attrs["firstIcon"] = value[16:18]
-                tree_attrs["secondIcon"] = value[18:20]
-                # others value[20:]
+                tree_attrs["firstIcon"] = value[20] + value[16:18]
+                tree_attrs["secondIcon"] = value[21] + value[18:20]
+                # others value[23:]
             else:
                 attrs[element] = value
 
