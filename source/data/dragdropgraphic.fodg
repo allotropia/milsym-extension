@@ -415,7 +415,7 @@
     <office:automatic-styles>
         <style:style style:name="dp1" style:family="drawing-page"/>
         <style:style style:name="gr1" style:family="graphic" style:list-style-name="L2">
-            <style:graphic-properties MilSymCode="130310000000000000000000000000" MilSymSize="150" MilSymStack="0" MilSymReinforced="" MilSymSignature="" MilSymEngagementType="TARGET" MilSymColorMode="Light" draw:stroke="none" svg:stroke-width="0cm" svg:stroke-color="#3465a4" draw:marker-start="" draw:marker-start-width="0.2cm" draw:marker-start-center="false" draw:marker-end="" draw:marker-end-width="0.2cm" draw:marker-end-center="false" draw:fill="none" draw:fill-color="#729fcf" draw:textarea-horizontal-align="center" draw:textarea-vertical-align="middle" fo:padding-top="0.125cm" fo:padding-bottom="0.125cm" fo:padding-left="0.25cm" fo:padding-right="0.25cm" fo:wrap-option="wrap" draw:shadow="hidden" draw:shadow-offset-x="0.2cm" draw:shadow-offset-y="0.2cm" draw:shadow-color="#808080" draw:color-mode="standard" draw:luminance="0%" draw:contrast="0%" draw:gamma="100%" draw:red="0%" draw:green="0%" draw:blue="0%" fo:clip="rect(0cm, 0cm, 0cm, 0cm)" draw:image-opacity="100%" style:mirror="none" loext:decorative="false"/>
+            <style:graphic-properties draw:stroke="none" svg:stroke-width="0cm" svg:stroke-color="#3465a4" draw:marker-start="" draw:marker-start-width="0.2cm" draw:marker-start-center="false" draw:marker-end="" draw:marker-end-width="0.2cm" draw:marker-end-center="false" draw:fill="none" draw:fill-color="#729fcf" draw:textarea-horizontal-align="center" draw:textarea-vertical-align="middle" fo:padding-top="0.125cm" fo:padding-bottom="0.125cm" fo:padding-left="0.25cm" fo:padding-right="0.25cm" fo:wrap-option="wrap" draw:shadow="hidden" draw:shadow-offset-x="0.2cm" draw:shadow-offset-y="0.2cm" draw:shadow-color="#808080" draw:color-mode="standard" draw:luminance="0%" draw:contrast="0%" draw:gamma="100%" draw:red="0%" draw:green="0%" draw:blue="0%" fo:clip="rect(0cm, 0cm, 0cm, 0cm)" draw:image-opacity="100%" style:mirror="none" loext:decorative="false"/>
         </style:style>
         <style:style style:name="P1" style:family="paragraph">
             <loext:graphic-properties draw:fill="none" draw:fill-color="#729fcf"/>
@@ -510,7 +510,7 @@
     <office:body>
         <office:drawing>
             <draw:page draw:name="page0" draw:style-name="dp1">
-                <draw:frame draw:name="Symbol (130310000000000000000000000000)" draw:style-name="gr1" draw:text-style-name="P1" draw:layer="layout" svg:width="SVG_WIDTH_CM" svg:height="SVG_HEIGHT_CM" svg:x="0cm" svg:y="0cm">
+                <draw:frame draw:name="SYMBOL_NAME" draw:style-name="gr1" draw:text-style-name="P1" draw:layer="layout" svg:width="SVG_WIDTH_CM" svg:height="SVG_HEIGHT_CM" svg:x="0cm" svg:y="0cm">
                     <draw:image draw:mime-type="image/svg+xml">
                         <office:binary-data>SVG_BASE_64_ENCODED</office:binary-data>
                         <text:p/>

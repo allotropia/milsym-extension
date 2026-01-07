@@ -661,6 +661,31 @@ class SymbolTransferable(unohelper.Base, XTransferable):
             data_string = data_string.replace('SVG_BASE_64_ENCODED', svg_base64)
             data_string = data_string.replace('SVG_WIDTH_CM', str(width_cm)+'cm')
             data_string = data_string.replace('SVG_HEIGHT_CM', str(height_cm)+'cm')
+            data_string = data_string.replace('SYMBOL_NAME', self.node.getDisplayValue())
+
+            style_start = data_string.find('<style:style style:name="gr1"')
+            style_end = data_string.find('</style:style>', style_start)
+
+            props_start = data_string.find('<style:graphic-properties', style_start, style_end)
+            props_end = data_string.find('/>', props_start)
+            props_tag = data_string[props_start:props_end]
+
+            milsym_values = {}
+            for item in self.node.DataValue[1:]:
+                milsym_values[item.Name] = str(item.Value)
+
+            attrs = []
+            attrs.append(f'MilSymCode="{self.node.DataValue[0]}"')
+            for name, value in milsym_values.items():
+                attrs.append(f'MilSym{name[0].upper() + name[1:]}="{value}"')
+
+            new_props_tag = props_tag + ' ' + ' '.join(attrs) + '/>'
+
+            data_string = (
+                data_string[:props_start] +
+                new_props_tag +
+                data_string[props_end+2:]
+            )
 
             data_bytes = data_string.encode('utf-8')
             return uno.ByteSequence(data_bytes)
