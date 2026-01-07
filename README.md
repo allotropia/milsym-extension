@@ -4,8 +4,6 @@ Extension to generate military symbols in LibreOffice.
 
 Uses the [milsymbol](https://github.com/spatialillusions/milsymbol/) library.
 
-Uses the [flagpack](https://github.com/jackiboy/flagpack) SVGs for country flags.
-
 ## Building
 
 Build the extension with:
