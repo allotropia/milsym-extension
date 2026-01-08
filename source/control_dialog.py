@@ -144,6 +144,31 @@ class ControlDlgHandler(
             if self.tree_control is not None:
                 self.tree_control.setFocus()
             return True
+        elif methodName == "OnDragOrbatChange":
+            if self.is_drag_orbat_enabled():
+                # Leave the currently active group if any
+                diagram = self.get_controller().get_diagram()
+                current_group_shape = diagram.get_group_shape() if diagram else None
+                if current_group_shape:
+                    current_group_shape.leaveGroup()
+                    # Select the group shape that we just left
+                    self.get_controller().set_selected_shape(current_group_shape)
+            else:
+                # Re-enter the group if a group shape is selected
+                selected_shape = self.get_controller().get_selected_shape()
+                if selected_shape and selected_shape.supportsService("com.sun.star.drawing.GroupShape"):
+                    selected_shape.enterGroup()
+                    # Also ensure the currently selected items in the tree are selected in the document
+                    selected_tree_items = self._get_selected_tree_items()
+                    shapes_to_select = []
+                    for tree_item in selected_tree_items:
+                        shape = tree_item.get_rectangle_shape()
+                        if shape:
+                            shapes_to_select.append(shape)
+                    if shapes_to_select:
+                        self._select_shapes_in_document(shapes_to_select)
+
+            return True
         else:
             return False
 
@@ -185,6 +210,14 @@ class ControlDlgHandler(
     def get_controller(self):
         """Get controller reference"""
         return self.dialog.get_controller()
+
+    def get_drag_orbat_checkbox(self):
+        """Get reference to the Drag Orbat checkbox"""
+        return self.get_gui()._x_control_dialog.getControl("ChkDragOrbat")
+
+    def is_drag_orbat_enabled(self):
+        """Check if the Drag Orbat checkbox is checked"""
+        return self.get_drag_orbat_checkbox().getState() == 1
 
     def paste_to_selected_item(self):
         """Paste clipboard contents to currently selected item.

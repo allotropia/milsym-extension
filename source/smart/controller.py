@@ -360,7 +360,9 @@ class Controller(unohelper.Base, XSelectionChangeListener):
 
             if selected_shape.supportsService("com.sun.star.drawing.GroupShape"):
                 try:
-                    selected_shape.enterGroup()
+                    # Enter group only if drag orbat is disabled
+                    if not self._gui._global_control_dlg_listener.is_drag_orbat_enabled():
+                        selected_shape.enterGroup()
                 except Exception:
                     print("Error entering group shape")
 
