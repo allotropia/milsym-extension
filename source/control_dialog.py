@@ -953,34 +953,6 @@ class ControlDlgHandler(
             # Try to get shape information
             shape = tree_item.get_rectangle_shape()
             if shape is not None:
-                shape_name = ""
-
-                # Try to get shape name
-                try:
-                    shape_name = shape.getName()
-                except:
-                    pass
-
-                # Try to get shape text/string content
-                shape_text = ""
-                try:
-                    shape_text = shape.getString()
-                except:
-                    try:
-                        text_obj = shape.getText()
-                        if text_obj:
-                            shape_text = text_obj.getString()
-                    except:
-                        pass
-
-                # Try to get level information
-                level_info = ""
-                try:
-                    level = tree_item.get_level()
-                    level_info = f" L{level}"
-                except:
-                    pass
-
                 # Try to get MilSym information
                 milsym_code = ""
                 attributes = extractGraphicAttributes(shape)
@@ -998,16 +970,11 @@ class ControlDlgHandler(
 
                 # Build display name
                 if milsym_code.strip() and milsym_hier.strip():
-                    return f"Unit {milsym_hier} {shape_text.strip()} - (code {milsym_code}, level {level_info})"
-                elif shape_text and shape_text.strip():
-                    return f"Unit ({milsym_code}) - {shape_text.strip()}({level_info})"
-                elif shape_name and shape_name.strip():
-                    if milsym_code.strip():
-                        return f"Unit ({milsym_code}): {shape_name}({level_info})"
-                    else:
-                        return f"Placeholder unit: {shape_name} (level: {level_info})"
+                    return f"Unit {milsym_hier} ({milsym_code})"
+                elif milsym_code.strip():
+                    return f"Unit ({milsym_code})"
                 else:
-                    return f"Code {milsym_code} - item {item_number} {level_info}"
+                    return "Placeholder unit"
 
             return f"Unit {item_number}"
 
