@@ -370,9 +370,9 @@ class Controller(unohelper.Base, XSelectionChangeListener):
             if self.is_smart_diagram_shape(selected_shape_name):
                 new_diagram_name = selected_shape_name.split("-", 1)[0]
 
-                if Gui._global_listener is not None:
+                if Gui._global_control_dlg_listener is not None:
                     try:
-                        global_controller = Gui._global_listener.get_controller()
+                        global_controller = Gui._global_control_dlg_listener.get_controller()
                         if global_controller != self:
                             self._last_diagram_name = ""
                     except Exception:

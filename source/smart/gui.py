@@ -23,7 +23,7 @@ from com.sun.star.awt.WindowClass import MODALTOP
 class Gui:
     # Class-level variables to ensure only one dialog exists globally
     _global_control_dialog = None
-    _global_listener = None
+    _global_control_dlg_listener = None
     def __init__(self, controller, x_context, x_frame):
         """Initialize GUI"""
         self._controller = controller
@@ -31,7 +31,7 @@ class Gui:
         self._x_frame = x_frame
         self._x_control_dialog = None
         self._is_visible_control_dialog = False
-        self._o_listener = None
+        self._control_dlg_listener = None
 
     def get_controller(self):
         """Get controller reference"""
@@ -50,9 +50,9 @@ class Gui:
 
         # Check if we need to recreate dialog for a different diagram
         need_new_dialog = False
-        if Gui._global_listener is not None:
+        if Gui._global_control_dlg_listener is not None:
             try:
-                global_controller = Gui._global_listener.get_controller()
+                global_controller = Gui._global_control_dlg_listener.get_controller()
                 if global_controller != self.get_controller():
                     need_new_dialog = True  # Different document, need new dialog
             except Exception:
@@ -72,7 +72,7 @@ class Gui:
 
         # Sync instance reference from global
         self._x_control_dialog = Gui._global_control_dialog
-        self._o_listener = Gui._global_listener
+        self._control_dlg_listener = Gui._global_control_dlg_listener
 
         if self._x_control_dialog is not None:
             if visible:
@@ -80,8 +80,8 @@ class Gui:
                 self._is_visible_control_dialog = True
                 self._x_control_dialog.setFocus()
                 # Refresh tree when dialog becomes visible
-                if self._o_listener:
-                    self._o_listener.refresh_tree()
+                if self._control_dlg_listener:
+                    self._control_dlg_listener.refresh_tree()
             else:
                 self._x_control_dialog.setVisible(False)
                 self._is_visible_control_dialog = False
@@ -111,26 +111,26 @@ class Gui:
 
                 # Store in both global and instance variables
                 Gui._global_control_dialog = new_dialog
-                Gui._global_listener = new_listener
+                Gui._global_control_dlg_listener = new_listener
                 self._x_control_dialog = new_dialog
-                self._o_listener = new_listener
+                self._control_dlg_listener = new_listener
 
         except Exception as ex:
             print(f"Error creating control dialog: {ex}")
             # Reset state on error to allow retry
             Gui._global_control_dialog = None
-            Gui._global_listener = None
+            Gui._global_control_dlg_listener = None
             self._x_control_dialog = None
-            self._o_listener = None
+            self._control_dlg_listener = None
 
     def _dispose_global_dialog(self):
         """Helper method to dispose the global dialog"""
         if Gui._global_control_dialog is not None:
             try:
-                if Gui._global_listener is not None:
-                    if hasattr(Gui._global_listener, 'cleanup'):
-                        Gui._global_listener.cleanup()
-                    Gui._global_control_dialog.removeTopWindowListener(Gui._global_listener)
+                if Gui._global_control_dlg_listener is not None:
+                    if hasattr(Gui._global_control_dlg_listener, 'cleanup'):
+                        Gui._global_control_dlg_listener.cleanup()
+                    Gui._global_control_dialog.removeTopWindowListener(Gui._global_control_dlg_listener)
                 Gui._global_control_dialog.setVisible(False)
 
                 # Dispose through XComponent interface
@@ -143,13 +143,13 @@ class Gui:
                 print(f"Error disposing global dialog: {ex}")
             finally:
                 Gui._global_control_dialog = None
-                Gui._global_listener = None
+                Gui._global_control_dlg_listener = None
 
     def close_and_dispose_control_dialog(self):
         """Close and dispose control dialog"""
         # Clear all references to prevent recreation during disposal
         self._x_control_dialog = None
-        self._o_listener = None
+        self._control_dlg_listener = None
         self._is_visible_control_dialog = False
 
         # Dispose the global dialog
