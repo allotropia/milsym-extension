@@ -423,7 +423,7 @@ class Diagram(ABC):
     def add_group_shape_to_draw_page(self):
         if self._x_model.supportsService("com.sun.star.text.TextDocument"): # Writer
             self._x_group_shape.setPropertyValue("AnchorType", AT_PARAGRAPH)
-            cursor = self._x_controller.getViewCursor()
+            cursor = self._x_model.getText().createTextCursor()
             cursor.getText().insertTextContent(cursor, self._x_group_shape, False)
         elif self._x_model.supportsService("com.sun.star.sheet.SpreadsheetDocument"): # Calc
             self._x_draw_page.getDrawPage().add(self._x_group_shape)
