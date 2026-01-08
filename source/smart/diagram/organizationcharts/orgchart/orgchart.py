@@ -77,9 +77,6 @@ class OrgChart(OrganizationChart):
                 self.set_control_shape_props(x_base_shape)
                 self.set_color_mode_and_style_of_control_shape(x_base_shape)
 
-                OrgChartTree.LAST_HOR_LEVEL = 10000
-                self.set_hor_level_of_control_shape(x_base_shape, 10000)
-
                 # Create start shape
                 x_start_shape = self.create_shape(
                     Diagram.DIAGRAM_SHAPE_TYPE, 1,
@@ -181,8 +178,6 @@ class OrgChart(OrganizationChart):
                         self._diagram_tree.get_root_item().get_rectangle_shape()
                     )
 
-                OrgChartTree.LAST_HOR_LEVEL = last_hor_level
-                self.set_hor_level_of_control_shape(x_base_shape, last_hor_level)
                 self.refresh_diagram()
 
     def _create_diagram_with_count(self, n: int):
@@ -199,9 +194,6 @@ class OrgChart(OrganizationChart):
             self._x_shapes.add(x_base_shape)
             self.set_control_shape_props(x_base_shape)
             self.set_color_mode_and_style_of_control_shape(x_base_shape)
-
-            OrgChartTree.LAST_HOR_LEVEL = 1
-            self.set_hor_level_of_control_shape(x_base_shape, 1)
 
             # Use fixed dimensions - don't scale shapes to fit available space
             if n > 1:
@@ -271,17 +263,6 @@ class OrgChart(OrganizationChart):
             self._diagram_tree = OrgChartTree(self)
 
         self._diagram_tree.set_lists()
-
-        if OrgChartTree.LAST_HOR_LEVEL == -1:
-            OrgChartTree.LAST_HOR_LEVEL = self.get_hor_level_of_control_shape(
-                self._diagram_tree.get_control_shape()
-            )
-        else:
-            self.set_hor_level_of_control_shape(
-                self._diagram_tree.get_control_shape(),
-                OrgChartTree.LAST_HOR_LEVEL
-            )
-
         self._diagram_tree.set_tree()
 
     def paste_subtree(self, target_tree_item, clipboard_item, script=None):

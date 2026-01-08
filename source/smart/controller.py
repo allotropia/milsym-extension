@@ -389,7 +389,6 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                     if selected_shape_name.startswith("OrganizationDiagram"):
                         self.set_group_type(self.ORGANIGROUP)
                         self.set_diagram_type(self.ORGANIGRAM)
-                        OrgChartTree.LAST_HOR_LEVEL = -1
 
                     self.instantiate_diagram()
                     self._last_diagram_name = new_diagram_name

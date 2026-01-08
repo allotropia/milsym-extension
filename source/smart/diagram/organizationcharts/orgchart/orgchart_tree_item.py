@@ -81,7 +81,7 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
 
     def init_tree_items(self):
         """Initialize tree items recursively"""
-        last_hor_level = getattr(self._diagram_tree, 'LAST_HOR_LEVEL', 2)
+        last_hor_level = self._diagram_tree.LAST_HOR_LEVEL
 
         x_first_child_shape = self.get_diagram_tree().get_first_child_shape(self._x_rectangle_shape)
         if x_first_child_shape is not None:
@@ -129,7 +129,7 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
 
     def set_positions_of_items(self):
         """Set positions of items recursively"""
-        last_hor_level = getattr(self._diagram_tree, 'LAST_HOR_LEVEL', 2)
+        last_hor_level = self._diagram_tree.LAST_HOR_LEVEL
 
         if self._first_child is not None:
             first_child_level = self._level + 1
@@ -186,7 +186,7 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
 
     def set_max_pos_of_branch(self):
         """Set max position of branch"""
-        last_hor_level = getattr(self._diagram_tree, 'LAST_HOR_LEVEL', 2)
+        last_hor_level = self._diagram_tree.LAST_HOR_LEVEL
 
         # Copy max positions to branch positions
         OrgChartTreeItem._max_branch_positions = OrgChartTreeItem._max_positions.copy()
@@ -227,7 +227,7 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
     def set_pos_of_rect(self):
         """Set position of rectangle"""
         x_coord = OrgChartTreeItem._group_pos_x + int((OrgChartTreeItem._shape_width + OrgChartTreeItem._hor_space) * self.get_pos())
-        last_hor_level = getattr(self._diagram_tree, 'LAST_HOR_LEVEL', 1)
+        last_hor_level = self._diagram_tree.LAST_HOR_LEVEL
 
         # Use smaller vertical spacing for levels beyond horizontal threshold (vertical stacking)
         if self._level > last_hor_level:

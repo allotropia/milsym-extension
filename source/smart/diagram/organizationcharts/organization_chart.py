@@ -173,34 +173,6 @@ class OrganizationChart(Diagram):
         except Exception:
             return ""
 
-    def set_hor_level_of_control_shape(self, control_shape, level: int):
-        """Set horizontal level of control shape"""
-        if control_shape is not None:
-            text = control_shape.getString()
-            if text == "" or ":" not in text:
-                control_shape.setString(f"LastHorLevel:{level}")
-            else:
-                is_already_defined = False
-                a_str = text.split(":")
-                for i in range(len(a_str) - 1):
-                    if a_str[i] == "LastHorLevel":
-                        a_str[i + 1] = str(level)
-                        is_already_defined = True
-
-                if is_already_defined:
-                    text = ""
-                    for i in range(len(a_str)):
-                        text += a_str[i]
-                        if i < len(a_str) - 1:
-                            text += ":"
-                else:
-                    text += f":LastHorLevel:{level}"
-
-                control_shape.setString(text)
-            control_shape.MoveProtect = True
-            control_shape.SizeProtect = True
-            control_shape.Visible = False
-
     def get_hor_level_of_control_shape(self, control_shape) -> int:
         """Get horizontal level of control shape"""
         if control_shape is not None:

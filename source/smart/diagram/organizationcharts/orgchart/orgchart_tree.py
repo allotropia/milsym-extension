@@ -41,7 +41,6 @@ class OrgChartTree(OrganizationChartTree):
             # Constructor with existing diagram tree
             super().__init__(organigram, control_shape_or_tree)
             OrgChartTreeItem.init_static_members()
-            self.get_org_chart().set_hor_level_of_control_shape(self.get_control_shape(), OrgChartTree.LAST_HOR_LEVEL)
             self._root_item = OrgChartTreeItem(self, None, control_shape_or_tree.get_root_item())
             self._root_item.set_level(0)
             self._root_item.set_pos(0.0)
@@ -49,11 +48,6 @@ class OrgChartTree(OrganizationChartTree):
         else:
             # Basic constructor
             super().__init__(organigram)
-
-    def set_last_hor_level(self, level: int):
-        """Set last horizontal level"""
-        OrgChartTree.LAST_HOR_LEVEL = level
-        self.get_org_chart().set_hor_level_of_control_shape(self._x_control_shape, level)
 
     def init_tree_items(self):
         """Initialize tree items"""
