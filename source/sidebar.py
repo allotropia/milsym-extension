@@ -618,7 +618,11 @@ class TreeDragDropHandler(unohelper.Base, XDragGestureListener, XDragSourceListe
 
     def dragDropEnd(self, event):
         """Drag operation ended"""
-        pass
+        # Force exiting the drag state by clearing and restoring the selection:
+        selection = self.tree_control.getSelection()
+        self.tree_control.clearSelection()
+        if selection:
+            self.tree_control.select(selection)
 
     def dropActionChanged(self, event):
         pass
