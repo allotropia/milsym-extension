@@ -624,6 +624,29 @@ class TreeDragDropHandler(unohelper.Base, XDragGestureListener, XDragSourceListe
         if selection:
             self.tree_control.select(selection)
 
+        # Focus the document window and select the dropped shape
+        try:
+            model = self.sidebar_panel.desktop.getCurrentComponent()
+            if model:
+                controller = model.getCurrentController()
+                if controller:
+                    # For Writer documents, select the last shape
+                    if model.supportsService("com.sun.star.text.TextDocument"):
+                        draw_page = model.getDrawPage()
+                        if draw_page and draw_page.getCount() > 0:
+                            last_shape = draw_page.getByIndex(draw_page.getCount() - 1)
+                            controller.select(last_shape)
+
+                    # Focus the document window
+                    frame = controller.getFrame()
+                    if frame:
+                        component_window = frame.getComponentWindow()
+                        if component_window:
+                            component_window.setFocus()
+        except Exception as e:
+            print(f"Error focusing document after drop: {e}")
+
+
     def dropActionChanged(self, event):
         pass
 
