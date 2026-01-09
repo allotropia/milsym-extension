@@ -526,11 +526,21 @@ class ControlDlgHandler(
 
             # Collect data for undo before removal
             undo_manager = self._get_undo_manager()
-            removal_data = []  # List of (serialized_data, parent_tree_item, child_shapes)
+            removal_data = []  # List of (serialized_data, parent_tree_item, child_shapes, prev_sibling_shape)
 
             for tree_item in selected_items:
                 parent = tree_item.get_dad()
                 serialized = self._serialize_tree_item_only(tree_item)
+
+                # Get the previous sibling shape (to restore correct position on undo)
+                prev_sibling_shape = None
+                diagram = self.get_controller().get_diagram()
+                if diagram and diagram.get_diagram_tree():
+                    prev_sibling = diagram.get_diagram_tree().get_previous_sibling(
+                        tree_item
+                    )
+                    if prev_sibling:
+                        prev_sibling_shape = prev_sibling.get_rectangle_shape()
 
                 # Collect child shapes that will be re-parented during removal
                 child_shapes = []
@@ -542,7 +552,9 @@ class ControlDlgHandler(
                     child_item = child_item.get_first_sibling()
 
                 if serialized and parent:
-                    removal_data.append((serialized, parent, child_shapes))
+                    removal_data.append(
+                        (serialized, parent, child_shapes, prev_sibling_shape)
+                    )
 
             # Remove shapes (order: process items with deeper levels first to avoid
             # invalidating parent references)
@@ -1623,8 +1635,9 @@ class RemoveShapeUndoAction(unohelper.Base, XUndoAction):
         """
         Args:
             dialog_handler: Reference to ControlDlgHandler
-            removal_data: List of (serialized_data, parent_tree_item, child_shapes) tuples
+            removal_data: List of (serialized_data, parent_tree_item, child_shapes, prev_sibling_shape) tuples
                           child_shapes are the shapes that were re-parented to grandparent
+                          prev_sibling_shape is the previous sibling (for restoring correct position)
         """
         self.dialog_handler = dialog_handler
         self.removal_data = removal_data
@@ -1647,9 +1660,12 @@ class RemoveShapeUndoAction(unohelper.Base, XUndoAction):
             controller.remove_selection_listener()
             self._restored_shapes = []
 
-            for serialized_data, parent_tree_item, child_shapes in reversed(
-                self.removal_data
-            ):
+            for (
+                serialized_data,
+                parent_tree_item,
+                child_shapes,
+                prev_sibling_shape,
+            ) in reversed(self.removal_data):
                 # Create the removed shape (without children - they already exist)
                 success = diagram.paste_subtree(
                     parent_tree_item, serialized_data, self.dialog_handler.script
@@ -1660,6 +1676,11 @@ class RemoveShapeUndoAction(unohelper.Base, XUndoAction):
                     )
                     if restored:
                         self._restored_shapes.append(restored)
+
+                        # Move to correct sibling position if we have a previous sibling
+                        self._restore_sibling_position(
+                            diagram, restored, parent_tree_item, prev_sibling_shape
+                        )
 
                         # Re-attach children to the restored shape
                         if child_shapes:
@@ -1690,6 +1711,53 @@ class RemoveShapeUndoAction(unohelper.Base, XUndoAction):
                     diagram.move_tree_item(child_tree_item, parent_tree_item, "child")
         except Exception as e:
             print(f"Error re-attaching children: {e}")
+
+    def _restore_sibling_position(
+        self, diagram, restored_shape, parent_tree_item, prev_sibling_shape
+    ):
+        """Move the restored shape to its original sibling position.
+
+        The paste_subtree always appends the new shape as the last child.
+        This method moves it to the correct position in the sibling order.
+
+        Args:
+            diagram: The diagram object
+            restored_shape: The shape that was just restored
+            parent_tree_item: The parent tree item
+            prev_sibling_shape: The shape that was the previous sibling (or None if first child)
+        """
+        try:
+            diagram_tree = diagram.get_diagram_tree()
+            if diagram_tree is None:
+                return
+
+            restored_tree_item = diagram_tree.get_tree_item(restored_shape)
+            if restored_tree_item is None:
+                return
+
+            # If there was no previous sibling, the item should be the first child
+            if prev_sibling_shape is None:
+                first_child = parent_tree_item.get_first_child()
+                if first_child and first_child != restored_tree_item:
+                    # Remove restored_tree_item from its current position
+                    diagram._remove_item_from_tree(restored_tree_item)
+                    # Insert as first child
+                    restored_tree_item.set_dad(parent_tree_item)
+                    restored_tree_item.set_first_sibling(first_child)
+                    parent_tree_item.set_first_child(restored_tree_item)
+            else:
+                # The restored item should be after prev_sibling_shape
+                prev_sibling_tree_item = diagram_tree.get_tree_item(prev_sibling_shape)
+                if (
+                    prev_sibling_tree_item
+                    and prev_sibling_tree_item != restored_tree_item
+                ):
+                    diagram._remove_item_from_tree(restored_tree_item)
+                    diagram._insert_as_sibling_after(
+                        restored_tree_item, prev_sibling_tree_item
+                    )
+        except Exception as e:
+            print(f"Error restoring sibling position: {e}")
 
     def redo(self):
         """Redo the removal by removing the restored shapes"""
