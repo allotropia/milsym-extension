@@ -141,6 +141,25 @@ class Controller(unohelper.Base, XSelectionChangeListener):
         if self._diagram is not None:
             self._diagram = None
 
+    def dispose_diagram(self):
+        """Dispose diagram and clear all shape references before document closes.
+
+        This method should be called from queryClosing() BEFORE the document
+        actually closes to ensure all Python references to UNO shapes are
+        released before LibreOffice destroys the underlying C++ objects.
+        """
+        try:
+            # Clear all undo action references from the dialog handler
+            if self._gui is not None:
+                dialog_handler = Gui._global_control_dlg_listener
+                if dialog_handler is not None:
+                    if hasattr(dialog_handler, "clear_all_undo_action_references"):
+                        dialog_handler.clear_all_undo_action_references()
+
+            self._diagram = None
+        except Exception as e:
+            print(f"Error in dispose_diagram: {e}")
+
     def set_last_diagram_name(self, name):
         """Set last diagram name"""
         self._last_diagram_name = name

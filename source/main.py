@@ -29,6 +29,7 @@ from com.sun.star.ui.ContextMenuInterceptorAction import EXECUTE_MODIFIED
 from com.sun.star.ui.ContextMenuInterceptorAction import IGNORED
 from translator import Translator
 
+
 class DocumentCloseListener(unohelper.Base, XCloseListener):
     def __init__(self, model, frame):
         self.model = model
@@ -39,6 +40,25 @@ class DocumentCloseListener(unohelper.Base, XCloseListener):
         ControllerManager().remove_controller(self.frame)
 
     def queryClosing(self, event, getsOwnership):
+        """Clean up BEFORE document closes and shapes are destroyed.
+
+        This is critical for preventing memory leaks and crashes. We must clear
+        all Python references to UNO shapes before LibreOffice destroys the
+        underlying C++ objects.
+        """
+        try:
+            # First, clear all shape references via the controller
+            controller = ControllerManager().get_controller_for_frame(self.frame)
+            if controller is not None:
+                controller.dispose_diagram()
+
+            # Then clear the undo stack
+            if hasattr(self.model, "getUndoManager"):
+                undo_manager = self.model.getUndoManager()
+                if undo_manager is not None:
+                    undo_manager.clear()
+        except Exception as e:
+            print(f"Error in queryClosing cleanup: {e}")
         return True
 
     def disposing(self, event):
@@ -93,6 +113,7 @@ class ListenerRegistry:
 
 class ControllerManager:
     """Manages Controller instances for different frames"""
+
     _instance = None
     _controllers = {}
 
@@ -123,6 +144,10 @@ class ControllerManager:
                 print(f"Error disposing controller: {e}")
             del self._controllers[frame]
 
+    def get_controller_for_frame(self, frame):
+        """Get controller for a given frame, if one exists"""
+        return self._controllers.get(frame)
+
     def document_has_smart_diagrams(self, model):
         """Check if document contains smart diagram shapes"""
         try:
@@ -137,8 +162,9 @@ class ControllerManager:
                     draw_page = sheet.getDrawPage()
                     if self.check_shapes_for_diagrams(draw_page):
                         return True
-            elif (model.supportsService("com.sun.star.presentation.PresentationDocument") or
-                  model.supportsService("com.sun.star.drawing.DrawingDocument")):
+            elif model.supportsService(
+                "com.sun.star.presentation.PresentationDocument"
+            ) or model.supportsService("com.sun.star.drawing.DrawingDocument"):
                 draw_pages = model.getDrawPages()
                 for i in range(draw_pages.getCount()):
                     draw_page = draw_pages.getByIndex(i)
@@ -153,13 +179,14 @@ class ControllerManager:
         try:
             for i in range(draw_page.getCount()):
                 shape = draw_page.getByIndex(i)
-                if hasattr(shape, 'getName'):
+                if hasattr(shape, "getName"):
                     shape_name = shape.getName()
                     if shape_name.startswith("OrganizationDiagram"):
                         return True
         except Exception as e:
             print(f"Error checking shapes: {e}")
         return False
+
 
 class ContextMenuInterceptor(unohelper.Base, XContextMenuInterceptor):
     """Intercepts context menu to add 'Edit Military Symbol' option"""
@@ -212,6 +239,7 @@ class ContextMenuInterceptor(unohelper.Base, XContextMenuInterceptor):
         except Exception as e:
             print(f"_insert_menu_item error: {e}")
 
+
 class StartupJob(unohelper.Base, XJob, XSelectionChangeListener):
     """Job that runs on document events to initialize controllers"""
 
@@ -250,7 +278,8 @@ class StartupJob(unohelper.Base, XJob, XSelectionChangeListener):
         try:
             controller_manager = ControllerManager(self.ctx)
             desktop = self.ctx.getServiceManager().createInstanceWithContext(
-                "com.sun.star.frame.Desktop", self.ctx)
+                "com.sun.star.frame.Desktop", self.ctx
+            )
 
             # Check all open documents
             frames = desktop.getFrames()
@@ -264,11 +293,15 @@ class StartupJob(unohelper.Base, XJob, XSelectionChangeListener):
                         if not registry.has(xcontroller):
                             model = xcontroller.getModel()
                             xcontroller.addSelectionChangeListener(self)
-                            ListenerRegistry.instance().register(model, xcontroller, self)
+                            ListenerRegistry.instance().register(
+                                model, xcontroller, self
+                            )
                             model.addCloseListener(DocumentCloseListener(model, frame))
                             interceptor = ContextMenuInterceptor(self.ctx)
                             xcontroller.registerContextMenuInterceptor(interceptor)
-                            ListenerRegistry.instance().register_interceptor(xcontroller, interceptor)
+                            ListenerRegistry.instance().register_interceptor(
+                                xcontroller, interceptor
+                            )
 
                     try:
                         controller_manager.get_or_create_controller(self.ctx, frame)
@@ -292,11 +325,13 @@ class MainJob(unohelper.Base, XJobExecutor):
         except NameError:
             self.sm = ctx.ServiceManager
             self.desktop = self.ctx.getServiceManager().createInstanceWithContext(
-                "com.sun.star.frame.Desktop", self.ctx)
+                "com.sun.star.frame.Desktop", self.ctx
+            )
 
     def trigger(self, args):
         desktop = self.ctx.ServiceManager.createInstanceWithContext(
-            "com.sun.star.frame.Desktop", self.ctx)
+            "com.sun.star.frame.Desktop", self.ctx
+        )
         self.model = desktop.getCurrentComponent()
 
         if args == "symbolDialog":
@@ -343,8 +378,12 @@ class MainJob(unohelper.Base, XJobExecutor):
                 frame = frames.getByIndex(i)
                 try:
                     model = frame.getController().getModel()
-                    if model and self.controller_manager.document_has_smart_diagrams(model):
-                        self.controller_manager.get_or_create_controller(self.ctx, frame)
+                    if model and self.controller_manager.document_has_smart_diagrams(
+                        model
+                    ):
+                        self.controller_manager.get_or_create_controller(
+                            self.ctx, frame
+                        )
                 except Exception as e:
                     print(f"Error initializing controller for frame {i}: {e}")
         except Exception as e:
@@ -375,14 +414,17 @@ g_ImplementationHelper = unohelper.ImplementationHelper()
 g_ImplementationHelper.addImplementation(
     MainJob,  # UNO object class
     "com.collabora.milsymbol.do",  # implementation name (customize for yourself)
-    ("com.sun.star.task.Job",), )  # implemented services (only 1)
+    ("com.sun.star.task.Job",),
+)  # implemented services (only 1)
 
 g_ImplementationHelper.addImplementation(
     SidebarFactory,
     "com.collabora.milsymbol.TacticalSymbolsFactory",
-    ("com.sun.star.ui.UIElementFactory",), )
+    ("com.sun.star.ui.UIElementFactory",),
+)
 
 g_ImplementationHelper.addImplementation(
     StartupJob,
     "com.collabora.milsymbol.StartupJob",
-    ("com.sun.star.task.Job",), )
+    ("com.sun.star.task.Job",),
+)

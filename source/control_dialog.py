@@ -65,6 +65,7 @@ class ControlDlgHandler(
         self._syncing_selection = False
         self._syncing_from_tree = False
         self._is_dragging = False
+        self._undo_actions = []  # Track all undo actions for cleanup on document close
         factory = self.x_context.getServiceManager().createInstanceWithContext(
             "com.sun.star.script.provider.MasterScriptProviderFactory", self.x_context
         )
@@ -106,6 +107,7 @@ class ControlDlgHandler(
                             self, added_shape, parent_tree_item
                         )
                         undo_manager.addUndoAction(undo_action)
+                        self._undo_actions.append(undo_action)
                     except Exception as e:
                         print(f"Failed to register undo action: {e}")
 
@@ -136,6 +138,7 @@ class ControlDlgHandler(
                             self, selected_shape, original_attributes, edited_attributes
                         )
                         undo_manager.addUndoAction(undo_action)
+                        self._undo_actions.append(undo_action)
                     except Exception as e:
                         print(f"Failed to register edit undo action: {e}")
 
@@ -312,6 +315,7 @@ class ControlDlgHandler(
                                 pasted_shapes,
                             )
                             undo_manager.addUndoAction(undo_action)
+                            self._undo_actions.append(undo_action)
                         except Exception as e:
                             print(f"Failed to register paste undo action: {e}")
 
@@ -573,6 +577,7 @@ class ControlDlgHandler(
                 try:
                     undo_action = RemoveShapeUndoAction(self, removal_data)
                     undo_manager.addUndoAction(undo_action)
+                    self._undo_actions.append(undo_action)
                 except Exception as e:
                     print(f"Failed to register undo action: {e}")
 
@@ -1380,6 +1385,7 @@ class ControlDlgHandler(
                             self, move_data, target_tree_item, drop_position
                         )
                         undo_manager.addUndoAction(undo_action)
+                        self._undo_actions.append(undo_action)
                     except Exception as e:
                         print(f"Failed to register drag and drop undo action: {e}")
 
@@ -1529,6 +1535,25 @@ class ControlDlgHandler(
         except Exception as e:
             print(f"Error during ControlDlgHandler cleanup: {e}")
 
+    def clear_all_undo_action_references(self):
+        """Clear all shape references from tracked undo actions.
+
+        This method is called before document close to ensure all Python
+        references to UNO shapes are released before LibreOffice destroys
+        the underlying C++ objects. This prevents SIGSEGV crashes on close.
+        """
+        try:
+            if hasattr(self, "_undo_actions") and self._undo_actions:
+                for action in self._undo_actions:
+                    if action is not None and hasattr(action, "clear_references"):
+                        try:
+                            action.clear_references()
+                        except Exception as e:
+                            print(f"Error clearing undo action references: {e}")
+                self._undo_actions.clear()
+        except Exception as e:
+            print(f"Error in clear_all_undo_action_references: {e}")
+
 
 class ClipboardItem:
     """Stores data for a copied tree item and its children"""
@@ -1620,12 +1645,20 @@ class EditShapeUndoAction(unohelper.Base, XUndoAction):
 
         return params
 
-    def disposing(self, event):
-        """Handle disposing event"""
+    def clear_references(self):
+        """Clear all shape references to prevent memory leaks during document close.
+
+        This is called explicitly before document close since disposing() is not
+        reliably called by the undo manager.
+        """
         self.dialog_handler = None
         self.shape = None
         self.original_attributes = None
         self.edited_attributes = None
+
+    def disposing(self, event):
+        """Handle disposing event"""
+        pass
 
 
 class RemoveShapeUndoAction(unohelper.Base, XUndoAction):
@@ -1783,11 +1816,30 @@ class RemoveShapeUndoAction(unohelper.Base, XUndoAction):
         except Exception as e:
             print(f"Error during redo remove shape: {e}")
 
+    def clear_references(self):
+        """Clear all shape references to prevent memory leaks during document close.
+
+        This is called explicitly before document close since disposing() is not
+        reliably called by the undo manager.
+        """
+        self.dialog_handler = None
+
+        # Clear shape references in removal_data
+        if self.removal_data:
+            for item in self.removal_data:
+                # Clear the child_shapes list (index 2) which contains shape references
+                if len(item) >= 3 and item[2] is not None:
+                    item[2].clear()
+        self.removal_data = None
+
+        # Clear restored shapes list to release shape references
+        if self._restored_shapes:
+            self._restored_shapes.clear()
+        self._restored_shapes = None
+
     def disposing(self, event):
         """Handle disposing event"""
-        self.dialog_handler = None
-        self.removal_data = None
-        self._restored_shapes = None
+        pass
 
 
 class PasteShapeUndoAction(unohelper.Base, XUndoAction):
@@ -1920,12 +1972,24 @@ class PasteShapeUndoAction(unohelper.Base, XUndoAction):
         except Exception as e:
             print(f"Error during redo paste shape: {e}")
 
-    def disposing(self, event):
-        """Handle disposing event"""
+    def clear_references(self):
+        """Clear all shape references to prevent memory leaks during document close.
+
+        This is called explicitly before document close since disposing() is not
+        reliably called by the undo manager.
+        """
         self.dialog_handler = None
         self.clipboard_data_list = None
         self.parent_tree_item = None
+
+        # Clear pasted_shapes list to release shape references
+        if self.pasted_shapes:
+            self.pasted_shapes.clear()
         self.pasted_shapes = None
+
+    def disposing(self, event):
+        """Handle disposing event"""
+        pass
 
 
 class AddShapeUndoAction(unohelper.Base, XUndoAction):
@@ -2020,11 +2084,19 @@ class AddShapeUndoAction(unohelper.Base, XUndoAction):
         except Exception as e:
             print(f"Error during redo add shape: {e}")
 
-    def disposing(self, event):
-        """Handle disposing event"""
+    def clear_references(self):
+        """Clear all shape references to prevent memory leaks during document close.
+
+        This is called explicitly before document close since disposing() is not
+        reliably called by the undo manager.
+        """
         self.dialog_handler = None
         self.added_shape = None
         self.parent_tree_item = None
+
+    def disposing(self, event):
+        """Handle disposing event"""
+        pass
 
 
 class DragDropUndoAction(unohelper.Base, XUndoAction):
@@ -2092,11 +2164,22 @@ class DragDropUndoAction(unohelper.Base, XUndoAction):
         except Exception as e:
             print(f"Error during redo drag and drop: {e}")
 
-    def disposing(self, event):
-        """Handle disposing event"""
+    def clear_references(self):
+        """Clear all shape references to prevent memory leaks during document close.
+
+        This is called explicitly before document close since disposing() is not
+        reliably called by the undo manager.
+        """
         self.dialog_handler = None
+
+        if self.move_data:
+            self.move_data.clear()
         self.move_data = None
         self.target_tree_item = None
+
+    def disposing(self, event):
+        """Handle disposing event"""
+        pass
 
 
 class TreeKeyHandler(unohelper.Base, XKeyListener):
