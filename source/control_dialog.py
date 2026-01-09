@@ -268,27 +268,39 @@ class ControlDlgHandler(
             if diagram:
                 controller.remove_selection_listener()
 
+                # Get undo manager and lock to prevent Writer internal undo records
+                undo_manager = self._get_undo_manager()
+                if undo_manager:
+                    undo_manager.lock()
+
                 # Paste all clipboard items and track pasted shapes
                 pasted_shapes = []
                 any_success = False
 
-                for clipboard_item in clipboard_items:
-                    success = diagram.paste_subtree(
-                        target_tree_item, clipboard_item, self.script
-                    )
-                    if success:
-                        any_success = True
-                        # Find the newly added shape for this paste
-                        pasted_shape = self._find_newly_added_shape(target_tree_item)
-                        if pasted_shape:
-                            pasted_shapes.append(pasted_shape)
+                try:
+                    for clipboard_item in clipboard_items:
+                        success = diagram.paste_subtree(
+                            target_tree_item, clipboard_item, self.script
+                        )
+                        if success:
+                            any_success = True
+                            # Find the newly added shape for this paste
+                            pasted_shape = self._find_newly_added_shape(
+                                target_tree_item
+                            )
+                            if pasted_shape:
+                                pasted_shapes.append(pasted_shape)
+
+                    if any_success:
+                        diagram.refresh_diagram()
+                finally:
+                    if undo_manager:
+                        undo_manager.unlock()
 
                 if any_success:
-                    diagram.refresh_diagram()
                     self.refresh_tree()
 
                     # Register undo action
-                    undo_manager = self._get_undo_manager()
                     if undo_manager and pasted_shapes:
                         try:
                             undo_action = PasteShapeUndoAction(
@@ -1080,18 +1092,26 @@ class ControlDlgHandler(
 
             controller = self.get_controller()
 
-            if len(shapes) == 1:
-                controller.set_selected_shape(shapes[0])
-            else:
-                # Create a ShapeCollection for multiple shapes
-                service_manager = self.x_context.getServiceManager()
-                shape_collection = service_manager.createInstanceWithContext(
-                    "com.sun.star.drawing.ShapeCollection", self.x_context
-                )
-                for shape in shapes:
-                    shape_collection.add(shape)
+            # Lock undo manager to prevent selection changes from creating undo records
+            undo_manager = self._get_undo_manager()
+            if undo_manager:
+                undo_manager.lock()
+            try:
+                if len(shapes) == 1:
+                    controller.set_selected_shape(shapes[0])
+                else:
+                    # Create a ShapeCollection for multiple shapes
+                    service_manager = self.x_context.getServiceManager()
+                    shape_collection = service_manager.createInstanceWithContext(
+                        "com.sun.star.drawing.ShapeCollection", self.x_context
+                    )
+                    for shape in shapes:
+                        shape_collection.add(shape)
 
-                controller._x_controller.select(shape_collection)
+                    controller._x_controller.select(shape_collection)
+            finally:
+                if undo_manager:
+                    undo_manager.unlock()
         except Exception as e:
             print(f"Error selecting shapes in document: {e}")
 
@@ -1737,18 +1757,27 @@ class PasteShapeUndoAction(unohelper.Base, XUndoAction):
 
             controller.remove_selection_listener()
 
-            # Remove shapes in reverse order (last pasted first)
-            for shape in reversed(self.pasted_shapes):
-                if shape is None:
-                    continue
-                pasted_tree_item = self._find_tree_item_for_shape(shape)
-                if pasted_tree_item:
-                    self._remove_subtree(diagram, controller, pasted_tree_item)
+            # Lock undo manager to prevent Writer from creating internal undo records
+            undo_manager = self.dialog_handler._get_undo_manager()
+            if undo_manager:
+                undo_manager.lock()
+            try:
+                # Remove shapes in reverse order (last pasted first)
+                for shape in reversed(self.pasted_shapes):
+                    if shape is None:
+                        continue
+                    pasted_tree_item = self._find_tree_item_for_shape(shape)
+                    if pasted_tree_item:
+                        self._remove_subtree(diagram, controller, pasted_tree_item)
 
-            # Clear references to removed shapes
-            self.pasted_shapes = []
+                # Clear references to removed shapes
+                self.pasted_shapes = []
 
-            diagram.refresh_diagram()
+                diagram.refresh_diagram()
+            finally:
+                if undo_manager:
+                    undo_manager.unlock()
+
             self.dialog_handler.refresh_tree()
             controller.add_selection_listener()
         except Exception as e:
@@ -1787,19 +1816,30 @@ class PasteShapeUndoAction(unohelper.Base, XUndoAction):
 
             controller.remove_selection_listener()
 
-            self.pasted_shapes = []
-            for clipboard_data in self.clipboard_data_list:
-                success = diagram.paste_subtree(
-                    self.parent_tree_item, clipboard_data, self.dialog_handler.script
-                )
-                if success:
-                    pasted_shape = self.dialog_handler._find_newly_added_shape(
-                        self.parent_tree_item
+            # Lock undo manager to prevent Writer from creating internal undo records
+            undo_manager = self.dialog_handler._get_undo_manager()
+            if undo_manager:
+                undo_manager.lock()
+            try:
+                self.pasted_shapes = []
+                for clipboard_data in self.clipboard_data_list:
+                    success = diagram.paste_subtree(
+                        self.parent_tree_item,
+                        clipboard_data,
+                        self.dialog_handler.script,
                     )
-                    if pasted_shape:
-                        self.pasted_shapes.append(pasted_shape)
+                    if success:
+                        pasted_shape = self.dialog_handler._find_newly_added_shape(
+                            self.parent_tree_item
+                        )
+                        if pasted_shape:
+                            self.pasted_shapes.append(pasted_shape)
 
-            diagram.refresh_diagram()
+                diagram.refresh_diagram()
+            finally:
+                if undo_manager:
+                    undo_manager.unlock()
+
             self.dialog_handler.refresh_tree()
 
             # Select all re-pasted shapes
