@@ -51,6 +51,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         self.tree_category_name = None
         self.current_symbolSet_index = None
         self.active_tree_ctrl = None
+        self.symbol_id = None
         self.selected_node_value = selected_node_value
         self.selected_shape = selected_shape
         self.translator = Translator(self.ctx)
@@ -287,7 +288,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             elif listbox_name == "ltbSymbolSet":
                 BASE_ICON_URL = "vnd.sun.star.extension://com.collabora.milsymbol/img/preview/symbol_set"
             else:
-                category = self.tree_category_name.replace(" - ", "_").replace(" ", "_").lower()
+                category = self.symbol_id.lower()
                 sub_category = re.sub(r'(?<!^)(?=[A-Z])', '_', tree_name[4:]).lower()
                 BASE_ICON_URL = f"vnd.sun.star.extension://com.collabora.milsymbol/img/preview/"f"{category}/{sub_category}"
 
@@ -398,8 +399,8 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
     def get_current_symbol(self, selected_index):
         symbol_meta = symbols_data.SYMBOLS[selected_index]
-        symbol_id = symbol_meta["id"]
-        current_symbol = symbols_data.SYMBOL_DETAILS[symbol_id]
+        self.symbol_id = symbol_meta["id"]
+        current_symbol = symbols_data.SYMBOL_DETAILS[self.symbol_id]
         self.tree_category_name=self.translator.translate(symbol_meta["label"])
         return current_symbol
 
