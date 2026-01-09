@@ -1170,7 +1170,7 @@ SYMBOL_DETAILS = {
             { "label": "Label.Leader_or_Leadership_Organization", "value": "001", "img": "001.png" }
         ],
         "EchelonMobility": [
-            {"label": "Label.Not_Applicable", "value": "00"}
+            { "label": "Label.Not_Applicable", "value": "00", "img": "00.png"  }
         ],
         "HeadquartersTaskforceDummy": [
             { "label": "Label.Unspecified", "value": "0", "img": "0.png" },
