@@ -552,7 +552,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         text = dialog.getControl(methodName).Text
 
         if text:
-            self.sidc_options[options_name] = " " + text
+            self.sidc_options[options_name] = text
         else:
             self.sidc_options.pop(options_name, None) # remove
 
