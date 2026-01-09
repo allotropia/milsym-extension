@@ -156,7 +156,9 @@ class ControlDlgHandler(
             else:
                 # Re-enter the group if a group shape is selected
                 selected_shape = self.get_controller().get_selected_shape()
-                if selected_shape and selected_shape.supportsService("com.sun.star.drawing.GroupShape"):
+                if selected_shape and selected_shape.supportsService(
+                    "com.sun.star.drawing.GroupShape"
+                ):
                     selected_shape.enterGroup()
                     # Also ensure the currently selected items in the tree are selected in the document
                     selected_tree_items = self._get_selected_tree_items()
@@ -1052,7 +1054,7 @@ class ControlDlgHandler(
                                 pass
                     finally:
                         self._syncing_selection = False
-                        # Note: _syncing_from_tree cleared in selectionChanged handler
+                        self._syncing_from_tree = False
 
         except Exception as e:
             print(f"Error handling tree selection: {e}")
@@ -1081,7 +1083,7 @@ class ControlDlgHandler(
             print(f"Error syncing selected shapes: {e}")
         finally:
             self._syncing_selection = False
-            # Note: _syncing_from_tree cleared in selectionChanged handler
+            self._syncing_from_tree = False
             self._update_button_states()
 
     def _select_shapes_in_document(self, shapes):
@@ -2072,15 +2074,21 @@ class TreeKeyHandler(unohelper.Base, XKeyListener):
                     tree_control = event.Source
                     selection = tree_control.getSelection()
                     if selection is not None:
-                        # Get the first selected node for syncing to document
-                        selected_node = None
-                        if hasattr(selection, "getDisplayValue"):
-                            selected_node = selection
-                        elif hasattr(selection, "__len__") and len(selection) > 0:
-                            selected_node = selection[0]
+                        is_shift = bool(event.Modifiers & KeyModifier.SHIFT)
 
-                        if selected_node and hasattr(selected_node, "getDisplayValue"):
-                            self.dialog_handler.handle_tree_selection(selected_node)
+                        if is_shift:
+                            self.dialog_handler.sync_all_selected_shapes_to_document()
+                        else:
+                            selected_node = None
+                            if hasattr(selection, "getDisplayValue"):
+                                selected_node = selection
+                            elif hasattr(selection, "__len__") and len(selection) > 0:
+                                selected_node = selection[0]
+
+                            if selected_node and hasattr(
+                                selected_node, "getDisplayValue"
+                            ):
+                                self.dialog_handler.handle_tree_selection(selected_node)
                 except Exception as e:
                     print(f"Error getting tree selection after key navigation: {e}")
 
@@ -2154,6 +2162,11 @@ class TreeSelectionListener(unohelper.Base, XSelectionChangeListener):
     def selectionChanged(self, event):
         """Handle selection change events from the document"""
         try:
+            # Skip if tree control has focus (user is navigating tree with keyboard)
+            tree_control = getattr(self.dialog_handler, "tree_control", None)
+            if tree_control and tree_control.hasFocus():
+                return
+
             # Skip if we're currently syncing from tree to document
             if getattr(self.dialog_handler, "_syncing_selection", False):
                 return
@@ -2162,10 +2175,8 @@ class TreeSelectionListener(unohelper.Base, XSelectionChangeListener):
             if getattr(self.dialog_handler, "_is_dragging", False):
                 return
 
-            # If sync was initiated from tree, clear the flag and skip
-            # This handles async event dispatch in Writer
+            # Skip if sync was initiated from tree
             if getattr(self.dialog_handler, "_syncing_from_tree", False):
-                self.dialog_handler._syncing_from_tree = False
                 return
 
             # Get the selected shapes and sync ALL of them to tree
