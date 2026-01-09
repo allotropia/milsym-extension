@@ -468,6 +468,22 @@ class ControlDlgHandler(
 
         return ClipboardItem(attributes, children)
 
+    def _serialize_tree_item_only(self, tree_item):
+        """Serialize only the tree item itself without its children.
+
+        Used for undo/redo of remove operations where children are preserved
+        (moved to grandparent) rather than deleted.
+        """
+        if tree_item is None:
+            return None
+
+        shape = tree_item.get_rectangle_shape()
+        if shape is None:
+            return None
+
+        attributes = extractGraphicAttributes(shape)
+        return ClipboardItem(attributes, [])
+
     def handle_undo(self):
         """Trigger undo via the document's undo manager"""
         undo_manager = self._get_undo_manager()
@@ -496,13 +512,23 @@ class ControlDlgHandler(
 
             # Collect data for undo before removal
             undo_manager = self._get_undo_manager()
-            removal_data = []  # List of (serialized_data, parent_tree_item)
+            removal_data = []  # List of (serialized_data, parent_tree_item, child_shapes)
 
             for tree_item in selected_items:
                 parent = tree_item.get_dad()
-                serialized = self._serialize_tree_item(tree_item)
+                serialized = self._serialize_tree_item_only(tree_item)
+
+                # Collect child shapes that will be re-parented during removal
+                child_shapes = []
+                child_item = tree_item.get_first_child()
+                while child_item is not None:
+                    child_shape = child_item.get_rectangle_shape()
+                    if child_shape:
+                        child_shapes.append(child_shape)
+                    child_item = child_item.get_first_sibling()
+
                 if serialized and parent:
-                    removal_data.append((serialized, parent))
+                    removal_data.append((serialized, parent, child_shapes))
 
             # Remove shapes (order: process items with deeper levels first to avoid
             # invalidating parent references)
@@ -1575,7 +1601,8 @@ class RemoveShapeUndoAction(unohelper.Base, XUndoAction):
         """
         Args:
             dialog_handler: Reference to ControlDlgHandler
-            removal_data: List of (serialized_data, parent_tree_item) tuples
+            removal_data: List of (serialized_data, parent_tree_item, child_shapes) tuples
+                          child_shapes are the shapes that were re-parented to grandparent
         """
         self.dialog_handler = dialog_handler
         self.removal_data = removal_data
@@ -1588,7 +1615,7 @@ class RemoveShapeUndoAction(unohelper.Base, XUndoAction):
             self.Title = f"Remove {count} Shape(s)"
 
     def undo(self):
-        """Undo the removal by re-adding all shapes"""
+        """Undo the removal by re-adding all shapes and re-attaching children"""
         try:
             controller = self.dialog_handler.get_controller()
             diagram = controller.get_diagram()
@@ -1598,7 +1625,10 @@ class RemoveShapeUndoAction(unohelper.Base, XUndoAction):
             controller.remove_selection_listener()
             self._restored_shapes = []
 
-            for serialized_data, parent_tree_item in reversed(self.removal_data):
+            for serialized_data, parent_tree_item, child_shapes in reversed(
+                self.removal_data
+            ):
+                # Create the removed shape (without children - they already exist)
                 success = diagram.paste_subtree(
                     parent_tree_item, serialized_data, self.dialog_handler.script
                 )
@@ -1609,11 +1639,35 @@ class RemoveShapeUndoAction(unohelper.Base, XUndoAction):
                     if restored:
                         self._restored_shapes.append(restored)
 
+                        # Re-attach children to the restored shape
+                        if child_shapes:
+                            self._reattach_children(diagram, restored, child_shapes)
+
             diagram.refresh_diagram()
             self.dialog_handler.refresh_tree()
             controller.add_selection_listener()
         except Exception as e:
             print(f"Error during undo remove shape: {e}")
+
+    def _reattach_children(self, diagram, parent_shape, child_shapes):
+        """Re-attach child shapes to the restored parent shape"""
+        try:
+            diagram_tree = diagram.get_diagram_tree()
+            if diagram_tree is None:
+                return
+
+            parent_tree_item = diagram_tree.get_tree_item(parent_shape)
+            if parent_tree_item is None:
+                return
+
+            for child_shape in child_shapes:
+                if child_shape is None:
+                    continue
+                child_tree_item = diagram_tree.get_tree_item(child_shape)
+                if child_tree_item is not None:
+                    diagram.move_tree_item(child_tree_item, parent_tree_item, "child")
+        except Exception as e:
+            print(f"Error re-attaching children: {e}")
 
     def redo(self):
         """Redo the removal by removing the restored shapes"""
