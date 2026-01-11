@@ -45,6 +45,7 @@ from utils import (
     insertGraphicAttributes,
 )
 from unohelper import systemPathToFileUrl
+from translator import translate
 import tempfile
 
 
@@ -65,6 +66,8 @@ class ControlDlgHandler(
         self._syncing_selection = False
         self._syncing_from_tree = False
         self._is_dragging = False
+        self._unit_str = translate(x_context, "ControlDialog.Unit")
+        self._placeholder_str = translate(x_context, "ControlDialog.Placeholder")
         self._undo_actions = []  # Track all undo actions for cleanup on document close
         factory = self.x_context.getServiceManager().createInstanceWithContext(
             "com.sun.star.script.provider.MasterScriptProviderFactory", self.x_context
@@ -1027,11 +1030,11 @@ class ControlDlgHandler(
 
                 # Build display name
                 if milsym_code.strip() and milsym_hier.strip():
-                    return f"Unit {milsym_hier} ({milsym_code})"
+                    return f"{self._unit_str} {milsym_hier} ({milsym_code})"
                 elif milsym_code.strip():
-                    return f"Unit ({milsym_code})"
+                    return f"{self._unit_str} ({milsym_code})"
                 else:
-                    return "Placeholder unit"
+                    return self._placeholder_str
 
             return f"Unit {item_number}"
 
