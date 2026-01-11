@@ -46,7 +46,7 @@ class OrgChart(OrganizationChart):
 
     def get_diagram_type_name(self) -> str:
         """Get diagram type name"""
-        return "OrganizationDiagram"
+        return "OrbatDiagram"
 
     def create_diagram(self, datas):
         """Create diagram from data"""

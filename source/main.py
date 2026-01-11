@@ -181,7 +181,7 @@ class ControllerManager:
                 shape = draw_page.getByIndex(i)
                 if hasattr(shape, "getName"):
                     shape_name = shape.getName()
-                    if shape_name.startswith("OrganizationDiagram"):
+                    if shape_name.startswith("OrbatDiagram"):
                         return True
         except Exception as e:
             print(f"Error checking shapes: {e}")

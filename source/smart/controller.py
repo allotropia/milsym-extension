@@ -86,7 +86,7 @@ class Controller(unohelper.Base, XSelectionChangeListener):
 
     def is_smart_diagram_shape(self, shape_name):
         """Check if shape is a smart diagram shape"""
-        return shape_name.startswith("OrganizationDiagram")
+        return shape_name.startswith("OrbatDiagram")
 
     def set_new_size(self):
         """Set new diagram size"""
@@ -405,7 +405,7 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                     diagram_id = int(''.join(c for c in new_diagram_name if c.isdigit()) or '0')
 
                     # Set diagram types based on shape name
-                    if selected_shape_name.startswith("OrganizationDiagram"):
+                    if selected_shape_name.startswith("OrbatDiagram"):
                         self.set_group_type(self.ORGANIGROUP)
                         self.set_diagram_type(self.ORGANIGRAM)
 
@@ -418,11 +418,8 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                     self._gui.set_visible_control_dialog(True)
 
                 # Handle organization chart shape selection
-                org_chart_shapes = ["OrganizationDiagram", "SimpleOrganizationDiagram",
-                                   "HorizontalOrganizationDiagram", "TableHierarchyDiagram"]
-                is_org_chart = any(selected_shape_name.startswith(shape) for shape in org_chart_shapes)
-
-                if (is_org_chart and selected_shape_name.endswith("RectangleShape0")):
+                if (selected_shape_name.startswith("OrbatDiagram")
+                    and selected_shape_name.endswith("RectangleShape0")):
                     if self.get_diagram() is not None:
                         self.get_diagram().select_shapes()
 
@@ -445,7 +442,7 @@ class Controller(unohelper.Base, XSelectionChangeListener):
             selected_shape = self.get_selected_shape()
             selected_shape_name = selected_shape.getName()
 
-            if (selected_shape_name.startswith("OrganizationDiagram") and
+            if (selected_shape_name.startswith("OrbatDiagram") and
                     "RectangleShape" in selected_shape_name and
                     not selected_shape_name.endswith("RectangleShape0")):
                 return True
