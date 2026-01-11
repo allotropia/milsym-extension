@@ -27,7 +27,7 @@ from com.sun.star.util import XCloseListener
 from com.sun.star.ui import XContextMenuInterceptor
 from com.sun.star.ui.ContextMenuInterceptorAction import EXECUTE_MODIFIED
 from com.sun.star.ui.ContextMenuInterceptorAction import IGNORED
-from translator import Translator
+from translator import translate
 
 
 class DocumentCloseListener(unohelper.Base, XCloseListener):
@@ -223,8 +223,7 @@ class ContextMenuInterceptor(unohelper.Base, XContextMenuInterceptor):
         try:
             menu_item = menu_container.createInstance("com.sun.star.ui.ActionTrigger")
 
-            translator = Translator(self.ctx)
-            menu_text = translator.translate("ContextMenu.EditMilitarySymbol")
+            menu_text = translate(self.ctx, "ContextMenu.EditMilitarySymbol")
             menu_item.setPropertyValue("Text", menu_text)
             menu_item.setPropertyValue(
                 "CommandURL", "service:com.collabora.milsymbol.do?symbolDialog"
