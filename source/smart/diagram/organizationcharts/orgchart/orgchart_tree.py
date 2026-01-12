@@ -188,14 +188,3 @@ class OrgChartTree(OrganizationChartTree):
                 end_pos = 3  # Left connection point
 
             self.get_org_chart().set_connector_shape_props(x_conn_shape, expected_start_shape, start_pos, current_end_shape, end_pos)
-
-    def get_end_glue_point_index(self, x_conn_shape) -> int:
-        """Get end glue point index of connector"""
-        try:
-            # In real implementation, would use UNO API:
-            # x_props = UnoRuntime.queryInterface(XPropertySet.class, x_conn_shape)
-            # return AnyConverter.toInt(x_props.getPropertyValue("EndGluePointIndex"))
-            return 0  # Stub implementation
-        except Exception as ex:
-            print(f"Error getting end glue point index: {ex}")
-            return -1
