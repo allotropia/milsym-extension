@@ -28,7 +28,6 @@ from com.sun.star.awt import (
 )
 from com.sun.star.awt import MouseButton
 from com.sun.star.view.SelectionType import (
-    SINGLE as SELECTION_TYPE_SINGLE,
     MULTI as SELECTION_TYPE_MULTI,
 )
 from com.sun.star.view import XSelectionChangeListener
@@ -37,7 +36,7 @@ from com.sun.star.datatransfer.dnd import XDragSourceListener
 from com.sun.star.datatransfer.dnd.DNDConstants import ACTION_MOVE
 from com.sun.star.datatransfer import XTransferable, DataFlavor
 from com.sun.star.beans import NamedValue
-from com.sun.star.document import XUndoAction, XUndoManager
+from com.sun.star.document import XUndoAction
 from utils import (
     extractGraphicAttributes,
     getExtensionBasePath,

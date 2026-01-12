@@ -14,8 +14,6 @@ Base Diagram class - stub implementation
 Python port of Diagram.java
 """
 import sys
-import unohelper
-import officehelper
 import os
 import uno
 
@@ -30,7 +28,6 @@ from abc import ABC, abstractmethod
 from com.sun.star.beans import PropertyValue
 from com.sun.star.awt import Point, Size
 from com.sun.star.text.TextContentAnchorType import AT_PARAGRAPH
-from com.sun.star.xml import AttributeData
 
 class Diagram(ABC):
     """Base diagram class - simplified version of the Java Diagram class"""

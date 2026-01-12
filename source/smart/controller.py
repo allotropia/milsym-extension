@@ -20,7 +20,6 @@ from .gui import Gui
 from com.sun.star.view import XSelectionChangeListener
 
 from smart.diagram.organizationcharts.orgchart.orgchart import OrgChart
-from smart.diagram.organizationcharts.orgchart.orgchart import OrgChartTree
 
 class Controller(unohelper.Base, XSelectionChangeListener):
     """Controller class for LibreOffice extension"""

@@ -14,7 +14,6 @@ import unohelper
 from com.sun.star.awt import XDialogEventHandler
 from com.sun.star.awt.ImageScaleMode import ISOTROPIC
 from com.sun.star.beans import NamedValue
-from xml.etree.ElementPath import prepare_self
 
 base_dir = os.path.dirname(__file__)
 if base_dir not in sys.path:
