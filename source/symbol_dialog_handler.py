@@ -22,7 +22,6 @@ if base_dir not in sys.path:
 
 from data import symbols_data
 from data import country_data
-from data.help_content import HELP_CONTENT
 from utils import insertSvgGraphic, insertGraphicAttributes, getExtensionBasePath, create_graphic_from_svg
 from translator import Translator
 from com.sun.star.view.SelectionType import SINGLE
@@ -524,24 +523,25 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         """Display a message box with help text for the specified field.
 
         Args:
-            field_name: The field name (without "btHelp" prefix) to look up in HELP_CONTENT
+            field_name: The field name (without "btHelp" prefix), used to construct
+                        translation keys Help.<field_name>.Title and Help.<field_name>.Message
         """
         from com.sun.star.awt.MessageBoxType import INFOBOX
         from com.sun.star.awt.MessageBoxButtons import BUTTONS_OK
 
-        help_info = HELP_CONTENT.get(field_name)
-        if not help_info:
-            return
+        title_key = f"Help.{field_name}.Title"
+        message_key = f"Help.{field_name}.Message"
 
         toolkit = self.ctx.getServiceManager().createInstanceWithContext(
-            "com.sun.star.awt.Toolkit", self.ctx)
+            "com.sun.star.awt.Toolkit", self.ctx
+        )
         parent_window = self.dialog.getPeer()
         msgbox = toolkit.createMessageBox(
             parent_window,
             INFOBOX,
             BUTTONS_OK,
-            self.translator.translate(help_info["title"]),
-            self.translator.translate(help_info["message"])
+            self.translator.translate(title_key),
+            self.translator.translate(message_key),
         )
         msgbox.execute()
 
