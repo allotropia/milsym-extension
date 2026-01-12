@@ -169,7 +169,6 @@ class OrgChartTree(OrganizationChartTree):
 
             # Get the tree item for the end shape (child)
             child_tree_item = self.get_tree_item(current_end_shape)
-            print(f"Processing connector for child shape: {child_tree_item}")
             if not child_tree_item:
                 continue
 
@@ -183,7 +182,6 @@ class OrgChartTree(OrganizationChartTree):
             level = child_tree_item.get_level()
             start_pos = 2  # Bottom connection point
 
-            print(f"Updating connector: level {level}, start shape matches expected parent. LASTHORLEVEL={OrgChartTree.LAST_HOR_LEVEL}")
             if level <= OrgChartTree.LAST_HOR_LEVEL:
                 end_pos = 0  # Top connection point
             else:
