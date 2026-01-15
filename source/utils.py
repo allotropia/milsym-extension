@@ -92,10 +92,7 @@ def insertSvgGraphic(ctx, model, svg_data, params, selected_shape, smybol_name, 
 
         # For Writer, create a TextGraphicObject which behaves better (keeps aspect ratio, etc.)
         if selected_shape is None:
-            if is_writer:
-                shape = model.createInstance("com.sun.star.text.TextGraphicObject")
-            else:
-                shape = model.createInstance("com.sun.star.drawing.GraphicObjectShape")
+            shape = model.createInstance("com.sun.star.drawing.GraphicObjectShape")
         else:
             shape = selected_shape
 
