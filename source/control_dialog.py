@@ -592,6 +592,8 @@ class ControlDlgHandler(
     def windowClosing(self, event):
         """Handle window closing event"""
         if event.Source == self.get_gui()._x_control_dialog:
+            # Save dialog geometry before closing
+            self._save_dialog_geometry()
             self.get_gui().set_visible_control_dialog(False)
 
         self.cleanup()
@@ -599,6 +601,10 @@ class ControlDlgHandler(
     def windowOpened(self, event):
         """Handle window opened event"""
         if event.Source == self.get_gui()._x_control_dialog:
+            # Restore saved dialog geometry
+            saved_geometry = self._load_dialog_geometry()
+            if saved_geometry:
+                self._apply_dialog_geometry(saved_geometry)
             # Initialize tree control when dialog opens
             self._init_tree_control()
             # Populate tree with current diagram structure
@@ -1536,6 +1542,107 @@ class ControlDlgHandler(
 
         except Exception as e:
             print(f"Error during ControlDlgHandler cleanup: {e}")
+
+    def _get_settings_file_path(self):
+        """Get the file path for storing dialog settings.
+
+        Returns:
+            System path to the settings JSON file, or None if path cannot be determined.
+        """
+        try:
+            from unohelper import fileUrlToSystemPath
+
+            ps = self.x_context.getByName(
+                "/singletons/com.sun.star.util.thePathSettings"
+            )
+            user_config = ps.UserConfig
+            user_profile_path = os.path.dirname(user_config)
+
+            settings_dir = os.path.join(
+                fileUrlToSystemPath(user_profile_path), "milsymbol_settings"
+            )
+            os.makedirs(settings_dir, exist_ok=True)
+
+            return os.path.join(settings_dir, "control_dialog.json")
+        except Exception as e:
+            print(f"Error getting settings file path: {e}")
+            return None
+
+    def _save_dialog_geometry(self):
+        """Save the current dialog position and size to a JSON file."""
+        try:
+            dialog = self.get_gui()._x_control_dialog
+            if dialog is None:
+                return
+
+            # Get current position and size
+            pos_size = dialog.getPosSize()
+
+            geometry = {
+                "x": pos_size.X,
+                "y": pos_size.Y,
+                "width": pos_size.Width,
+                "height": pos_size.Height,
+            }
+
+            settings_path = self._get_settings_file_path()
+            if settings_path is None:
+                return
+
+            with open(settings_path, "w", encoding="utf-8") as f:
+                json.dump(geometry, f, indent=2)
+
+        except Exception as e:
+            print(f"Error saving dialog geometry: {e}")
+
+    def _load_dialog_geometry(self):
+        """Load saved dialog geometry from JSON file.
+
+        Returns:
+            Dictionary with x, y, width, height keys, or None if not found/error.
+        """
+        try:
+            settings_path = self._get_settings_file_path()
+            if settings_path is None or not os.path.exists(settings_path):
+                return None
+
+            with open(settings_path, "r", encoding="utf-8") as f:
+                geometry = json.load(f)
+
+            # Validate that all required keys exist
+            required_keys = ["x", "y", "width", "height"]
+            if all(key in geometry for key in required_keys):
+                return geometry
+
+            return None
+        except Exception as e:
+            print(f"Error loading dialog geometry: {e}")
+            return None
+
+    def _apply_dialog_geometry(self, geometry):
+        """Apply saved geometry to the dialog.
+
+        Args:
+            geometry: Dictionary with x, y, width, height keys.
+        """
+        try:
+            if geometry is None:
+                return
+
+            dialog = self.get_gui()._x_control_dialog
+            if dialog is None:
+                return
+
+            # POS_X + POS_Y + POS_WIDTH + POS_HEIGHT = 1 + 2 + 4 + 8 = 15
+            dialog.setPosSize(
+                geometry["x"],
+                geometry["y"],
+                geometry["width"],
+                geometry["height"],
+                15,  # All position and size components
+            )
+        except Exception as e:
+            print(f"Error applying dialog geometry: {e}")
 
     def clear_all_undo_action_references(self):
         """Clear all shape references from tracked undo actions.
