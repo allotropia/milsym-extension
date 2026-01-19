@@ -39,6 +39,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         self.sidebar_panel = sidebar_panel
         self.sidc_options = {}
         self.tree_values = {}
+        self.ui_indexes = {}
         self.ignore_event = False
         self.is_editing = False
         self.color = None
@@ -47,9 +48,10 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         self.final_svg_args = None
         self.sidebar_symbol_svg_data = None
         self.tree_category_name = None
-        self.current_symbolSet_index = None
+        self.current_symbolSet_index = 4
         self.active_tree_ctrl = None
         self.symbol_id = None
+        self.search_index = None
         self.selected_node_value = selected_node_value
         self.selected_shape = selected_shape
         self.translator = Translator(self.ctx)
@@ -71,7 +73,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         if not has_selected_item:
             self.init_buttons()
             self.init_default_values()
-            self.updatePreview()
+            self.init_base_preview()
 
     def init_textboxes(self):
         # Mapping of dialog textbox control names to their corresponding option names
@@ -179,7 +181,9 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             tree_key_listener = TreeKeyListener(self, listbox_ctrl)
             tree_ctrl.addKeyListener(tree_key_listener)
 
-    def init_default_values(self, selected_index = 4):
+    def init_default_values(self, selected_index = 4, update_country = True):
+        self.init_default_tree(update_country)
+
         label = self.translator.translate(symbols_data.SYMBOLS[selected_index]["label"])
         listbox_control = self.dialog.getControl("ltbSymbolSet")
         listbox_control.addItems([label], 0)
@@ -218,41 +222,62 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         listbox_control.selectItemPos(0, True)
         self.headTaskDummy = current_symbol["HeadquartersTaskforceDummy"][0]["value"]
 
-        label = self.translator.translate(country_data.COUNTRY_CODES[0]["label"])
-        listbox_control = self.dialog.getControl("ltbCountry")
-        listbox_control.addItems([label], 0)
-        listbox_control.selectItemPos(0, True)
-        self.country = country_data.COUNTRY_CODES[0]["value"]
-
-    def populate_symbol_tree(self, selected_index, update_listbox = True, update_country = True):
-        self.current_symbolSet_index = selected_index
-        current_symbol = self.get_current_symbol(selected_index)
-
-        self.symbolSet = self.fill_tree_control(
-            "treeSymbolSet", "ltbSymbolSet", symbols_data.SYMBOLS, update_listbox,  selected_index
-        )
-        self.mainIcon = self.fill_tree_control(
-            "treeMainIcon", "ltbMainIcon", current_symbol["MainIcon"], update_listbox
-        )
-        self.firstIcon = self.fill_tree_control(
-            "treeFirstIcon", "ltbFirstIcon", current_symbol["FirstIconModifier"], update_listbox
-        )
-        self.secondIcon = self.fill_tree_control(
-            "treeSecondIcon", "ltbSecondIcon", current_symbol["SecondIconModifier"], update_listbox
-        )
-        self.echelonMobility = self.fill_tree_control(
-            "treeEchelonMobility", "ltbEchelonMobility", current_symbol["EchelonMobility"], update_listbox
-        )
-        self.headTaskDummy = self.fill_tree_control(
-            "treeHeadTaskDummy", "ltbHeadTaskDummy", current_symbol["HeadquartersTaskforceDummy"], update_listbox
-        )
-
         if update_country:
-            self.country = self.fill_tree_control(
-                "treeCountry", "ltbCountry", country_data.COUNTRY_CODES, update_listbox
-            )
+            label = self.translator.translate(country_data.COUNTRY_CODES[0]["label"])
+            listbox_control = self.dialog.getControl("ltbCountry")
+            listbox_control.addItems([label], 0)
+            listbox_control.selectItemPos(0, True)
+            self.country = country_data.COUNTRY_CODES[0]["value"]
 
-    def fill_tree_control(self, tree_name, listbox_name, items, update_listbox, selected_index = 0):
+    def init_default_tree(self, update_country):
+        for tree_ctrl in self.tree_ctrls.values():
+            data_model = tree_ctrl.getModel().DataModel
+            if data_model:
+                if (tree_ctrl.getModel().Name == "treeCountry"
+                    and not update_country
+                ):
+                    continue
+
+                root_node = tree_ctrl.getModel().DataModel.getRoot()
+                selected_node = root_node.getChildAt(0)
+                tree_ctrl.select(selected_node)
+
+    def populate_symbolSet(self, selected_index):
+        self.fill_tree_control(
+            "treeSymbolSet", "ltbSymbolSet", symbols_data.SYMBOLS, selected_index
+        )
+
+    def populate_mainIcon(self, current_symbol, selected_index):
+        self.fill_tree_control(
+            "treeMainIcon", "ltbMainIcon", current_symbol["MainIcon"], selected_index
+        )
+
+    def populate_firstIcon(self, current_symbol, selected_index):
+        self.fill_tree_control(
+            "treeFirstIcon", "ltbFirstIcon", current_symbol["FirstIconModifier"], selected_index
+        )
+
+    def populate_secondIcon(self, current_symbol, selected_index):
+        self.fill_tree_control(
+            "treeSecondIcon", "ltbSecondIcon", current_symbol["SecondIconModifier"], selected_index
+        )
+
+    def populate_echelonMobility(self, current_symbol, selected_index):
+        self.fill_tree_control(
+            "treeEchelonMobility", "ltbEchelonMobility", current_symbol["EchelonMobility"], selected_index
+        )
+
+    def populate_headTaskDummy(self, current_symbol, selected_index):
+        self.fill_tree_control(
+            "treeHeadTaskDummy", "ltbHeadTaskDummy", current_symbol["HeadquartersTaskforceDummy"], selected_index
+        )
+
+    def populate_country(self, selected_index):
+        self.fill_tree_control(
+            "treeCountry", "ltbCountry", country_data.COUNTRY_CODES, selected_index
+        )
+
+    def fill_tree_control(self, tree_name, listbox_name, items, selected_index):
         root_node = None
         tree_control = self.tree_ctrls[tree_name]
         tree_model = tree_control.getModel()
@@ -310,36 +335,13 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
         selected_node = root_node.getChildAt(selected_index)
         node_name = selected_node.getDisplayValue()
-
-        if update_listbox:
-            listbox_control = self.dialog.getControl(listbox_name)
-            listbox_control.addItems([node_name], 0)
-            listbox_control.selectItemPos(0, True)
-
         tree_control.select(selected_node)
 
+        listbox_control = self.dialog.getControl(listbox_name)
+        listbox_control.addItems([node_name], 0)
+        listbox_control.selectItemPos(0, True)
+
         self.tree_values[tree_name] = [item["value"] for item in items]
-
-        return items[selected_index]["value"]
-
-    def update_symbolSet_tree(self, selected_index):
-        if selected_index == self.current_symbolSet_index:
-            return
-
-        self.current_symbolSet_index = selected_index
-        self.populate_symbol_tree(selected_index, True, False)
-
-        self.updatePreview()
-
-    def update_tree_value_by_index(self, tree_control, selected_index):
-        control_name = tree_control.getModel().Name
-
-        attr_name = self.tree_map.get(control_name)
-        values = self.tree_values[control_name]
-        value = values[selected_index]
-        setattr(self, attr_name, value)
-
-        self.updatePreview()
 
     def handle_search_tree_node_click(self, node_name, category):
         tbSearch_ctrl = self.dialog.getControl("tbSearch")
@@ -348,7 +350,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         groups = symbols_data.SYMBOL_DETAILS.get(category, {})
         labels = groups.get("MainIcon", [])
 
-        mainIcon_index = next(
+        self.search_index = next(
             (
                 index
                 for index, item in enumerate(labels)
@@ -358,24 +360,25 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             None
         )
 
-        if mainIcon_index is not None:
+        if self.search_index is not None:
             keys = list(symbols_data.SYMBOL_DETAILS.keys())
             symbolSet_index = keys.index(category)
+            self.current_symbolSet_index = symbolSet_index
+            index = self.search_index
 
-            self.populate_symbol_tree(symbolSet_index)
+            self.reset_symbol(self.dialog, symbolSet_index)
 
-            treeMainIcon_ctrl = self.tree_ctrls["treeMainIcon"]
-            self.update_tree_value_by_index(treeMainIcon_ctrl, mainIcon_index)
+            current_symbol = self.get_current_symbol(symbolSet_index)
+            label = self.translator.translate(current_symbol["MainIcon"][index]["label"])
+            listbox_control = self.dialog.getControl("ltbMainIcon")
+            listbox_control.addItems([label], 0)
+            listbox_control.selectItemPos(0, True)
+            self.mainIcon = current_symbol["MainIcon"][index]["value"]
 
-            root_node = treeMainIcon_ctrl.getModel().DataModel.getRoot()
-            mainIcon_node= root_node.getChildAt(mainIcon_index)
-            treeMainIcon_ctrl.select(mainIcon_node)
-
-            ltbMainIcon_ctrl = self.dialog.getControl("ltbMainIcon")
-            ltbMainIcon_ctrl.addItems([node_name], 0)
-            ltbMainIcon_ctrl.selectItemPos(0, True)
+            self.updatePreview()
 
     def apply_tree_selection(self, node, tree_ctrl, listbox_ctrl):
+        tree_ctrl.select(node)
         tree_ctrl.setVisible(False)
         listbox_ctrl.getPeer().setFocus()
 
@@ -389,11 +392,30 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         listbox_ctrl.addItems([label], 0)
         listbox_ctrl.selectItemPos(0, True)
 
-        if tree_ctrl.getModel().Name == "treeSymbolSet":
-            self.update_symbolSet_tree(node.DataValue)
-        else:
-            selected_index = node.DataValue
-            self.update_tree_value_by_index(tree_ctrl, selected_index)
+        selected_index = node.DataValue
+        control_name = tree_ctrl.getModel().Name
+        values = self.tree_values[control_name]
+        value = values[selected_index]
+
+        if control_name == "treeSymbolSet":
+            self.symbolSet = value
+            self.init_default_values(selected_index, update_country=False)
+            self.current_symbolSet_index = selected_index
+            self.ui_indexes.clear()
+        elif control_name == "treeMainIcon":
+            self.mainIcon = value
+        elif control_name == "treeFirstIcon":
+            self.firstIcon = value
+        elif control_name == "treeSecondIcon":
+            self.secondIcon = value
+        elif control_name == "treeEchelonMobility":
+            self.echelonMobility = value
+        elif control_name == "treeHeadTaskDummy":
+            self.headTaskDummy = value
+        elif control_name == "treeCountry":
+            self.country = value
+
+        self.updatePreview()
 
     def get_current_symbol(self, selected_index):
         symbol_meta = symbols_data.SYMBOLS[selected_index]
@@ -443,6 +465,10 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             self.update_ui_state()
             return True
         elif methodName == "dialog_btSave":
+            if not self.final_svg_args:
+                self.sidc = "130310000000000000000000000000"
+                self.updatePreview()
+
             if self.controller is not None:
                 shape = self.controller.get_diagram().set_svg_data(
                     self.final_svg_data)
@@ -475,22 +501,25 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
     def disposing(self, event):
         pass
 
-    def reset_symbol(self, dialog):
+    def reset_symbol(self, dialog, selected_index = None):
         self.ignore_event = True
         for textbox, option_name in self.textbox_map.items():
             dialog.getControl(textbox).Text = ""
             self.sidc_options[option_name] = ""
         self.ignore_event = False
 
-        symbolSet_item = next((item for item in symbols_data.SYMBOLS
-                               if item["value"] == self.symbolSet),None)
+        if selected_index is not None:
+            index = selected_index
+        else:
+            symbolSet_item = next((item for item in symbols_data.SYMBOLS
+                                   if item["value"] == self.symbolSet),None)
+            index = symbols_data.SYMBOLS.index(symbolSet_item)
+            self.search_index = None
 
-        index = symbols_data.SYMBOLS.index(symbolSet_item)
-
-        self.populate_symbol_tree(index)
-
+        self.init_default_values(index)
         self.init_buttons(True)
         self.update_buttons_state(dialog)
+        self.ui_indexes.clear()
 
         self.updatePreview()
 
@@ -615,6 +644,12 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
         dialog.getControl(button_id).getModel().State = state
 
+    def init_base_preview(self):
+        imgPreview = self.dialog.getModel().getByName("imgPreview")
+        imgPreview.ScaleImage = True
+        imgPreview.ScaleMode = ISOTROPIC
+        imgPreview.ImageURL =  "vnd.sun.star.extension://com.collabora.milsymbol/img/base.svg"
+
     def updatePreview(self):
         svg_data = None
         if self.selected_node_value is not None:
@@ -709,7 +744,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         return name[6:][0].lower() + name[6:][1:]
 
     def init_selected_shape_params(self, dialog, shape, tree_node_value):
-        attrs, tree_attrs = self.get_attrs(shape, tree_node_value)
+        attrs = self.get_attrs(shape, tree_node_value)
 
         if not attrs:
             return False
@@ -720,8 +755,10 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             name = self.get_textbox_name(element)
             textbox = self.reverse_textbox_map.get(name)
             if textbox:
-                self.sidc_options[name] = " " + value
+                self.ignore_event = True
+                self.sidc_options[name] = value
                 self.dialog.getControl(textbox).Text = value
+                self.ignore_event = False
             else:
                 if element   == "MilSymStack":          self.stack      = value
                 elif element == "MilSymReinforced":     self.reinforced = value
@@ -736,85 +773,84 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             else:
                 self.color = "NoFill"
 
-        self.update_tree_controls(dialog, tree_attrs)
+        self.update_tree_controls()
         self.update_buttons_state(dialog)
 
         self.updatePreview()
 
         return True
 
-    def update_tree_controls(self, dialog, tree_attrs):
-        symbolSet_item = next(
-            (item for item in symbols_data.SYMBOLS
-             if item["value"] == self.symbolSet),None)
+    def update_tree_controls(self):
+        symbolSet_index, symbolSet_label = self.find_index_and_label(
+            symbols_data.SYMBOLS, self.symbolSet
+        )
+        label = self.translator.translate(symbolSet_label)
+        listbox_control = self.dialog.getControl("ltbSymbolSet")
+        listbox_control.addItems([label], 0)
+        listbox_control.selectItemPos(0, True)
 
-        index = symbols_data.SYMBOLS.index(symbolSet_item)
-        self.populate_symbol_tree(index)
+        self.current_symbolSet_index = symbolSet_index
+        current_symbol = self.get_current_symbol(symbolSet_index)
 
-        for attr, value in tree_attrs.items():
-            setattr(self, attr, value)
+        mainIcon_index, mainIcon_label = self.find_index_and_label(
+            current_symbol["MainIcon"], self.mainIcon
+        )
+        self.ui_indexes["treeMainIcon"] = mainIcon_index
+        label = self.translator.translate(mainIcon_label)
+        listbox_control = self.dialog.getControl("ltbMainIcon")
+        listbox_control.addItems([label], 0)
+        listbox_control.selectItemPos(0, True)
 
-        symbol_id = self.translator.translate(symbolSet_item["id"])
-        current_symbol = symbols_data.SYMBOL_DETAILS[symbol_id]
+        firstIcon_index, firstIcon_label = self.find_index_and_label(
+            current_symbol["FirstIconModifier"], self.firstIcon
+        )
+        self.ui_indexes["treeFirstIcon"] = firstIcon_index
+        label = self.translator.translate(firstIcon_label)
+        listbox_control = self.dialog.getControl("ltbFirstIcon")
+        listbox_control.addItems([label], 0)
+        listbox_control.selectItemPos(0, True)
 
-        mainIcon_item = next(
-            (item for item in current_symbol["MainIcon"]
-             if item["value"] == self.mainIcon), None)
-        self.set_selected_shapes_tree_item(dialog, mainIcon_item, "treeMainIcon", "ltbMainIcon")
+        secondIcon_index, secondIcon_label = self.find_index_and_label(
+            current_symbol["SecondIconModifier"], self.secondIcon
+        )
+        self.ui_indexes["treeSecondIcon"] = secondIcon_index
+        label = self.translator.translate(secondIcon_label)
+        listbox_control = self.dialog.getControl("ltbSecondIcon")
+        listbox_control.addItems([label], 0)
+        listbox_control.selectItemPos(0, True)
 
-        firstIcon_item = next(
-            (item for item in current_symbol["FirstIconModifier"]
-             if item["value"] == self.firstIcon), None)
-        self.set_selected_shapes_tree_item(dialog, firstIcon_item, "treeFirstIcon", "ltbFirstIcon")
+        echelonMobility_index, echelonMobility_label = self.find_index_and_label(
+            current_symbol["EchelonMobility"], self.echelonMobility
+        )
+        self.ui_indexes["treeEchelonMobility"] = echelonMobility_index
+        label = self.translator.translate(echelonMobility_label)
+        listbox_control = self.dialog.getControl("ltbEchelonMobility")
+        listbox_control.addItems([label], 0)
+        listbox_control.selectItemPos(0, True)
 
-        secondIcon_item = next(
-            (item for item in current_symbol["SecondIconModifier"]
-             if item["value"] == self.secondIcon), None)
-        self.set_selected_shapes_tree_item(dialog, secondIcon_item, "treeSecondIcon", "ltbSecondIcon")
+        headTaskDummy_index, headTaskDummy_label = self.find_index_and_label(
+            current_symbol["HeadquartersTaskforceDummy"], self.headTaskDummy
+        )
+        self.ui_indexes["treeHeadTaskDummy"] = headTaskDummy_index
+        label = self.translator.translate(headTaskDummy_label)
+        listbox_control = self.dialog.getControl("ltbHeadTaskDummy")
+        listbox_control.addItems([label], 0)
+        listbox_control.selectItemPos(0, True)
 
-        echelonMobility_item = next(
-            (item for item in current_symbol["EchelonMobility"]
-             if item["value"] == self.echelonMobility), None)
-        self.set_selected_shapes_tree_item(dialog, echelonMobility_item, "treeEchelonMobility", "ltbEchelonMobility")
+        country_index, country_label = self.find_index_and_label(
+            country_data.COUNTRY_CODES, self.country
+        )
+        self.ui_indexes["treeCountry"] = country_index
+        label = self.translator.translate(country_label)
+        listbox_control = self.dialog.getControl("ltbCountry")
+        listbox_control.addItems([label], 0)
+        listbox_control.selectItemPos(0, True)
 
-        headTaskDummy_item = next(
-            (item for item in current_symbol["HeadquartersTaskforceDummy"]
-             if item["value"] == self.headTaskDummy), None)
-        self.set_selected_shapes_tree_item(dialog, headTaskDummy_item, "treeHeadTaskDummy", "ltbHeadTaskDummy")
-
-        country_item = next(
-            (item for item in country_data.COUNTRY_CODES
-             if item["value"] == self.country), None)
-        self.set_selected_shapes_tree_item(dialog, country_item, "treeCountry", "ltbCountry")
-
-    def set_selected_shapes_tree_item(self, dialog, item, tree, listbox):
-        if not item:
-            return
-
-        label = self.translator.translate(item["label"])
-        tree_ctrl = self.tree_ctrls[tree]
-        listbox_ctrl = dialog.getControl(listbox)
-
-        root_node = tree_ctrl.getModel().DataModel.getRoot()
-
-        self.find_and_select(tree_ctrl, root_node, label)
-
-        listbox_ctrl.addItems([label], 0)
-        listbox_ctrl.selectItemPos(0, True)
-
-    def find_and_select(self, tree_ctrl, root_node, label):
-        node_name = root_node.getDisplayValue()
-        if node_name == label:
-            tree_ctrl.select(root_node)
-            return True
-
-        for i in range(root_node.getChildCount()):
-            child = root_node.getChildAt(i)
-
-            if self.find_and_select(tree_ctrl, child, label):
-                return True
-
-        return False
+    def find_index_and_label(self, items, value):
+        return next(
+            ((i, item["label"]) for i, item in enumerate(items) if item["value"] == value),
+            (0, None)
+        )
 
     def update_buttons_state(self, dialog):
         self.set_button_state(dialog, self.stack,       "STACK")
@@ -835,8 +871,8 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
     def get_attrs(self, shape, tree_node_value):
         attrs = {}
-        tree_attrs = {}
         other_attrs = {}
+        self.country = ""
 
         if shape is not None:
             user_attrs = shape.getPropertyValue("UserDefinedAttributes")
@@ -857,18 +893,18 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
                 self.affiliation = value[3]
                 self.symbolSet = value[4:6]
                 self.status = value[6]
-                tree_attrs["headTaskDummy"] = value[7]
-                tree_attrs["echelonMobility"] = value[8:10]
-                tree_attrs["mainIcon"] = value[10:16]
-                tree_attrs["firstIcon"] = value[20] + value[16:18]
-                tree_attrs["secondIcon"] = value[21] + value[18:20]
+                self.headTaskDummy = value[7]
+                self.echelonMobility = value[8:10]
+                self.mainIcon = value[10:16]
+                self.firstIcon = value[20] + value[16:18]
+                self.secondIcon = value[21] + value[18:20]
                 # others value[23:]
             elif element == "MilSymCountry":
-                tree_attrs["country"] = value
+                self.country = value
             else:
                 attrs[element] = value
 
-        return attrs, tree_attrs
+        return attrs
 
 class SearchTreeMouseListener(unohelper.Base, XMouseListener):
     def __init__(self, dialog_handler):
@@ -973,8 +1009,8 @@ class SearchTextboxKeyListener(unohelper.Base, XKeyListener):
             return
 
         matches = self.run_search(text)
-        self.treeSearch_ctrl.setVisible(bool(matches))
         self.rebuild_tree(matches)
+        self.treeSearch_ctrl.setVisible(bool(matches))
 
     def handle_tree_navigation(self, event):
         root = self.tree_model.DataModel.getRoot()
@@ -1082,9 +1118,27 @@ class ListboxMouseListener(unohelper.Base, XMouseListener):
         self.tree_ctrl = tree_ctrl
 
     def mousePressed(self, event):
-        data_model = self.tree_ctrl.getModel().DataModel
-        if not data_model:
-            self.dialog_handler.populate_symbol_tree(4, False)
+        control_name = self.tree_ctrl.getModel().Name
+        symbolSet_index = self.dialog_handler.current_symbolSet_index
+
+        if control_name == "treeSymbolSet":
+            self.dialog_handler.populate_symbolSet(symbolSet_index)
+        else:
+            selected_index = self.get_selected_index(control_name)
+
+            current_symbol = self.dialog_handler.get_current_symbol(symbolSet_index)
+            if control_name == "treeMainIcon":
+                self.dialog_handler.populate_mainIcon(current_symbol, selected_index)
+            elif control_name == "treeFirstIcon":
+                self.dialog_handler.populate_firstIcon(current_symbol, selected_index)
+            elif control_name == "treeSecondIcon":
+                self.dialog_handler.populate_secondIcon(current_symbol, selected_index)
+            elif control_name == "treeEchelonMobility":
+                self.dialog_handler.populate_echelonMobility(current_symbol, selected_index)
+            elif control_name == "treeHeadTaskDummy":
+                self.dialog_handler.populate_headTaskDummy(current_symbol, selected_index)
+            elif control_name == "treeCountry":
+                self.dialog_handler.populate_country(selected_index)
 
         self.tree_ctrl.getPeer().setFocus()
         self.tree_ctrl.setVisible(not self.tree_ctrl.isVisible())
@@ -1093,6 +1147,20 @@ class ListboxMouseListener(unohelper.Base, XMouseListener):
             and self.dialog_handler.active_tree_ctrl != self.tree_ctrl
         ):
             self.dialog_handler.active_tree_ctrl.setVisible(False)
+
+    def get_selected_index(self, control_name):
+        if (control_name == "treeMainIcon"
+            and self.dialog_handler.search_index is not None
+        ):
+            idx = self.dialog_handler.search_index
+            self.dialog_handler.search_index = None
+            return idx
+
+        node = self.tree_ctrl.getSelection()
+        if node:
+            return node.DataValue
+
+        return self.dialog_handler.ui_indexes.get(control_name, 0)
 
     def mouseReleased(self, event):
         node = self.tree_ctrl.getSelection()

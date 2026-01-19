@@ -1714,7 +1714,7 @@ SYMBOL_DETAILS = {
             { "label": "Label.Civilian_Television_Telecommunication_Type", "value": "013", "img": "013.png" }
         ],
         "SecondIconModifier": [
-            { "label": "Label.Unspecified", "value": "00", "img": "004.png" },
+            { "label": "Label.Unspecified", "value": "000", "img": "000.png" },
             { "label": "Label.Atomic_Energy_Reactor_Capability", "value": "005", "img": "005.png" },
             { "label": "Label.Autonomous_Control_Capability", "value": "110", "img": "110.png" },
             { "label": "Label.Biological_Warfare_Production_Capability", "value": "001", "img": "001.png" },
