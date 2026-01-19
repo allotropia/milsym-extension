@@ -22,6 +22,39 @@ from com.sun.star.xml import AttributeData
 from com.sun.star.beans import NamedValue
 
 
+def get_default_symbol_height_cm(ctx):
+    """Get default symbol height in cm from LibreOffice configuration.
+
+    Returns height in 1/100mm units (1cm = 1000 units)
+    """
+    default_height = 1000  # 1cm in 1/100mm units
+
+    try:
+        # Create configuration provider
+        config_provider = ctx.ServiceManager.createInstanceWithContext(
+            "com.sun.star.configuration.ConfigurationProvider", ctx)
+
+        # Create property for configuration access
+        prop = PropertyValue()
+        prop.Name = "nodepath"
+        prop.Value = "/com.collabora.milsymbol.Configuration/Settings"
+
+        # Create configuration access
+        config_access = config_provider.createInstanceWithArguments(
+            "com.sun.star.configuration.ConfigurationAccess", (prop,))
+
+        # Get the DefaultSymbolHeightCm setting
+        if config_access.hasByName("DefaultSymbolHeightCm"):
+            height_cm = config_access.getByName("DefaultSymbolHeightCm")
+            # Convert cm to 1/100mm units (1cm = 1000 units in 1/100mm)
+            default_height = int(float(height_cm) * 1000)
+
+    except Exception as e:
+        print(f"Warning: Could not read symbol height configuration, using default: {e}")
+
+    return default_height
+
+
 def parse_svg_dimensions(svg_data, scale_factor=1):
     """Parse SVG dimensions and return width and height in 1/100mm units.
 
@@ -100,12 +133,12 @@ def insertSvgGraphic(ctx, model, svg_data, params, selected_shape, smybol_name, 
 
         size = parse_svg_dimensions(svg_data, scale_factor)
 
-        # Normalize height to 1cm (1000 units in 1/100mm) while maintaining aspect ratio
-        TARGET_HEIGHT = 1000
+        # Normalize height based on configuration while maintaining aspect ratio
+        target_height = get_default_symbol_height_cm(ctx)
         if size.Height > 0:
-            aspect_scale = TARGET_HEIGHT / size.Height
+            aspect_scale = target_height / size.Height
             size.Width = int(size.Width * aspect_scale)
-            size.Height = TARGET_HEIGHT
+            size.Height = target_height
 
         shape.setSize(size)
 

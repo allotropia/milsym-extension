@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+SPDX-FileCopyrightText: Collabora Productivity and contributors
+SPDX-License-Identifier: MPL-2.0
+-->
+<oor:component-schema
+    xmlns:oor="http://openoffice.org/2001/registry"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    oor:name="Configuration"
+    oor:package="com.collabora.milsymbol"
+    xml:lang="en-US">
+
+    <component>
+        <group oor:name="Settings">
+            <info>
+                <desc>Configuration settings for Military Symbol extension</desc>
+            </info>
+
+            <prop oor:name="DefaultSymbolHeightCm" oor:type="xs:double">
+                <info>
+                    <desc>Default height for military symbols in centimeters</desc>
+                </info>
+                <value>1.0</value>
+            </prop>
+        </group>
+    </component>
+
+
+
+</oor:component-schema>

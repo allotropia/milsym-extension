@@ -8,4 +8,5 @@
 	<manifest:file-entry manifest:full-path="Sidebar.xcu" manifest:media-type="application/vnd.sun.star.configuration-data"/>
 	<manifest:file-entry manifest:full-path="Sidebar_Factory.xcu" manifest:media-type="application/vnd.sun.star.configuration-data"/>
 	<manifest:file-entry manifest:full-path="Jobs.xcu" manifest:media-type="application/vnd.sun.star.configuration-data"/>
+	<manifest:file-entry manifest:full-path="Configuration.xcs" manifest:media-type="application/vnd.sun.star.configuration-schema"/>
 </manifest:manifest>
