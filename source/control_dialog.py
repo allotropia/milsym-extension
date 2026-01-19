@@ -628,6 +628,7 @@ class ControlDlgHandler(
                 self._populate_tree_on_show = False
             # Add window resize listener
             self._add_resize_listener()
+            self._resize_controls(event)
 
     def _add_resize_listener(self):
         """Add window resize listener to handle dialog resizing"""
@@ -682,32 +683,25 @@ class ControlDlgHandler(
     def _resize_controls(self, event):
         """Resize controls based on new dialog size"""
         try:
-            # Calculate margins (based on original layout)
-            margin_left = 3
-            margin_right = 3
-            margin_top = 21
+            dialog = self.get_gui()._x_control_dialog
+            if dialog is None or self.tree_control is None:
+                return
+
+            dialog_size = dialog.getPosSize()
+            dialog_width = dialog_size.Width
+            dialog_height = dialog_size.Height
+
+            tree_pos = self.tree_control.getPosSize()
+            tree_x = tree_pos.X
+            tree_y = tree_pos.Y
+
+            margin_right = 4
             margin_bottom = 3
 
-            # Calculate new tree control size
-            new_tree_width = (
-                event.Width
-                - event.LeftInset
-                - event.RightInset
-                - margin_left
-                - margin_right
-            )
-            new_tree_height = (
-                event.Height
-                - event.TopInset
-                - event.BottomInset
-                - margin_top
-                - margin_bottom
-            )
+            new_tree_width = dialog_width - tree_x - margin_right
+            new_tree_height = dialog_height - tree_y - margin_bottom
 
-            # Set new tree control size
-            tree_model = self.tree_control.getModel()
-            tree_model.Width = new_tree_width
-            tree_model.Height = new_tree_height
+            self.tree_control.setPosSize(0, 0, new_tree_width, new_tree_height, 12)
 
         except Exception as e:
             print(f"Error resizing controls: {e}")
