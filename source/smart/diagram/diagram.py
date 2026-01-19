@@ -362,19 +362,32 @@ class Diagram(ABC):
                 if _current_diagram_id != 0:
                     self._diagram_id = _current_diagram_id
 
-            s_diagram_id = str(self._diagram_id)
+            # Look for existing group shape with our diagram ID
+            expected_name = f"{self.get_diagram_type_name()}{self._diagram_id}-GroupShape"
+
+            # First look for exact match, collect near matches as backup
+            found_exact = False
+            near_matches = []
 
             for i in range(self._x_draw_page.getCount()):
                 x_curr_shape = self._x_draw_page.getByIndex(i)
                 curr_shape_name = self.get_shape_name(x_curr_shape)
 
-                if (s_diagram_id in curr_shape_name and
-                    curr_shape_name.startswith(self.get_diagram_type_name()) and
-                    curr_shape_name.endswith("GroupShape")):
-
-                    # Query interfaces for XShapes and XShape
+                if curr_shape_name == expected_name:
+                    # Found exact match
                     self._x_shapes = x_curr_shape
                     self._x_group_shape = x_curr_shape
+                    found_exact = True
+                    break
+                elif curr_shape_name.startswith(expected_name):
+                    # This is a near match (copied shape)
+                    near_matches.append(x_curr_shape)
+
+            # If no exact match found, use the first near match
+            if not found_exact and near_matches:
+                best_match_shape = near_matches[0]
+                self._x_shapes = best_match_shape
+                self._x_group_shape = best_match_shape
 
         except Exception as ex:
             print(f"Error in init_diagram: {ex}")
