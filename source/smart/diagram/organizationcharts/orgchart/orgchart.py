@@ -30,9 +30,9 @@ class OrgChart(OrganizationChart):
         # Set specific dimensions for org chart
         self._group_width = 10
         self._group_height = 6
-        self._shape_width = 4
+        self._shape_width = 2
         self._hor_space = 1
-        self._shape_height = 2
+        self._shape_height = 1
         self._ver_space = 1
 
     def init_diagram_tree(self, diagram_tree):
