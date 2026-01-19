@@ -1,12 +1,14 @@
 # MilSymbol Extension for LibreOffice
 
-Extension to generate military symbols in LibreOffice.
+A LibreOffice extension for generating military symbols in documents and presentations.
 
-Uses the [milsymbol](https://github.com/spatialillusions/milsymbol/) library.
+This extension uses the [milsymbol](https://github.com/spatialillusions/milsymbol/) library to create NATO standard military symbols directly within LibreOffice applications.
 
-## Installing
+## Installation
 
-First, install LibreOffice.
+### Prerequisites
+
+First, install LibreOffice:
 
 **Windows / macOS**
 
@@ -14,23 +16,39 @@ Download and install LibreOffice from https://www.libreoffice.org/
 
 **Linux**
 
-Install LibreOffice from your package manager. Make sure that the script provider for Javascript is installed.
+Install LibreOffice from your package manager. Make sure that the script provider for JavaScript is installed:
 
 * Debian/Ubuntu: `sudo apt install libreoffice-script-provider-js`
 * Fedora: `sudo dnf install libreoffice-rhino`
 
-Then [download the extension](https://github.com/allotropia/milsym-extension/releases) and install it via `Tools->Extensions` in LibreOffice or simply by opening the `.oxt` file from your file manager.
+### Extension Installation
 
-## Building
+1. [Download the extension](https://github.com/allotropia/milsym-extension/releases) from the releases page
+2. Install it via `Tools > Extensions` in LibreOffice
+3. Alternatively, simply open the `.oxt` file from your file manager
 
-Build the extension with:
+## Building from Source
 
-`./build.sh`
+To build the extension from source:
 
-Then install the resulting `milsymbol-extension.oxt` using the LibreOffice extension manager, or use unopkg:
+```bash
+./build.sh
+```
 
-`unopkg add -f milsymbol-extension.oxt`
+Then install the resulting `milsymbol-extension.oxt` file using one of these methods:
 
-## Autocomplete suggestions
+* Using the LibreOffice extension manager: `Tools > Extensions`
+* Using unopkg command line tool:
+  ```bash
+  unopkg add -f milsymbol-extension.oxt
+  ```
 
-Install [types-unopy](https://pypi.org/project/types-unopy/) and restart your LSP.
+## Development
+
+### Autocomplete Support
+
+For development with autocomplete suggestions, install [types-unopy](https://pypi.org/project/types-unopy/) and restart your LSP:
+
+```bash
+pip install types-unopy
+```
