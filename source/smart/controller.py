@@ -378,8 +378,11 @@ class Controller(unohelper.Base, XSelectionChangeListener):
 
             if selected_shape.supportsService("com.sun.star.drawing.GroupShape"):
                 try:
-                    # Enter group only if drag orbat is disabled
-                    if not self._gui._global_control_dlg_listener.is_drag_orbat_enabled():
+                    # Enter group only if drag orbat is disabled and dialog is visible
+                    if (
+                        not self._gui._global_control_dlg_listener.is_drag_orbat_enabled()
+                        and self._gui.is_visible_control_dialog()
+                    ):
                         selected_shape.enterGroup()
                 except Exception:
                     print("Error entering group shape")
@@ -414,7 +417,9 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                     self.get_diagram().init_diagram(diagram_id)
                     self.get_diagram().init_properties()
 
-                    self._gui.set_visible_control_dialog(True)
+                    # Auto-open dialog if user hasn't explicitly closed it this session
+                    if not Gui._user_closed_dialog:
+                        self._gui.set_visible_control_dialog(True)
 
                 # Handle organization chart shape selection
                 if (selected_shape_name.startswith("OrbatDiagram")
@@ -422,13 +427,9 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                     if self.get_diagram() is not None:
                         self.get_diagram().select_shapes()
 
-                # GUI control logic
-                if self._gui is not None:
-                    if not self._gui.is_visible_control_dialog():
-                        self._gui.set_visible_control_dialog(True)
-
-                    if self._gui.is_visible_control_dialog():
-                        self._gui.set_focus_control_dialog()
+                # Focus the dialog if it's visible (don't auto-open)
+                if self._gui is not None and self._gui.is_visible_control_dialog():
+                    self._gui.set_focus_control_dialog()
 
     def disappear_control_dialog(self):
         """Hide control dialog"""

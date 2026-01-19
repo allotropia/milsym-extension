@@ -189,7 +189,7 @@ class ControllerManager:
 
 
 class ContextMenuInterceptor(unohelper.Base, XContextMenuInterceptor):
-    """Intercepts context menu to add 'Edit Military Symbol' option"""
+    """Intercepts context menu to add 'Edit Military Symbol' and 'Edit Orbat' options"""
 
     def __init__(self, ctx):
         self.ctx = ctx
@@ -197,6 +197,12 @@ class ContextMenuInterceptor(unohelper.Base, XContextMenuInterceptor):
     def notifyContextMenuExecute(self, event):
         """Called when a context menu is about to be displayed"""
         try:
+            orbat_shape = self._get_orbat_group_shape(event)
+            if orbat_shape is not None:
+                menu_container = event.ActionTriggerContainer
+                self._insert_edit_orbat_menu_item(menu_container)
+                return EXECUTE_MODIFIED
+
             shape = ListenerRegistry.instance().get_selected_shape()
 
             if shape is None:
@@ -217,6 +223,64 @@ class ContextMenuInterceptor(unohelper.Base, XContextMenuInterceptor):
         except Exception as e:
             print(f"ContextMenuInterceptor error: {e}")
             return IGNORED
+
+    def _get_orbat_group_shape(self, event):
+        """Check if the selected shape is an ORBAT group shape"""
+        try:
+            controller = event.Selection
+            if controller is None:
+                return None
+
+            selection = (
+                controller.getSelection()
+                if hasattr(controller, "getSelection")
+                else controller
+            )
+
+            if selection is None:
+                return None
+
+            # Check if it's a single shape or a collection
+            shape = None
+            if selection.supportsService("com.sun.star.drawing.GroupShape"):
+                shape = selection
+            elif selection.supportsService("com.sun.star.drawing.Shapes"):
+                if selection.getCount() == 1:
+                    shape = selection.getByIndex(0)
+                    if not shape.supportsService("com.sun.star.drawing.GroupShape"):
+                        return None
+
+            if shape is None:
+                return None
+
+            shape_name = shape.getName() if hasattr(shape, "getName") else ""
+            if shape_name.startswith("OrbatDiagram"):
+                return shape
+
+            return None
+        except Exception as e:
+            print(f"Error checking for ORBAT group: {e}")
+            return None
+
+    def _insert_edit_orbat_menu_item(self, menu_container):
+        """Insert 'Edit Orbat' menu item"""
+        try:
+            menu_item = menu_container.createInstance("com.sun.star.ui.ActionTrigger")
+
+            menu_text = translate(self.ctx, "ContextMenu.EditOrbat")
+            menu_item.setPropertyValue("Text", menu_text)
+            menu_item.setPropertyValue(
+                "CommandURL", "service:com.collabora.milsymbol.do?editOrbat"
+            )
+
+            separator = menu_container.createInstance(
+                "com.sun.star.ui.ActionTriggerSeparator"
+            )
+
+            menu_container.insertByIndex(0, separator)
+            menu_container.insertByIndex(0, menu_item)
+        except Exception as e:
+            print(f"_insert_edit_orbat_menu_item error: {e}")
 
     def _insert_menu_item(self, menu_container):
         """Insert 'Edit Military Symbol' menu item"""
@@ -258,12 +322,25 @@ class StartupJob(unohelper.Base, XJob, XSelectionChangeListener):
 
             if selection.supportsService("com.sun.star.text.TextGraphicObject"):
                 shape = selection
-                if shape.UserDefinedAttributes:
-                    ListenerRegistry.instance().update_selected_shape(shape)
+                try:
+                    if (
+                        hasattr(shape, "UserDefinedAttributes")
+                        and shape.UserDefinedAttributes
+                    ):
+                        ListenerRegistry.instance().update_selected_shape(shape)
+                except Exception:
+                    pass
             elif selection.supportsService("com.sun.star.drawing.Shapes"):
-                shape = selection.getByIndex(0)
-                if shape.UserDefinedAttributes:
-                    ListenerRegistry.instance().update_selected_shape(shape)
+                if selection.getCount() > 0:
+                    shape = selection.getByIndex(0)
+                    try:
+                        if (
+                            hasattr(shape, "UserDefinedAttributes")
+                            and shape.UserDefinedAttributes
+                        ):
+                            ListenerRegistry.instance().update_selected_shape(shape)
+                    except Exception:
+                        pass
 
         except Exception as e:
             print(f"Error document selection listener: {e}")
@@ -338,10 +415,54 @@ class MainJob(unohelper.Base, XJobExecutor):
             open_symbol_dialog(self.ctx, self.model, None, None, selected_shape, None)
         if args == "orgChart":
             self.onOrgChart()
+        if args == "editOrbat":
+            self.onEditOrbat()
+
+    def onEditOrbat(self):
+        """Open the ORBAT dialog for the currently selected ORBAT group"""
+        frame = self.desktop.getCurrentFrame()
+        controller_manager = ControllerManager(self.ctx)
+
+        if frame in controller_manager._controllers:
+            controller = controller_manager._controllers[frame]
+        else:
+            controller = controller_manager.get_or_create_controller(self.ctx, frame)
+            if controller is None:
+                return
+
+        xcontroller = frame.getController()
+        selection = xcontroller.getSelection()
+        if selection is None:
+            return
+
+        shape = None
+        if selection.supportsService("com.sun.star.drawing.GroupShape"):
+            shape = selection
+        elif selection.supportsService("com.sun.star.drawing.Shapes"):
+            if selection.getCount() == 1:
+                shape = selection.getByIndex(0)
+
+        if shape is None:
+            return
+
+        shape_name = shape.getName() if hasattr(shape, "getName") else ""
+        if not shape_name.startswith("OrbatDiagram"):
+            return
+
+        diagram_name = shape_name.split("-", 1)[0]
+        diagram_id = int("".join(c for c in diagram_name if c.isdigit()) or "0")
+
+        controller.set_group_type(controller.ORGANIGROUP)
+        controller.set_diagram_type(controller.ORGANIGRAM)
+        controller.instantiate_diagram()
+        controller._last_diagram_name = diagram_name
+        controller.get_diagram().init_diagram(diagram_id)
+        controller.get_diagram().init_properties()
+
+        controller._gui.set_visible_control_dialog(True)
 
     def onOrgChart(self):
         """Create a simple organization chart"""
-
         frame = self.desktop.getCurrentFrame()
 
         controller_manager = ControllerManager(self.ctx)
@@ -365,8 +486,9 @@ class MainJob(unohelper.Base, XJobExecutor):
         data.add(1, "")  # Level 1
         data.add(1, "")  # Level 1
 
-        # Create the diagram
+        # Create the diagram and show the dialog
         controller.create_diagram(data)
+        controller._gui.set_visible_control_dialog(True)
 
     def initialize_controllers_for_open_documents(self):
         """Initialize controllers for all currently open documents that contain smart diagrams"""
