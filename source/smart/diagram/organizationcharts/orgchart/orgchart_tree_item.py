@@ -16,6 +16,8 @@ Python port of OrgChartTreeItem.java
 
 from typing import List
 
+from ....utils import get_default_symbol_height_cm
+
 from ..organization_chart_tree_item import OrganizationChartTreeItem
 
 from com.sun.star.awt import Point, Size
@@ -267,7 +269,8 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
     def _calculate_size_for_aspect_ratio(self):
         """Calculate size with fixed height and proportional width"""
         default_width = OrgChartTreeItem._shape_width
-        fixed_height = 1000  # Fixed height for all shapes
+        context = self.get_diagram_tree().get_org_chart()._x_context
+        fixed_height = get_default_symbol_height_cm(context)  # Fixed height for all shapes
 
         try:
             if self._x_rectangle_shape.Graphic:
