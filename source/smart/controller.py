@@ -417,6 +417,10 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                     self.get_diagram().init_diagram(diagram_id)
                     self.get_diagram().init_properties()
 
+                    # Auto-open dialog if user hasn't explicitly closed it this session
+                    if not Gui._user_closed_dialog:
+                        self._gui.set_visible_control_dialog(True)
+
                 # Handle organization chart shape selection
                 if (selected_shape_name.startswith("OrbatDiagram")
                     and selected_shape_name.endswith("RectangleShape0")):

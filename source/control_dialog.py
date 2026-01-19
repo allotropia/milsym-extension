@@ -592,6 +592,10 @@ class ControlDlgHandler(
     def windowClosing(self, event):
         """Handle window closing event"""
         if event.Source == self.get_gui()._x_control_dialog:
+
+            from smart.gui import Gui
+            Gui._user_closed_dialog = True
+
             # Save dialog geometry before closing
             self._save_dialog_geometry()
 

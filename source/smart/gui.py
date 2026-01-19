@@ -24,6 +24,11 @@ class Gui:
     # Class-level variables to ensure only one dialog exists globally
     _global_control_dialog = None
     _global_control_dlg_listener = None
+    # Track if user explicitly closed the dialog this session
+    _user_closed_dialog = (
+        False
+    )
+
     def __init__(self, controller, x_context, x_frame):
         """Initialize GUI"""
         self._controller = controller
