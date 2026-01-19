@@ -99,6 +99,14 @@ def insertSvgGraphic(ctx, model, svg_data, params, selected_shape, smybol_name, 
         shape.setPropertyValue("Graphic", graphic)
 
         size = parse_svg_dimensions(svg_data, scale_factor)
+
+        # Normalize height to 1cm (1000 units in 1/100mm) while maintaining aspect ratio
+        TARGET_HEIGHT = 1000
+        if size.Height > 0:
+            aspect_scale = TARGET_HEIGHT / size.Height
+            size.Width = int(size.Width * aspect_scale)
+            size.Height = TARGET_HEIGHT
+
         shape.setSize(size)
 
         # set MilSym-specific user defined attributes
