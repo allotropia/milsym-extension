@@ -594,6 +594,17 @@ class ControlDlgHandler(
         if event.Source == self.get_gui()._x_control_dialog:
             # Save dialog geometry before closing
             self._save_dialog_geometry()
+
+            try:
+                diagram = self.get_controller().get_diagram()
+                if diagram:
+                    group_shape = diagram.get_group_shape()
+                    if group_shape:
+                        group_shape.leaveGroup()
+                        self.get_controller().set_selected_shape(group_shape)
+            except Exception as e:
+                print(f"Error leaving group on dialog close: {e}")
+
             self.get_gui().set_visible_control_dialog(False)
 
         self.cleanup()
