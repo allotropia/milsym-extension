@@ -287,17 +287,26 @@ class Controller(unohelper.Base, XSelectionChangeListener):
         self.remove_selection_listener()
         self.instantiate_diagram()
 
-        if self.get_diagram() is not None:
-            if data is not None:
-                self.get_diagram().create_diagram(data)
-            else:
-                self.get_diagram().create_diagram()
+        # Lock controllers to avoid layout jumps during diagram creation
+        model = self._x_frame.getController().getModel()
+        model.lockControllers()
 
-            # Initialize object tree in organigrams
-            if self.get_group_type() == self.ORGANIGROUP:
-                self.get_diagram().init_diagram()
+        try:
+            if self.get_diagram() is not None:
+                if data is not None:
+                    self.get_diagram().create_diagram(data)
+                else:
+                    self.get_diagram().create_diagram()
 
-            self._gui.set_visible_control_dialog(True)
+                # Initialize object tree in organigrams
+                if self.get_group_type() == self.ORGANIGROUP:
+                    self.get_diagram().init_diagram()
+
+                self._gui.set_visible_control_dialog(True)
+        finally:
+            # Always unlock controllers
+            model.unlockControllers()
+
         self.add_selection_listener()
 
     def is_shape_service(self, obj):
