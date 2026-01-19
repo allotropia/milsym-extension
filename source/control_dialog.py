@@ -12,6 +12,7 @@ import sys
 import uno
 import unohelper
 import shutil
+from smart.gui import Gui
 
 base_dir = os.path.dirname(__file__)
 if base_dir not in sys.path:
@@ -592,8 +593,6 @@ class ControlDlgHandler(
     def windowClosing(self, event):
         """Handle window closing event"""
         if event.Source == self.get_gui()._x_control_dialog:
-
-            from smart.gui import Gui
             Gui._user_closed_dialog = True
 
             # Save dialog geometry before closing
