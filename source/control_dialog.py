@@ -617,6 +617,7 @@ class ControlDlgHandler(
         """Handle window opened event"""
         if event.Source == self.get_gui()._x_control_dialog:
             # Restore saved dialog geometry
+            # Note: Position (x, y) will not work on Wayland due to protocol limitations
             saved_geometry = self._load_dialog_geometry()
             if saved_geometry:
                 self._apply_dialog_geometry(saved_geometry)
