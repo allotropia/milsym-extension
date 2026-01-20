@@ -215,10 +215,11 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
 
         # Use fixed dimensions instead of scaling to fit available space
         org_chart = self.get_diagram_tree().get_org_chart()
+        configured_height = get_default_symbol_height_cm(org_chart._x_context)
 
         # Set fixed shape dimensions (convert to appropriate units)
         OrgChartTreeItem._shape_width = org_chart.get_shape_width() * 1000
-        OrgChartTreeItem._shape_height = org_chart.get_shape_height() * 1000
+        OrgChartTreeItem._shape_height = configured_height
         OrgChartTreeItem._hor_space = org_chart.get_hor_space() * 1000
         OrgChartTreeItem._ver_space = org_chart.get_ver_space() * 1000
 
