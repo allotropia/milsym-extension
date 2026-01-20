@@ -2320,6 +2320,10 @@ class TreeKeyHandler(unohelper.Base, XKeyListener):
             elif event.KeyCode == Key.C and (event.Modifiers & KeyModifier.MOD1):
                 self.dialog_handler.copy_selected_item()
                 return
+            elif event.KeyCode == Key.X and (event.Modifiers & KeyModifier.MOD1):
+                self.dialog_handler.copy_selected_item()
+                self.dialog_handler.remove_selected_shape()
+                return
             elif event.KeyCode == Key.V and (event.Modifiers & KeyModifier.MOD1):
                 self.dialog_handler.paste_to_selected_item()
                 return
