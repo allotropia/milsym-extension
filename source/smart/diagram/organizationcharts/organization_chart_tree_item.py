@@ -16,7 +16,7 @@ Python port of OrganizationChartTreeItem.java
 
 from abc import ABC
 
-from com.sun.star.drawing.FillStyle import NONE as FILL_STYLE_NONE, GRADIENT, SOLID
+from com.sun.star.drawing.FillStyle import GRADIENT, NONE as FILL_STYLE_NONE, SOLID
 from com.sun.star.drawing.LineStyle import NONE as LINE_STYLE_NONE, SOLID as LINE_STYLE_SOLID
 
 class OrganizationChartTreeItem(ABC):

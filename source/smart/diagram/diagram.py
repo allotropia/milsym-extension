@@ -13,8 +13,9 @@
 Base Diagram class - stub implementation
 Python port of Diagram.java
 """
-import sys
 import os
+import sys
+
 import uno
 
 # Add parent directory to path to import utils
@@ -25,8 +26,8 @@ if base_dir not in sys.path:
 from utils import parse_svg_dimensions
 
 from abc import ABC, abstractmethod
-from com.sun.star.beans import PropertyValue
 from com.sun.star.awt import Point, Size
+from com.sun.star.beans import PropertyValue
 from com.sun.star.text.TextContentAnchorType import AT_PARAGRAPH
 
 class Diagram(ABC):

@@ -19,7 +19,7 @@ from abc import abstractmethod
 # Import base classes
 from ..diagram import Diagram
 
-from com.sun.star.awt import Size, Point
+from com.sun.star.awt import Point, Size
 
 #from com.sun.star.drawing import LineStyle
 # from com.sun.star.drawing.ConnectorType import STANDARD as CONN_STANDARD_VALUE

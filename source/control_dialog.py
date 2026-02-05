@@ -9,9 +9,10 @@
 import json
 import os
 import sys
+import shutil
+
 import uno
 import unohelper
-import shutil
 
 base_dir = os.path.dirname(__file__)
 if base_dir not in sys.path:

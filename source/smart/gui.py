@@ -8,6 +8,7 @@
 
 import os
 import sys
+
 import uno
 
 base_dir = os.path.dirname(__file__)
@@ -18,7 +19,7 @@ from symbol_dialog import open_symbol_dialog
 from control_dialog import ControlDlgHandler
 from .. utils import get_package_location
 
-from com.sun.star.awt import WindowDescriptor, WindowAttribute
+from com.sun.star.awt import WindowAttribute, WindowDescriptor
 from com.sun.star.awt.WindowClass import MODALTOP
 
 class Gui:

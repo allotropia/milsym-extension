@@ -6,20 +6,20 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import sys
 import os
-import uno
+import sys
 import xml.etree.ElementTree as ET
+
+import uno
 
 base_dir = os.path.dirname(__file__)
 if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
 
-from com.sun.star.awt import Size, Point
-from com.sun.star.beans import PropertyValue
+from com.sun.star.awt import Point, Size
+from com.sun.star.beans import NamedValue, PropertyValue
 from com.sun.star.text.TextContentAnchorType import AT_PARAGRAPH
 from com.sun.star.xml import AttributeData
-from com.sun.star.beans import NamedValue
 
 
 def get_default_symbol_height_cm(ctx):

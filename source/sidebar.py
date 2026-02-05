@@ -17,14 +17,14 @@ from symbol_dialog import open_symbol_dialog
 from utils import get_package_location, parse_svg_dimensions
 from sidebar_rename_dialog import RenameDialog
 
-from unohelper import systemPathToFileUrl, fileUrlToSystemPath
+from unohelper import fileUrlToSystemPath, systemPathToFileUrl
 from com.sun.star.ui.dialogs.TemplateDescription import FILESAVE_AUTOEXTENSION, FILEOPEN_SIMPLE
-from com.sun.star.ui import XUIElement, XUIElementFactory, XToolPanel, XSidebarPanel, LayoutSize
+from com.sun.star.ui import LayoutSize, XToolPanel, XSidebarPanel, XUIElement, XUIElementFactory
 from com.sun.star.awt import XWindowListener, XActionListener
 from com.sun.star.awt import XFocusListener, XKeyListener
 from com.sun.star.view.SelectionType import SINGLE
 from com.sun.star.datatransfer.dnd import XDragGestureListener, XDragSourceListener
-from com.sun.star.datatransfer import XTransferable, DataFlavor
+from com.sun.star.datatransfer import DataFlavor, XTransferable
 from com.sun.star.datatransfer.dnd.DNDConstants import ACTION_COPY
 
 class SidebarFactory(unohelper.Base, XUIElementFactory):

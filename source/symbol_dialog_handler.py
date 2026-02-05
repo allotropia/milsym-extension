@@ -9,6 +9,7 @@
 import os
 import re
 import sys
+
 import uno
 import unohelper
 from com.sun.star.awt import XDialogEventHandler
@@ -22,14 +23,14 @@ if base_dir not in sys.path:
 from data import symbols_data
 from data import country_data
 from utils import (
-    insertSvgGraphic,
-    insertGraphicAttributes,
     createMilSymbolScriptInstance,
-    create_graphic_from_svg
+    create_graphic_from_svg,
+    insertGraphicAttributes,
+    insertSvgGraphic
 )
 from translator import Translator
 from com.sun.star.view.SelectionType import SINGLE
-from com.sun.star.awt import XMouseListener, XFocusListener, XKeyListener
+from com.sun.star.awt import XFocusListener, XKeyListener, XMouseListener
 from com.sun.star.awt.Key import UP, DOWN, LEFT, RIGHT, RETURN
 from collections import defaultdict
 
