@@ -21,7 +21,12 @@ if base_dir not in sys.path:
 
 from data import symbols_data
 from data import country_data
-from utils import insertSvgGraphic, insertGraphicAttributes, getExtensionBasePath, create_graphic_from_svg
+from utils import (
+    insertSvgGraphic,
+    insertGraphicAttributes,
+    createMilSymbolScriptInstance,
+    create_graphic_from_svg
+)
 from translator import Translator
 from com.sun.star.view.SelectionType import SINGLE
 from com.sun.star.awt import XMouseListener, XFocusListener, XKeyListener
@@ -54,12 +59,8 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         self.search_index = None
         self.selected_node_value = selected_node_value
         self.selected_shape = selected_shape
-        self.translator = Translator(self.ctx)
-        self.factory = self.ctx.getServiceManager().createInstanceWithContext("com.sun.star.script.provider.MasterScriptProviderFactory", self.ctx)
-        self.provider = self.factory.createScriptProvider(model)
-        self.script = self.provider.getScript(
-            "vnd.sun.star.script:milsymbol.milsymbol.js?language=JavaScript&location=user:uno_packages/" +
-            getExtensionBasePath(self.ctx))
+        self.translator = Translator(ctx)
+        self.script = createMilSymbolScriptInstance(ctx, model)
 
     def init_dialog_controls(self):
         self.init_textboxes()

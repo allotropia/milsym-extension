@@ -16,6 +16,7 @@ if base_dir not in sys.path:
 
 from symbol_dialog import open_symbol_dialog
 from control_dialog import ControlDlgHandler
+from .. utils import get_package_location
 
 from com.sun.star.awt import WindowDescriptor, WindowAttribute
 from com.sun.star.awt.WindowClass import MODALTOP
@@ -215,7 +216,7 @@ class Gui:
         """Get dialog property value from resource file"""
         result = None
         x_resources = None
-        m_res_root_url = self.get_package_location() + "/dialog/"
+        m_res_root_url = get_package_location(self._x_context) + "/dialog/"
 
         try:
             args = (m_res_root_url, True, self.get_locale(), dialog_name, '', uno.Any("com.sun.star.task.XInteractionHandler", None))
@@ -231,17 +232,6 @@ class Gui:
                     result = x_resources.resolveString(resource_id)
 
         return result
-
-    def get_package_location(self) -> str:
-        """Get package location from package information provider"""
-        location = None
-        try:
-            x_name_access = self._x_context
-            x_pip = x_name_access.getByName("/singletons/com.sun.star.deployment.PackageInformationProvider")
-            location = x_pip.getPackageLocation("com.collabora.milsymbol")
-        except Exception as ex:
-            print(f"Error getting package location: {ex}")
-        return location
 
     def get_locale(self):
         """Get locale from configuration provider"""

@@ -289,3 +289,22 @@ def get_package_location(ctx, extensionName="com.collabora.milsymbol"):
 def getExtensionBasePath(ctx, extensionName="com.collabora.milsymbol"):
     """Get the base path of the extension installation directory"""
     return os.path.basename(get_package_location(ctx, extensionName))
+
+def createMilSymbolScriptInstance(ctx, model):
+    """Create an instance of the MilSymbol.js scripting library"""
+    factory = ctx.getServiceManager().createInstanceWithContext(
+        "com.sun.star.script.provider.MasterScriptProviderFactory", ctx)
+    provider = factory.createScriptProvider(model)
+
+    package_path = get_package_location(ctx, "com.collabora.milsymbol")
+    location = ""
+    if "share/uno_packages" in package_path:
+        location = "share:uno_packages/"
+    else:
+        location = "user:uno_packages/"
+
+    return provider.getScript(
+        "vnd.sun.star.script:milsymbol.milsymbol.js?language=JavaScript&location="
+        + location
+        + os.path.basename(package_path)
+    )

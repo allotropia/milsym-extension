@@ -39,9 +39,9 @@ from com.sun.star.beans import NamedValue
 from com.sun.star.document import XUndoAction
 from utils import (
     extractGraphicAttributes,
-    getExtensionBasePath,
     generate_icon_svg,
     insertGraphicAttributes,
+    createMilSymbolScriptInstance
 )
 from unohelper import systemPathToFileUrl
 from translator import translate
@@ -68,14 +68,7 @@ class ControlDlgHandler(
         self._unit_str = translate(x_context, "ControlDialog.Unit")
         self._placeholder_str = translate(x_context, "ControlDialog.Placeholder")
         self._undo_actions = []  # Track all undo actions for cleanup on document close
-        factory = self.x_context.getServiceManager().createInstanceWithContext(
-            "com.sun.star.script.provider.MasterScriptProviderFactory", self.x_context
-        )
-        provider = factory.createScriptProvider(model)
-        self.script = provider.getScript(
-            "vnd.sun.star.script:milsymbol.milsymbol.js?language=JavaScript&location=user:uno_packages/"
-            + getExtensionBasePath(self.x_context)
-        )
+        self.script = createMilSymbolScriptInstance(x_context, model)
 
     def callHandlerMethod(self, dialog, eventObject, methodName):
         if methodName == "OnAdd":
