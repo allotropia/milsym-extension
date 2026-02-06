@@ -13,6 +13,7 @@
 OrgChart class - Main organization chart implementation
 Python port of OrgChart.java
 """
+
 from utils import generate_icon_svg
 from ...diagram import Diagram
 from ..organization_chart import OrganizationChart
@@ -70,8 +71,10 @@ class OrgChart(OrganizationChart):
 
                 # Create base control shape
                 x_base_shape = self.create_shape(
-                    Diagram.DIAGRAM_BASE_SHAPE_TYPE, 0,
-                    self.page_props.border_left, self.page_props.border_top
+                    Diagram.DIAGRAM_BASE_SHAPE_TYPE,
+                    0,
+                    self.page_props.border_left,
+                    self.page_props.border_top,
                 )
                 self._x_shapes.add(x_base_shape)
                 self.set_control_shape_props(x_base_shape)
@@ -79,8 +82,10 @@ class OrgChart(OrganizationChart):
 
                 # Create start shape
                 x_start_shape = self.create_shape(
-                    Diagram.DIAGRAM_SHAPE_TYPE, 1,
-                    self.page_props.border_left, self.page_props.border_top
+                    Diagram.DIAGRAM_SHAPE_TYPE,
+                    1,
+                    self.page_props.border_left,
+                    self.page_props.border_top,
                 )
                 self._x_shapes.add(x_start_shape)
 
@@ -105,7 +110,9 @@ class OrgChart(OrganizationChart):
 
                 # Create all shapes and tree items
                 for i in range(i_root, size):
-                    x_shape = self.create_shape(Diagram.DIAGRAM_SHAPE_TYPE, i + (2 - i_root))
+                    x_shape = self.create_shape(
+                        Diagram.DIAGRAM_SHAPE_TYPE, i + (2 - i_root)
+                    )
                     self._x_shapes.add(x_shape)
                     self.set_move_protect_of_shape(x_shape)
 
@@ -134,7 +141,9 @@ class OrgChart(OrganizationChart):
                             dad_item = dad_item.get_dad()
 
                     # Create connector shape
-                    x_connector_shape = self.create_shape(Diagram.CONNECTOR_SHAPE, i + (2 - i_root))
+                    x_connector_shape = self.create_shape(
+                        Diagram.CONNECTOR_SHAPE, i + (2 - i_root)
+                    )
                     self._x_shapes.add(x_connector_shape)
                     self.set_move_protect_of_shape(x_connector_shape)
 
@@ -144,13 +153,17 @@ class OrgChart(OrganizationChart):
 
                     self.set_connector_shape_props(
                         x_connector_shape,
-                        dad_item.get_rectangle_shape(), 2,
-                        x_shape, end_shape_conn_pos
+                        dad_item.get_rectangle_shape(),
+                        2,
+                        x_shape,
+                        end_shape_conn_pos,
                     )
                     self._diagram_tree.add_to_connectors(x_connector_shape)
 
                     # Create tree item and link to tree
-                    new_tree_item = OrgChartTreeItem(self._diagram_tree, x_shape, dad_item, 0, 0.0)
+                    new_tree_item = OrgChartTreeItem(
+                        self._diagram_tree, x_shape, dad_item, 0, 0.0
+                    )
 
                     if last_tree_item.get_level() == datas.get(i).get_level():
                         last_tree_item.set_first_sibling(new_tree_item)
@@ -166,7 +179,9 @@ class OrgChart(OrganizationChart):
                 # Handle root visibility
                 if not is_root_item:
                     self.get_controller().set_selected_shape(
-                        self._diagram_tree.get_root_item().get_last_child().get_rectangle_shape()
+                        self._diagram_tree.get_root_item()
+                        .get_last_child()
+                        .get_rectangle_shape()
                     )
                     self.set_hidden_root_element_prop(True)
                     self.get_diagram_tree().get_root_item().hide_element()
@@ -187,9 +202,12 @@ class OrgChart(OrganizationChart):
 
             # Create base control shape
             x_base_shape = self.create_shape(
-                Diagram.DIAGRAM_BASE_SHAPE_TYPE, 0,
-                self.page_props.border_left + self._half_diff, self.page_props.border_top,
-                self._draw_area_width, self._draw_area_height
+                Diagram.DIAGRAM_BASE_SHAPE_TYPE,
+                0,
+                self.page_props.border_left + self._half_diff,
+                self.page_props.border_top,
+                self._draw_area_width,
+                self._draw_area_height,
             )
             self._x_shapes.add(x_base_shape)
             self.set_control_shape_props(x_base_shape)
@@ -210,12 +228,21 @@ class OrgChart(OrganizationChart):
                 ver_space = 0
 
             # Create start shape (root)
-            x_coord = (self.page_props.border_left + self._half_diff +
-                      self._draw_area_width // 2 - shape_width // 2)
+            x_coord = (
+                self.page_props.border_left
+                + self._half_diff
+                + self._draw_area_width // 2
+                - shape_width // 2
+            )
             y_coord = self.page_props.border_top
 
             x_start_shape = self.create_shape(
-                Diagram.DIAGRAM_SHAPE_TYPE, 1, x_coord, y_coord, shape_width, shape_height
+                Diagram.DIAGRAM_SHAPE_TYPE,
+                1,
+                x_coord,
+                y_coord,
+                shape_width,
+                shape_height,
             )
             self._x_shapes.add(x_start_shape)
             self.set_move_protect_of_shape(x_start_shape)
@@ -229,9 +256,12 @@ class OrgChart(OrganizationChart):
 
             for i in range(2, n + 1):
                 x_rect_shape = self.create_shape(
-                    Diagram.DIAGRAM_SHAPE_TYPE, i,
-                    x_coord + (shape_width + hor_space) * (i - 2), y_coord,
-                    shape_width, shape_height
+                    Diagram.DIAGRAM_SHAPE_TYPE,
+                    i,
+                    x_coord + (shape_width + hor_space) * (i - 2),
+                    y_coord,
+                    shape_width,
+                    shape_height,
                 )
                 self._x_shapes.add(x_rect_shape)
                 self.set_move_protect_of_shape(x_rect_shape)
@@ -242,7 +272,9 @@ class OrgChart(OrganizationChart):
                 x_connector_shape = self.create_shape(Diagram.CONNECTOR_SHAPE, i)
                 self._x_shapes.add(x_connector_shape)
                 self.set_move_protect_of_shape(x_connector_shape)
-                self.set_connector_shape_props(x_connector_shape, x_start_shape, 2, x_rect_shape, 0)
+                self.set_connector_shape_props(
+                    x_connector_shape, x_start_shape, 2, x_rect_shape, 0
+                )
 
                 if i == 2 and x_rect_shape is not None:
                     x_selected_shape = x_rect_shape
@@ -252,7 +284,9 @@ class OrgChart(OrganizationChart):
                 self.get_controller().set_selected_shape(x_start_shape)
             elif x_selected_shape is not None:
                 self.get_controller().set_selected_shape(x_selected_shape)
-                shape_id = self.get_controller().get_shape_id(self.get_shape_name(x_selected_shape))
+                shape_id = self.get_controller().get_shape_id(
+                    self.get_shape_name(x_selected_shape)
+                )
                 self.set_color_prop(self._ORG_CHART_COLORS[(shape_id - 1) % 8])
 
     def init_diagram(self, diagram_id=None):
@@ -377,15 +411,23 @@ class OrgChart(OrganizationChart):
                 # Get shape name (in real implementation, would use UNO API)
                 selected_shape_name = self.get_shape_name(x_selected_shape)
 
-                if (Diagram.DIAGRAM_SHAPE_TYPE in selected_shape_name and
-                    Diagram.DIAGRAM_BASE_SHAPE_TYPE not in selected_shape_name):
-
+                if (
+                    Diagram.DIAGRAM_SHAPE_TYPE in selected_shape_name
+                    and Diagram.DIAGRAM_BASE_SHAPE_TYPE not in selected_shape_name
+                ):
                     selected_item = self._diagram_tree.get_tree_item(x_selected_shape)
 
                     # Can't be associate of root item
-                    if selected_item.get_dad() is None and self._new_item_h_type == self.ASSOCIATE:
-                        title = self.get_gui().get_dialog_property_value("Strings", "ItemAddError.Title")
-                        message = self.get_gui().get_dialog_property_value("Strings", "ItemAddError.Message")
+                    if (
+                        selected_item.get_dad() is None
+                        and self._new_item_h_type == self.ASSOCIATE
+                    ):
+                        title = self.get_gui().get_dialog_property_value(
+                            "Strings", "ItemAddError.Title"
+                        )
+                        message = self.get_gui().get_dialog_property_value(
+                            "Strings", "ItemAddError.Message"
+                        )
                         self.get_gui().show_message_box(title, message)
                     else:
                         top_shape_id = self.get_top_shape_id()
@@ -394,7 +436,9 @@ class OrgChart(OrganizationChart):
                             self.clear_empty_diagram_and_recreate()
                         else:
                             top_shape_id += 1
-                            x_rectangle_shape = self.create_shape(Diagram.DIAGRAM_SHAPE_TYPE, top_shape_id)
+                            x_rectangle_shape = self.create_shape(
+                                Diagram.DIAGRAM_SHAPE_TYPE, top_shape_id
+                            )
                             self._x_shapes.add(x_rectangle_shape)
                             self._diagram_tree.add_to_rectangles(x_rectangle_shape)
 
@@ -405,36 +449,60 @@ class OrgChart(OrganizationChart):
                                 # Add as child
                                 dad_item = selected_item
                                 new_tree_item = OrgChartTreeItem(
-                                    self._diagram_tree, x_rectangle_shape, dad_item, 0, 0.0
+                                    self._diagram_tree,
+                                    x_rectangle_shape,
+                                    dad_item,
+                                    0,
+                                    0.0,
                                 )
 
                                 if not dad_item.is_first_child():
                                     dad_item.set_first_child(new_tree_item)
                                 else:
-                                    x_previous_child = self._diagram_tree.get_last_child_shape(x_selected_shape)
+                                    x_previous_child = (
+                                        self._diagram_tree.get_last_child_shape(
+                                            x_selected_shape
+                                        )
+                                    )
                                     if x_previous_child is not None:
-                                        previous_item = self._diagram_tree.get_tree_item(x_previous_child)
+                                        previous_item = (
+                                            self._diagram_tree.get_tree_item(
+                                                x_previous_child
+                                            )
+                                        )
                                         if previous_item is not None:
-                                            previous_item.set_first_sibling(new_tree_item)
+                                            previous_item.set_first_sibling(
+                                                new_tree_item
+                                            )
 
                             elif self._new_item_h_type == self.ASSOCIATE:
                                 # Add as sibling
                                 dad_item = selected_item.get_dad()
                                 new_tree_item = OrgChartTreeItem(
-                                    self._diagram_tree, x_rectangle_shape, dad_item, 0, 0.0
+                                    self._diagram_tree,
+                                    x_rectangle_shape,
+                                    dad_item,
+                                    0,
+                                    0.0,
                                 )
 
                                 if selected_item.is_first_sibling():
-                                    new_tree_item.set_first_sibling(selected_item.get_first_sibling())
+                                    new_tree_item.set_first_sibling(
+                                        selected_item.get_first_sibling()
+                                    )
                                 selected_item.set_first_sibling(new_tree_item)
 
                             # Set shape properties
                             self.set_move_protect_of_shape(x_rectangle_shape)
-                            self.set_shape_properties(x_rectangle_shape, Diagram.DIAGRAM_SHAPE_TYPE)
+                            self.set_shape_properties(
+                                x_rectangle_shape, Diagram.DIAGRAM_SHAPE_TYPE
+                            )
 
                             # Create connector if not root level
                             if top_shape_id > 1:
-                                x_connector_shape = self.create_shape(Diagram.CONNECTOR_SHAPE, top_shape_id)
+                                x_connector_shape = self.create_shape(
+                                    Diagram.CONNECTOR_SHAPE, top_shape_id
+                                )
                                 self._x_shapes.add(x_connector_shape)
                                 self.set_move_protect_of_shape(x_connector_shape)
                                 self._diagram_tree.add_to_connectors(x_connector_shape)
@@ -444,20 +512,35 @@ class OrgChart(OrganizationChart):
 
                                 if self._new_item_h_type == self.UNDERLING:
                                     x_start_shape = selected_item.get_rectangle_shape()
-                                    if selected_item.get_level() + 1 > OrgChartTree.LAST_HOR_LEVEL:
+                                    if (
+                                        selected_item.get_level() + 1
+                                        > OrgChartTree.LAST_HOR_LEVEL
+                                    ):
                                         end_shape_conn_pos = 3
                                 elif self._new_item_h_type == self.ASSOCIATE:
-                                    x_start_shape = selected_item.get_dad().get_rectangle_shape()
-                                    if selected_item.get_level() > OrgChartTree.LAST_HOR_LEVEL:
+                                    x_start_shape = (
+                                        selected_item.get_dad().get_rectangle_shape()
+                                    )
+                                    if (
+                                        selected_item.get_level()
+                                        > OrgChartTree.LAST_HOR_LEVEL
+                                    ):
                                         end_shape_conn_pos = 3
 
                                 self.set_connector_shape_props(
-                                    x_connector_shape, x_start_shape, 2,
-                                    x_rectangle_shape, end_shape_conn_pos
+                                    x_connector_shape,
+                                    x_start_shape,
+                                    2,
+                                    x_rectangle_shape,
+                                    end_shape_conn_pos,
                                 )
 
                                 # Handle hidden root element
                                 if self.is_hidden_root_element_prop():
-                                    if (self.get_diagram_tree().get_root_item().get_rectangle_shape() ==
-                                        x_start_shape):
+                                    if (
+                                        self.get_diagram_tree()
+                                        .get_root_item()
+                                        .get_rectangle_shape()
+                                        == x_start_shape
+                                    ):
                                         self.get_diagram_tree().get_root_item().hide_element()

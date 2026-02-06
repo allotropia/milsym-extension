@@ -13,6 +13,7 @@
 Base Diagram class - stub implementation
 Python port of Diagram.java
 """
+
 import os
 import sys
 
@@ -30,13 +31,14 @@ from com.sun.star.awt import Point, Size
 from com.sun.star.beans import PropertyValue
 from com.sun.star.text.TextContentAnchorType import AT_PARAGRAPH
 
+
 class Diagram(ABC):
     """Base diagram class - simplified version of the Java Diagram class"""
 
     # Shape types
     DIAGRAM_SHAPE_TYPE = "GraphicObjectShape"  # start shape and child shapes
-    DIAGRAM_BASE_SHAPE_TYPE = "RectangleShape" # base control shape
-    CONNECTOR_SHAPE = "ConnectorShape"         # connector shape
+    DIAGRAM_BASE_SHAPE_TYPE = "RectangleShape"  # base control shape
+    CONNECTOR_SHAPE = "ConnectorShape"  # connector shape
 
     # Connection types
     CONN_LINE = 0
@@ -48,8 +50,14 @@ class Diagram(ABC):
 
     # Base colors array (simplified)
     _BASE_COLORS = [
-        0xff0000, 0x00ff00, 0x0000ff, 0xffff00,
-        0xff00ff, 0x00ffff, 0x800000, 0x008000
+        0xFF0000,
+        0x00FF00,
+        0x0000FF,
+        0xFFFF00,
+        0xFF00FF,
+        0x00FFFF,
+        0x800000,
+        0x008000,
     ]
 
     def __init__(self, controller, gui, x_frame, x_context):
@@ -107,7 +115,9 @@ class Diagram(ABC):
             return self._x_group_shape.getPosition()
         return None
 
-    def set_group_shape_size_and_pos(self, width: int, height: int, x_pos: int, y_pos: int):
+    def set_group_shape_size_and_pos(
+        self, width: int, height: int, x_pos: int, y_pos: int
+    ):
         """Set group shape size and position"""
         if self._x_group_shape is not None:
             try:
@@ -116,14 +126,24 @@ class Diagram(ABC):
             except Exception as ex:
                 print(f"Error setting group shape size and position: {ex}")
 
-    def create_shape(self, shape_type: str, shape_id: int, x: int = 0, y: int = 0, width: int = 0, height: int = 0):
+    def create_shape(
+        self,
+        shape_type: str,
+        shape_id: int,
+        x: int = 0,
+        y: int = 0,
+        width: int = 0,
+        height: int = 0,
+    ):
         x_shape = None
         try:
             # Create shape using LibreOffice service manager
             x_shape = self._x_model.createInstance(f"com.sun.star.drawing.{shape_type}")
 
             # Set shape name
-            shape_name = f"{self.get_diagram_type_name()}{self._diagram_id}-{shape_type}"
+            shape_name = (
+                f"{self.get_diagram_type_name()}{self._diagram_id}-{shape_type}"
+            )
             if shape_type != self.DIAGRAM_BASE_SHAPE_TYPE:
                 shape_name += f"{shape_id}"
             x_shape.setName(shape_name)
@@ -170,7 +190,9 @@ class Diagram(ABC):
             x_shape = x_selected_shapes.getByIndex(i)
             if x_shape is not None:
                 last_shape = x_shape
-                self.set_new_shape_properties(x_shape, self.DIAGRAM_SHAPE_TYPE, svg_data)
+                self.set_new_shape_properties(
+                    x_shape, self.DIAGRAM_SHAPE_TYPE, svg_data
+                )
 
         return last_shape
 
@@ -178,9 +200,15 @@ class Diagram(ABC):
         """Set shape properties"""
         try:
             if shape_type == self.DIAGRAM_SHAPE_TYPE:
-                graphic_provider = self._x_context.ServiceManager.createInstanceWithContext("com.sun.star.graphic.GraphicProvider", self._x_context)
-                pipe = self._x_context.ServiceManager.createInstanceWithContext("com.sun.star.io.Pipe", self._x_context)
-                pipe.writeBytes(uno.ByteSequence(svg_data.encode('utf-8')))
+                graphic_provider = (
+                    self._x_context.ServiceManager.createInstanceWithContext(
+                        "com.sun.star.graphic.GraphicProvider", self._x_context
+                    )
+                )
+                pipe = self._x_context.ServiceManager.createInstanceWithContext(
+                    "com.sun.star.io.Pipe", self._x_context
+                )
+                pipe.writeBytes(uno.ByteSequence(svg_data.encode("utf-8")))
                 pipe.flush()
                 pipe.closeOutput()
                 media_properties = (PropertyValue("InputStream", 0, pipe, 0),)
@@ -198,8 +226,14 @@ class Diagram(ABC):
         """Set shape properties"""
         try:
             if shape_type == self.DIAGRAM_SHAPE_TYPE:
-                svg_url = "vnd.sun.star.extension://com.collabora.milsymbol/img/base.svg"
-                graphic_provider = self._x_context.ServiceManager.createInstanceWithContext("com.sun.star.graphic.GraphicProvider", self._x_context)
+                svg_url = (
+                    "vnd.sun.star.extension://com.collabora.milsymbol/img/base.svg"
+                )
+                graphic_provider = (
+                    self._x_context.ServiceManager.createInstanceWithContext(
+                        "com.sun.star.graphic.GraphicProvider", self._x_context
+                    )
+                )
                 media_properties = (PropertyValue("URL", 0, svg_url, 0),)
                 graphic = graphic_provider.queryGraphic(media_properties)
                 shape.setPropertyValue("Graphic", graphic)
@@ -312,7 +346,14 @@ class Diagram(ABC):
     def get_connectors_line_width_prop(self):
         return 40
 
-    def set_connector_shape_props(self, connector_shape, start_shape, start_conn_pos: int, end_shape, end_conn_pos: int):
+    def set_connector_shape_props(
+        self,
+        connector_shape,
+        start_shape,
+        start_conn_pos: int,
+        end_shape,
+        end_conn_pos: int,
+    ):
         """Set connector shape properties"""
         try:
             # Direct property access in Python UNO
@@ -320,7 +361,9 @@ class Diagram(ABC):
             connector_shape.setPropertyValue("EndShape", end_shape)
             connector_shape.setPropertyValue("StartGluePointIndex", start_conn_pos)
             connector_shape.setPropertyValue("EndGluePointIndex", end_conn_pos)
-            connector_shape.setPropertyValue("LineColor", self.get_connector_color_prop())
+            connector_shape.setPropertyValue(
+                "LineColor", self.get_connector_color_prop()
+            )
 
             # Set line properties
             self.set_connector_shape_line_props(connector_shape)
@@ -364,7 +407,9 @@ class Diagram(ABC):
                     self._diagram_id = _current_diagram_id
 
             # Look for existing group shape with our diagram ID
-            expected_name = f"{self.get_diagram_type_name()}{self._diagram_id}-GroupShape"
+            expected_name = (
+                f"{self.get_diagram_type_name()}{self._diagram_id}-GroupShape"
+            )
 
             # First look for exact match, collect near matches as backup
             found_exact = False
@@ -417,10 +462,14 @@ class Diagram(ABC):
             self.set_group_size()
 
             # Create group shape
-            self._x_group_shape = self._x_model.createInstance("com.sun.star.drawing.GroupShape")
+            self._x_group_shape = self._x_model.createInstance(
+                "com.sun.star.drawing.GroupShape"
+            )
 
             # Set name for the group shape
-            self._x_group_shape.setName(self.get_diagram_type_name() + str(self._diagram_id) + "-GroupShape")
+            self._x_group_shape.setName(
+                self.get_diagram_type_name() + str(self._diagram_id) + "-GroupShape"
+            )
 
             # Add to draw page
             self.add_group_shape_to_draw_page()
@@ -432,13 +481,15 @@ class Diagram(ABC):
             print(f"Error in create_diagram: {ex}")
 
     def add_group_shape_to_draw_page(self):
-        if self._x_model.supportsService("com.sun.star.text.TextDocument"): # Writer
+        if self._x_model.supportsService("com.sun.star.text.TextDocument"):  # Writer
             self._x_group_shape.setPropertyValue("AnchorType", AT_PARAGRAPH)
             cursor = self._x_model.getText().createTextCursor()
             cursor.getText().insertTextContent(cursor, self._x_group_shape, False)
-        elif self._x_model.supportsService("com.sun.star.sheet.SpreadsheetDocument"): # Calc
+        elif self._x_model.supportsService(
+            "com.sun.star.sheet.SpreadsheetDocument"
+        ):  # Calc
             self._x_draw_page.getDrawPage().add(self._x_group_shape)
-        else: # Impress/Draw
+        else:  # Impress/Draw
             self._x_draw_page.add(self._x_group_shape)
 
     def adjust_page_props(self):
@@ -489,12 +540,16 @@ class Diagram(ABC):
         if self.page_props is None:
             self.adjust_page_props()
         if self.page_props is not None:
-            self._draw_area_width = (self.page_props.Width -
-                                     self.page_props.BorderLeft -
-                                     self.page_props.BorderRight)
-            self._draw_area_height = (self.page_props.Height -
-                                      self.page_props.BorderTop -
-                                      self.page_props.BorderBottom)
+            self._draw_area_width = (
+                self.page_props.Width
+                - self.page_props.BorderLeft
+                - self.page_props.BorderRight
+            )
+            self._draw_area_height = (
+                self.page_props.Height
+                - self.page_props.BorderTop
+                - self.page_props.BorderBottom
+            )
 
     @abstractmethod
     def get_diagram_type_name(self) -> str:

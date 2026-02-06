@@ -17,6 +17,7 @@ Python port of OrganizationChartTree.java
 from abc import ABC, abstractmethod
 from ..diagram import Diagram
 
+
 class OrganizationChartTree(ABC):
     """Base class for organization chart trees"""
 
@@ -39,8 +40,12 @@ class OrganizationChartTree(ABC):
             self._x_control_shape = diagram_tree._x_control_shape
 
             # Remove horizontal level properties if not organigram
-            if self.get_org_chart().get_controller().get_diagram_type() != 0:  # Controller.ORGANIGRAM
-                self.get_org_chart().remove_hor_level_props_of_control_shape(self._x_control_shape)
+            if (
+                self.get_org_chart().get_controller().get_diagram_type() != 0
+            ):  # Controller.ORGANIGRAM
+                self.get_org_chart().remove_hor_level_props_of_control_shape(
+                    self._x_control_shape
+                )
 
             self._x_root_shape = diagram_tree._x_root_shape
 
@@ -152,7 +157,10 @@ class OrganizationChartTree(ABC):
                 if self._x_root_shape is None:
                     self._x_root_shape = rectangle_shape
                 else:
-                    if rectangle_shape.getPosition().Y < self._x_root_shape.getPosition().Y:
+                    if (
+                        rectangle_shape.getPosition().Y
+                        < self._x_root_shape.getPosition().Y
+                    ):
                         self._x_root_shape = rectangle_shape
 
         return num_of_roots
@@ -163,8 +171,16 @@ class OrganizationChartTree(ABC):
         error = self.set_root_item()
 
         if self._x_root_shape is None or error > 1:
-            title = self.get_org_chart().get_gui().get_dialog_property_value("Strings", "RoutShapeError.Title")
-            message = self.get_org_chart().get_gui().get_dialog_property_value("Strings", "RoutShapeError.Message")
+            title = (
+                self.get_org_chart()
+                .get_gui()
+                .get_dialog_property_value("Strings", "RoutShapeError.Title")
+            )
+            message = (
+                self.get_org_chart()
+                .get_gui()
+                .get_dialog_property_value("Strings", "RoutShapeError.Message")
+            )
             self.get_org_chart().get_gui().show_message_box(title, message)
         else:
             self.init_tree_items()

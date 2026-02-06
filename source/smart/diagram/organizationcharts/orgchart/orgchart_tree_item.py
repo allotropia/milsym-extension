@@ -22,6 +22,7 @@ from ..organization_chart_tree_item import OrganizationChartTreeItem
 
 from com.sun.star.awt import Point, Size
 
+
 class OrgChartTreeItem(OrganizationChartTreeItem):
     """Organization chart tree item implementation"""
 
@@ -38,7 +39,9 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
     _group_pos_x = 0
     _group_pos_y = 0
 
-    def __init__(self, diagram_tree, dad_or_shape=None, item_or_dad=None, level=None, pos=None):
+    def __init__(
+        self, diagram_tree, dad_or_shape=None, item_or_dad=None, level=None, pos=None
+    ):
         """
         Multiple constructor patterns:
         1. OrgChartTreeItem(diagram_tree, dad, item) - copy constructor
@@ -48,7 +51,11 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
             # Constructor with shape, dad, level, pos
             super().__init__(diagram_tree, item_or_dad, None)
             self._x_rectangle_shape = dad_or_shape
-            self._rectangle_name = self._diagram_tree.get_org_chart().get_shape_name(dad_or_shape) if dad_or_shape else ""
+            self._rectangle_name = (
+                self._diagram_tree.get_org_chart().get_shape_name(dad_or_shape)
+                if dad_or_shape
+                else ""
+            )
             self.set_level(level)
             self.set_pos(pos)
         else:
@@ -66,11 +73,15 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
     def convert_tree_items(self, tree_item):
         """Convert tree items from another tree"""
         if tree_item.is_first_child():
-            self._first_child = OrgChartTreeItem(self.get_diagram_tree(), self, tree_item.get_first_child())
+            self._first_child = OrgChartTreeItem(
+                self.get_diagram_tree(), self, tree_item.get_first_child()
+            )
             self._first_child.convert_tree_items(tree_item.get_first_child())
 
         if tree_item.is_first_sibling():
-            self._first_sibling = OrgChartTreeItem(self.get_diagram_tree(), self.get_dad(), tree_item.get_first_sibling())
+            self._first_sibling = OrgChartTreeItem(
+                self.get_diagram_tree(), self.get_dad(), tree_item.get_first_sibling()
+            )
             self._first_sibling.convert_tree_items(tree_item.get_first_sibling())
 
     def set_pos(self, pos: float):
@@ -85,40 +96,68 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
         """Initialize tree items recursively"""
         last_hor_level = self._diagram_tree.LAST_HOR_LEVEL
 
-        x_first_child_shape = self.get_diagram_tree().get_first_child_shape(self._x_rectangle_shape)
+        x_first_child_shape = self.get_diagram_tree().get_first_child_shape(
+            self._x_rectangle_shape
+        )
         if x_first_child_shape is not None:
             first_child_level = self._level + 1
             first_child_pos = 0.0
             if first_child_level <= last_hor_level:
-                first_child_pos = OrgChartTreeItem._max_positions[first_child_level] + 1.0
+                first_child_pos = (
+                    OrgChartTreeItem._max_positions[first_child_level] + 1.0
+                )
             else:
                 first_child_pos = self._pos + 0.5
-            self._first_child = OrgChartTreeItem(self.get_diagram_tree(), x_first_child_shape, self, first_child_level, first_child_pos)
+            self._first_child = OrgChartTreeItem(
+                self.get_diagram_tree(),
+                x_first_child_shape,
+                self,
+                first_child_level,
+                first_child_pos,
+            )
             self._first_child.init_tree_items()
 
         if self._level == last_hor_level:
             deep = self.get_number_of_items_in_branch(self)
             if deep > 2:
-                max_pos_in_level = OrgChartTreeItem._max_branch_positions[self._level + deep - 1]
+                max_pos_in_level = OrgChartTreeItem._max_branch_positions[
+                    self._level + deep - 1
+                ]
                 if self._pos < max_pos_in_level + 0.5:
                     if self.is_first_child():
-                        self.get_first_child().increase_pos_in_branch(max_pos_in_level + 0.5 - self._pos)
+                        self.get_first_child().increase_pos_in_branch(
+                            max_pos_in_level + 0.5 - self._pos
+                        )
                         self.set_pos(max_pos_in_level + 0.5)
             self.set_max_pos_of_branch()
 
-        x_first_sibling_shape = self.get_diagram_tree().get_first_sibling_shape(self._x_rectangle_shape, self._dad)
+        x_first_sibling_shape = self.get_diagram_tree().get_first_sibling_shape(
+            self._x_rectangle_shape, self._dad
+        )
         if x_first_sibling_shape is not None:
             first_sibling_level = self._level
             first_sibling_pos = self._pos + 1.0
 
             if first_sibling_level > last_hor_level:
                 first_sibling_pos = self._pos
-                first_sibling_level = self._level + self.get_number_of_items_in_branch(self)
+                first_sibling_level = self._level + self.get_number_of_items_in_branch(
+                    self
+                )
 
-            self._first_sibling = OrgChartTreeItem(self.get_diagram_tree(), x_first_sibling_shape, self._dad, first_sibling_level, first_sibling_pos)
+            self._first_sibling = OrgChartTreeItem(
+                self.get_diagram_tree(),
+                x_first_sibling_shape,
+                self._dad,
+                first_sibling_level,
+                first_sibling_pos,
+            )
             self._first_sibling.init_tree_items()
 
-        if self._level <= last_hor_level and self._dad is not None and self._dad.get_first_child() == self:
+        if (
+            self._level <= last_hor_level
+            and self._dad is not None
+            and self._dad.get_first_child() == self
+        ):
             new_pos = 0.0
             if self.is_first_sibling():
                 new_pos = (OrgChartTreeItem._max_positions[self._level] + self._pos) / 2
@@ -138,7 +177,9 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
             first_child_pos = 0.0
 
             if first_child_level <= last_hor_level:
-                first_child_pos = OrgChartTreeItem._max_positions[first_child_level] + 1.0
+                first_child_pos = (
+                    OrgChartTreeItem._max_positions[first_child_level] + 1.0
+                )
 
             if first_child_level > last_hor_level:
                 first_child_pos = self._pos + 0.5
@@ -151,10 +192,14 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
         if self._level == last_hor_level:
             deep = self.get_number_of_items_in_branch(self)
             if deep > 2:
-                max_pos_in_level = OrgChartTreeItem._max_branch_positions[self._level + deep - 1]
+                max_pos_in_level = OrgChartTreeItem._max_branch_positions[
+                    self._level + deep - 1
+                ]
                 if self._pos < max_pos_in_level + 0.5:
                     if self.is_first_child():
-                        self.get_first_child().increase_pos_in_branch(max_pos_in_level + 0.5 - self._pos)
+                        self.get_first_child().increase_pos_in_branch(
+                            max_pos_in_level + 0.5 - self._pos
+                        )
                         self.set_pos(max_pos_in_level + 0.5)
             self.set_max_pos_of_branch()
 
@@ -164,17 +209,20 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
 
             if first_sibling_level > last_hor_level:
                 first_sibling_pos = self._pos
-                first_sibling_level = self._level + self.get_number_of_items_in_branch(self)
+                first_sibling_level = self._level + self.get_number_of_items_in_branch(
+                    self
+                )
 
             self._first_sibling.set_level(first_sibling_level)
             self._first_sibling.set_pos(first_sibling_pos)
             self._first_sibling.set_positions_of_items()
 
         # Position adjustment
-        if (self._level <= last_hor_level and
-            self._dad is not None and
-            self._dad.get_first_child() == self):
-
+        if (
+            self._level <= last_hor_level
+            and self._dad is not None
+            and self._dad.get_first_child() == self
+        ):
             new_pos = 0.0
             if self.is_first_sibling():
                 new_pos = (OrgChartTreeItem._max_positions[self._level] + self._pos) / 2
@@ -207,8 +255,12 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
             pass
 
         base_shape_size = self.get_diagram_tree().get_control_shape_size()
-        OrgChartTreeItem._shape_width = base_shape_size.Width if base_shape_size else 1000
-        OrgChartTreeItem._shape_height = base_shape_size.Height if base_shape_size else 1000
+        OrgChartTreeItem._shape_width = (
+            base_shape_size.Width if base_shape_size else 1000
+        )
+        OrgChartTreeItem._shape_height = (
+            base_shape_size.Height if base_shape_size else 1000
+        )
 
         OrgChartTreeItem._hor_space = OrgChartTreeItem._ver_space = 0
 
@@ -228,20 +280,35 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
 
     def set_pos_of_rect(self):
         """Set position of rectangle"""
-        x_coord = OrgChartTreeItem._group_pos_x + int((OrgChartTreeItem._shape_width + OrgChartTreeItem._hor_space) * self.get_pos())
+        x_coord = OrgChartTreeItem._group_pos_x + int(
+            (OrgChartTreeItem._shape_width + OrgChartTreeItem._hor_space)
+            * self.get_pos()
+        )
         last_hor_level = self._diagram_tree.LAST_HOR_LEVEL
 
         # Use smaller vertical spacing for levels beyond horizontal threshold (vertical stacking)
         if self._level > last_hor_level:
             # For vertically stacked levels, use much smaller vertical spacing
-            vertical_spacing = OrgChartTreeItem._ver_space // 4  # Reduce to 1/4 of normal spacing
+            vertical_spacing = (
+                OrgChartTreeItem._ver_space // 4
+            )  # Reduce to 1/4 of normal spacing
             # Calculate y position with reduced spacing for vertical levels
-            base_y = OrgChartTreeItem._group_pos_y + (OrgChartTreeItem._shape_height + OrgChartTreeItem._ver_space) * last_hor_level
-            vertical_offset = (OrgChartTreeItem._shape_height + vertical_spacing) * (self.get_level() - last_hor_level)
+            base_y = (
+                OrgChartTreeItem._group_pos_y
+                + (OrgChartTreeItem._shape_height + OrgChartTreeItem._ver_space)
+                * last_hor_level
+            )
+            vertical_offset = (OrgChartTreeItem._shape_height + vertical_spacing) * (
+                self.get_level() - last_hor_level
+            )
             y_coord = base_y + vertical_offset
         else:
             # Normal horizontal level spacing
-            y_coord = OrgChartTreeItem._group_pos_y + (OrgChartTreeItem._shape_height + OrgChartTreeItem._ver_space) * self.get_level()
+            y_coord = (
+                OrgChartTreeItem._group_pos_y
+                + (OrgChartTreeItem._shape_height + OrgChartTreeItem._ver_space)
+                * self.get_level()
+            )
 
         if self.get_diagram_tree().get_org_chart().is_hidden_root_element_prop():
             if self == self.get_diagram_tree().get_root_item():
@@ -250,11 +317,17 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
                 if self.get_level() > last_hor_level:
                     # Apply same reduced spacing logic for hidden root
                     vertical_spacing = OrgChartTreeItem._ver_space // 4
-                    base_y = OrgChartTreeItem._group_pos_y + (OrgChartTreeItem._shape_height + OrgChartTreeItem._ver_space) * (last_hor_level - 1)
-                    vertical_offset = (OrgChartTreeItem._shape_height + vertical_spacing) * (self.get_level() - last_hor_level)
+                    base_y = OrgChartTreeItem._group_pos_y + (
+                        OrgChartTreeItem._shape_height + OrgChartTreeItem._ver_space
+                    ) * (last_hor_level - 1)
+                    vertical_offset = (
+                        OrgChartTreeItem._shape_height + vertical_spacing
+                    ) * (self.get_level() - last_hor_level)
                     y_coord = base_y + vertical_offset
                 else:
-                    y_coord = OrgChartTreeItem._group_pos_y + (OrgChartTreeItem._shape_height + OrgChartTreeItem._ver_space) * (self.get_level() - 1)
+                    y_coord = OrgChartTreeItem._group_pos_y + (
+                        OrgChartTreeItem._shape_height + OrgChartTreeItem._ver_space
+                    ) * (self.get_level() - 1)
 
         # Calculate size based on graphic aspect ratio while fitting within default bounds
         calculated_width, calculated_height = self._calculate_size_for_aspect_ratio()
@@ -270,7 +343,9 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
         """Calculate size with fixed height and proportional width"""
         default_width = OrgChartTreeItem._shape_width
         context = self.get_diagram_tree().get_org_chart()._x_context
-        fixed_height = get_default_symbol_height_cm(context)  # Fixed height for all shapes
+        fixed_height = get_default_symbol_height_cm(
+            context
+        )  # Fixed height for all shapes
 
         try:
             if self._x_rectangle_shape.Graphic:

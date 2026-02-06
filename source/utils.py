@@ -31,7 +31,8 @@ def get_default_symbol_height_cm(ctx):
     try:
         # Create configuration provider
         config_provider = ctx.ServiceManager.createInstanceWithContext(
-            "com.sun.star.configuration.ConfigurationProvider", ctx)
+            "com.sun.star.configuration.ConfigurationProvider", ctx
+        )
 
         # Create property for configuration access
         prop = PropertyValue()
@@ -40,7 +41,8 @@ def get_default_symbol_height_cm(ctx):
 
         # Create configuration access
         config_access = config_provider.createInstanceWithArguments(
-            "com.sun.star.configuration.ConfigurationAccess", (prop,))
+            "com.sun.star.configuration.ConfigurationAccess", (prop,)
+        )
 
         # Get the DefaultSymbolHeightCm setting
         if config_access.hasByName("DefaultSymbolHeightCm"):
@@ -49,7 +51,9 @@ def get_default_symbol_height_cm(ctx):
             default_height = int(float(height_cm) * 1000)
 
     except Exception as e:
-        print(f"Warning: Could not read symbol height configuration, using default: {e}")
+        print(
+            f"Warning: Could not read symbol height configuration, using default: {e}"
+        )
 
     return default_height
 
@@ -72,18 +76,18 @@ def parse_svg_dimensions(svg_data, scale_factor=1):
         root = ET.fromstring(svg_data)
 
         # Extract width and height attributes
-        width_str = root.get('width')
-        height_str = root.get('height')
+        width_str = root.get("width")
+        height_str = root.get("height")
 
         if width_str:
             # Remove units like 'px', 'pt', etc. and extract numeric value
-            width_num = ''.join(c for c in width_str if c.isdigit() or c == '.')
+            width_num = "".join(c for c in width_str if c.isdigit() or c == ".")
             if width_num:
                 width = int(float(width_num) * factor)
 
         if height_str:
             # Remove units like 'px', 'pt', etc. and extract numeric value
-            height_num = ''.join(c for c in height_str if c.isdigit() or c == '.')
+            height_num = "".join(c for c in height_str if c.isdigit() or c == ".")
             if height_num:
                 height = int(float(height_num) * factor)
     except Exception as e:
@@ -113,11 +117,14 @@ def extractGraphicAttributes(shape):
     return attributes
 
 
-def insertSvgGraphic(ctx, model, svg_data, params, selected_shape, smybol_name, scale_factor=1):
+def insertSvgGraphic(
+    ctx, model, svg_data, params, selected_shape, smybol_name, scale_factor=1
+):
     is_writer = model.supportsService("com.sun.star.text.TextDocument")
     is_calc = model.supportsService("com.sun.star.sheet.SpreadsheetDocument")
-    is_draw_impress = model.supportsService("com.sun.star.presentation.PresentationDocument") or \
-            model.supportsService("com.sun.star.drawing.DrawingDocument")
+    is_draw_impress = model.supportsService(
+        "com.sun.star.presentation.PresentationDocument"
+    ) or model.supportsService("com.sun.star.drawing.DrawingDocument")
 
     try:
         graphic = create_graphic_from_svg(ctx, svg_data)
@@ -208,6 +215,7 @@ def insertGraphicAttributes(shape, params):
     # seems we're getting a copy above; set it explicitely
     shape.setPropertyValue("UserDefinedAttributes", attributeHash)
 
+
 def generate_icon_svg(script, attributes, size):
     """Generate SVG icon from symbol attributes
 
@@ -251,6 +259,7 @@ def generate_icon_svg(script, attributes, size):
         print(f"Error generating icon SVG: {e}")
         return None
 
+
 def create_graphic_from_svg(ctx, svg_data):
     """Create XGraphic from SVG data"""
     try:
@@ -258,15 +267,15 @@ def create_graphic_from_svg(ctx, svg_data):
             return None
 
         # Create a pipe to stream the SVG data
-        pipe = ctx.ServiceManager.createInstanceWithContext(
-            "com.sun.star.io.Pipe", ctx)
-        pipe.writeBytes(uno.ByteSequence(svg_data.encode('utf-8')))
+        pipe = ctx.ServiceManager.createInstanceWithContext("com.sun.star.io.Pipe", ctx)
+        pipe.writeBytes(uno.ByteSequence(svg_data.encode("utf-8")))
         pipe.flush()
         pipe.closeOutput()
 
         # Create graphic provider
         graphic_provider = ctx.ServiceManager.createInstanceWithContext(
-            "com.sun.star.graphic.GraphicProvider", ctx)
+            "com.sun.star.graphic.GraphicProvider", ctx
+        )
 
         # Create media properties for the SVG data
         media_properties = (PropertyValue("InputStream", 0, pipe, 0),)
@@ -282,17 +291,22 @@ def create_graphic_from_svg(ctx, svg_data):
 
 def get_package_location(ctx, extensionName="com.collabora.milsymbol"):
     """Get package location from package information provider"""
-    srv = ctx.getByName("/singletons/com.sun.star.deployment.PackageInformationProvider")
+    srv = ctx.getByName(
+        "/singletons/com.sun.star.deployment.PackageInformationProvider"
+    )
     return srv.getPackageLocation(extensionName)
+
 
 def getExtensionBasePath(ctx, extensionName="com.collabora.milsymbol"):
     """Get the base path of the extension installation directory"""
     return os.path.basename(get_package_location(ctx, extensionName))
 
+
 def createMilSymbolScriptInstance(ctx, model):
     """Create an instance of the MilSymbol.js scripting library"""
     factory = ctx.getServiceManager().createInstanceWithContext(
-        "com.sun.star.script.provider.MasterScriptProviderFactory", ctx)
+        "com.sun.star.script.provider.MasterScriptProviderFactory", ctx
+    )
     provider = factory.createScriptProvider(model)
 
     package_path = get_package_location(ctx, "com.collabora.milsymbol")

@@ -19,24 +19,33 @@ class SchemeDefinitions:
     """Color scheme definitions for diagrams"""
 
     # Color schemes as tuples of (light_color, dark_color)
-    BLUE_SCHEME = (0x0099ff, 0x000077)
-    AQUA_SCHEME = (65535, 0x0099ff)
-    RED_SCHEME = (0xff0000, 0x660000)
-    FIRE_SCHEME = (0xffff00, 0xe00000)
-    SUN_SCHEME = (0xfffd45, 0xff8000)
-    GREEN_SCHEME = (65280, 0x0e4b00)
-    OLIVE_SCHEME = (14677829, 0x3c4900)
-    PURPLE_SCHEME = (16711935, 0x5e1b5d)
-    PINK_SCHEME = (0xffdeec, 0xd60084)
-    INDIAN_SCHEME = (0xffeeee, 0xcd5c5c)
+    BLUE_SCHEME = (0x0099FF, 0x000077)
+    AQUA_SCHEME = (65535, 0x0099FF)
+    RED_SCHEME = (0xFF0000, 0x660000)
+    FIRE_SCHEME = (0xFFFF00, 0xE00000)
+    SUN_SCHEME = (0xFFFD45, 0xFF8000)
+    GREEN_SCHEME = (65280, 0x0E4B00)
+    OLIVE_SCHEME = (14677829, 0x3C4900)
+    PURPLE_SCHEME = (16711935, 0x5E1B5D)
+    PINK_SCHEME = (0xFFDEEC, 0xD60084)
+    INDIAN_SCHEME = (0xFFEEEE, 0xCD5C5C)
     MAROON_SCHEME = (0xF9CFB5, 0xA33E03)
-    BROWN_SCHEME = (0xecba74, 0x5c2d0a)
+    BROWN_SCHEME = (0xECBA74, 0x5C2D0A)
 
     # Array of all color schemes
     COLOR_SCHEMES = [
-        BLUE_SCHEME, AQUA_SCHEME, RED_SCHEME, FIRE_SCHEME,
-        SUN_SCHEME, GREEN_SCHEME, OLIVE_SCHEME, PURPLE_SCHEME,
-        PINK_SCHEME, INDIAN_SCHEME, MAROON_SCHEME, BROWN_SCHEME
+        BLUE_SCHEME,
+        AQUA_SCHEME,
+        RED_SCHEME,
+        FIRE_SCHEME,
+        SUN_SCHEME,
+        GREEN_SCHEME,
+        OLIVE_SCHEME,
+        PURPLE_SCHEME,
+        PINK_SCHEME,
+        INDIAN_SCHEME,
+        MAROON_SCHEME,
+        BROWN_SCHEME,
     ]
 
     NUM_OF_SCHEMES = 12
@@ -67,7 +76,9 @@ class SchemeDefinitions:
         return (r << 16) | (g << 8) | b
 
     @staticmethod
-    def get_gradient_color_with_target(start_color: int, target_color: int, index: int, steps: int) -> int:
+    def get_gradient_color_with_target(
+        start_color: int, target_color: int, index: int, steps: int
+    ) -> int:
         """
         Get gradient color between start and target colors
         """

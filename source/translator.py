@@ -34,15 +34,12 @@ class Translator:
             self._resource_cache = {}
             Translator._initialized = True
 
-
-
     def get_locale(self):
         """Get locale from configuration provider"""
         try:
             x_mcf = self._x_context.getServiceManager()
             o_configuration_provider = x_mcf.createInstanceWithContext(
-                "com.sun.star.configuration.ConfigurationProvider",
-                self._x_context
+                "com.sun.star.configuration.ConfigurationProvider", self._x_context
             )
             x_localizable = o_configuration_provider
             locale = x_localizable.getLocale()
@@ -66,13 +63,17 @@ class Translator:
                 True,
                 self.get_locale(),
                 dialog_name,
-                '',
-                uno.Any("com.sun.star.task.XInteractionHandler", None)
+                "",
+                uno.Any("com.sun.star.task.XInteractionHandler", None),
             )
             x_resources = uno.invoke(
                 self._x_context.ServiceManager,
-                'createInstanceWithArgumentsAndContext',
-                ('com.sun.star.resource.StringResourceWithLocation', args, self._x_context)
+                "createInstanceWithArgumentsAndContext",
+                (
+                    "com.sun.star.resource.StringResourceWithLocation",
+                    args,
+                    self._x_context,
+                ),
             )
             # Cache the resource
             self._resource_cache[dialog_name] = x_resources

@@ -17,7 +17,11 @@ Python port of OrganizationChartTreeItem.java
 from abc import ABC
 
 from com.sun.star.drawing.FillStyle import GRADIENT, NONE as FILL_STYLE_NONE, SOLID
-from com.sun.star.drawing.LineStyle import NONE as LINE_STYLE_NONE, SOLID as LINE_STYLE_SOLID
+from com.sun.star.drawing.LineStyle import (
+    NONE as LINE_STYLE_NONE,
+    SOLID as LINE_STYLE_SOLID,
+)
+
 
 class OrganizationChartTreeItem(ABC):
     """Base class for organization chart tree items"""
@@ -36,7 +40,13 @@ class OrganizationChartTreeItem(ABC):
         if item is not None:
             # Copy constructor
             self._x_rectangle_shape = item._x_rectangle_shape
-            self._rectangle_name = self._diagram_tree.get_org_chart().get_shape_name(self._x_rectangle_shape) if self._x_rectangle_shape else ""
+            self._rectangle_name = (
+                self._diagram_tree.get_org_chart().get_shape_name(
+                    self._x_rectangle_shape
+                )
+                if self._x_rectangle_shape
+                else ""
+            )
         else:
             self._x_rectangle_shape = None
             self._rectangle_name = ""
@@ -45,7 +55,11 @@ class OrganizationChartTreeItem(ABC):
         """Constructor with shape"""
         self._diagram_tree = diagram_tree
         self._x_rectangle_shape = x_shape
-        self._rectangle_name = self._diagram_tree.get_org_chart().get_shape_name(x_shape) if x_shape else ""
+        self._rectangle_name = (
+            self._diagram_tree.get_org_chart().get_shape_name(x_shape)
+            if x_shape
+            else ""
+        )
         self._dad = dad
         self._first_child = None
         self._first_sibling = None
@@ -55,20 +69,39 @@ class OrganizationChartTreeItem(ABC):
     def hide_element(self):
         """Hide the element by setting fill and line style to none"""
         try:
-
             if self.get_diagram_tree().get_org_chart().is_hidden_root_element_prop():
                 self._x_rectangle_shape.setPropertyValue("FillStyle", FILL_STYLE_NONE)
                 self._x_rectangle_shape.setPropertyValue("LineStyle", LINE_STYLE_NONE)
 
-                if (self.get_diagram_tree().get_org_chart().get_controller().get_diagram_type() !=
-                    self.get_diagram_tree().get_org_chart().get_controller().TABLEHIERARCHYDIAGRAM):
+                if (
+                    self.get_diagram_tree()
+                    .get_org_chart()
+                    .get_controller()
+                    .get_diagram_type()
+                    != self.get_diagram_tree()
+                    .get_org_chart()
+                    .get_controller()
+                    .TABLEHIERARCHYDIAGRAM
+                ):
                     for x_conn_shape in self.get_diagram_tree().connector_list:
-                        if self._x_rectangle_shape == self.get_diagram_tree().get_start_shape_of_connector(x_conn_shape):
+                        if (
+                            self._x_rectangle_shape
+                            == self.get_diagram_tree().get_start_shape_of_connector(
+                                x_conn_shape
+                            )
+                        ):
                             if x_conn_shape is not None:
-                                x_conn_shape.setPropertyValue("LineStyle", LINE_STYLE_NONE)
+                                x_conn_shape.setPropertyValue(
+                                    "LineStyle", LINE_STYLE_NONE
+                                )
 
-                if (self.get_diagram_tree().get_org_chart().get_controller().get_selected_shape() ==
-                    self._x_rectangle_shape):
+                if (
+                    self.get_diagram_tree()
+                    .get_org_chart()
+                    .get_controller()
+                    .get_selected_shape()
+                    == self._x_rectangle_shape
+                ):
                     self.get_diagram_tree().get_org_chart().get_controller().set_selected_shape(
                         self.get_first_child().get_rectangle_shape()
                     )
@@ -79,16 +112,35 @@ class OrganizationChartTreeItem(ABC):
                     self._x_rectangle_shape.setPropertyValue("FillStyle", SOLID)
 
                 if self.get_diagram_tree().get_org_chart().is_outline_prop():
-                    self._x_rectangle_shape.setPropertyValue("LineStyle", LINE_STYLE_SOLID)
+                    self._x_rectangle_shape.setPropertyValue(
+                        "LineStyle", LINE_STYLE_SOLID
+                    )
                 else:
-                    self._x_rectangle_shape.setPropertyValue("LineStyle", LINE_STYLE_NONE)
+                    self._x_rectangle_shape.setPropertyValue(
+                        "LineStyle", LINE_STYLE_NONE
+                    )
 
-                if (self.get_diagram_tree().get_org_chart().get_controller().get_diagram_type() !=
-                    self.get_diagram_tree().get_org_chart().get_controller().TABLEHIERARCHYDIAGRAM):
+                if (
+                    self.get_diagram_tree()
+                    .get_org_chart()
+                    .get_controller()
+                    .get_diagram_type()
+                    != self.get_diagram_tree()
+                    .get_org_chart()
+                    .get_controller()
+                    .TABLEHIERARCHYDIAGRAM
+                ):
                     for x_conn_shape in self.get_diagram_tree().connector_list:
-                        if self._x_rectangle_shape == self.get_diagram_tree().get_start_shape_of_connector(x_conn_shape):
+                        if (
+                            self._x_rectangle_shape
+                            == self.get_diagram_tree().get_start_shape_of_connector(
+                                x_conn_shape
+                            )
+                        ):
                             if x_conn_shape is not None:
-                                x_conn_shape.setPropertyValue("LineStyle", LINE_STYLE_SOLID)
+                                x_conn_shape.setPropertyValue(
+                                    "LineStyle", LINE_STYLE_SOLID
+                                )
 
         except Exception as ex:
             print(f"Error hiding element: {ex}")
@@ -269,7 +321,9 @@ class OrganizationChartTreeItem(ABC):
         """Set properties recursively for tree items"""
         if self._first_child is not None:
             self._first_child.set_properties()
-        self.get_diagram_tree().get_org_chart().set_shape_properties(self._x_rectangle_shape, Diagram.DIAGRAM_SHAPE_TYPE)
+        self.get_diagram_tree().get_org_chart().set_shape_properties(
+            self._x_rectangle_shape, Diagram.DIAGRAM_SHAPE_TYPE
+        )
         if self._first_sibling is not None:
             self._first_sibling.set_properties()
 
@@ -278,13 +332,19 @@ class OrganizationChartTreeItem(ABC):
         if self.is_first_child():
             self._first_child.remove_items()
 
-        x_conn_shape = self.get_diagram_tree().get_dad_connector_shape(self._x_rectangle_shape)
+        x_conn_shape = self.get_diagram_tree().get_dad_connector_shape(
+            self._x_rectangle_shape
+        )
         if x_conn_shape is not None:
             self.get_diagram_tree().remove_from_connectors(x_conn_shape)
-            self.get_diagram_tree().get_org_chart().remove_shape_from_group(x_conn_shape)
+            self.get_diagram_tree().get_org_chart().remove_shape_from_group(
+                x_conn_shape
+            )
 
         self.get_diagram_tree().remove_from_rectangles(self._x_rectangle_shape)
-        self.get_diagram_tree().get_org_chart().remove_shape_from_group(self._x_rectangle_shape)
+        self.get_diagram_tree().get_org_chart().remove_shape_from_group(
+            self._x_rectangle_shape
+        )
 
         if self.is_first_sibling():
             self._first_sibling.remove_items()

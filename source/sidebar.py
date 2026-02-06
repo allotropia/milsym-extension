@@ -12,20 +12,35 @@ import json
 import base64
 import unohelper
 
-from sidebar_tree import SidebarTree, TreeKeyListener, TreeMouseListener, TreeSelectionChangeListener
+from sidebar_tree import (
+    SidebarTree,
+    TreeKeyListener,
+    TreeMouseListener,
+    TreeSelectionChangeListener,
+)
 from symbol_dialog import open_symbol_dialog
 from utils import get_package_location, parse_svg_dimensions
 from sidebar_rename_dialog import RenameDialog
 
 from unohelper import fileUrlToSystemPath, systemPathToFileUrl
-from com.sun.star.ui.dialogs.TemplateDescription import FILESAVE_AUTOEXTENSION, FILEOPEN_SIMPLE
-from com.sun.star.ui import LayoutSize, XToolPanel, XSidebarPanel, XUIElement, XUIElementFactory
+from com.sun.star.ui.dialogs.TemplateDescription import (
+    FILESAVE_AUTOEXTENSION,
+    FILEOPEN_SIMPLE,
+)
+from com.sun.star.ui import (
+    LayoutSize,
+    XToolPanel,
+    XSidebarPanel,
+    XUIElement,
+    XUIElementFactory,
+)
 from com.sun.star.awt import XWindowListener, XActionListener
 from com.sun.star.awt import XFocusListener, XKeyListener
 from com.sun.star.view.SelectionType import SINGLE
 from com.sun.star.datatransfer.dnd import XDragGestureListener, XDragSourceListener
 from com.sun.star.datatransfer import DataFlavor, XTransferable
 from com.sun.star.datatransfer.dnd.DNDConstants import ACTION_COPY
+
 
 class SidebarFactory(unohelper.Base, XUIElementFactory):
     def __init__(self, ctx):
@@ -47,8 +62,8 @@ class SidebarFactory(unohelper.Base, XUIElementFactory):
         except Exception as e:
             print("Sidebar factory error:", e)
 
-class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
 
+class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
     # POS_X + POS_Y + POS_WIDTH + POS_HEIGHT = 1 + 2 + 4 + 8 = 15
     POS_ALL = 15
 
@@ -76,7 +91,9 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
 
         self.favorites_dir_path = self.get_favorites_dir_path(ctx)
 
-        self.desktop = self.ctx.getServiceManager().createInstanceWithContext("com.sun.star.frame.Desktop", self.ctx)
+        self.desktop = self.ctx.getServiceManager().createInstanceWithContext(
+            "com.sun.star.frame.Desktop", self.ctx
+        )
 
         self._resizeListener = WindowResizeListener(self.onResize)
         self.xParentWindow.addWindowListener(self._resizeListener)
@@ -109,8 +126,12 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
             sm = self.ctx.ServiceManager
             toolkit = sm.createInstanceWithContext("com.sun.star.awt.Toolkit", self.ctx)
 
-            container = sm.createInstanceWithContext("com.sun.star.awt.UnoControlContainer", self.ctx)
-            container_model = sm.createInstanceWithContext("com.sun.star.awt.UnoControlContainerModel", self.ctx)
+            container = sm.createInstanceWithContext(
+                "com.sun.star.awt.UnoControlContainer", self.ctx
+            )
+            container_model = sm.createInstanceWithContext(
+                "com.sun.star.awt.UnoControlContainerModel", self.ctx
+            )
             container.setModel(container_model)
             container.createPeer(toolkit, self.xParentWindow)
 
@@ -121,7 +142,17 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
             height = self.BUTTON_HEIGHT
             names = ("Name", "Label")
             values = ("btNew", "New")
-            btNew = self.createControl(self.ctx, "com.sun.star.awt.UnoControlButton", "com.sun.star.awt.UnoControlButtonModel", x, y, width, height, names, values)
+            btNew = self.createControl(
+                self.ctx,
+                "com.sun.star.awt.UnoControlButton",
+                "com.sun.star.awt.UnoControlButtonModel",
+                x,
+                y,
+                width,
+                height,
+                names,
+                values,
+            )
             listener = NewButtonListener(self.ctx, self)
             btNew.addActionListener(listener)
 
@@ -131,8 +162,18 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
             width = self.BUTTON_WIDTH
             height = self.BUTTON_HEIGHT
             names = ("Name", "Label")
-            values = ("btImport", "\u21E5")
-            btImport = self.createControl(self.ctx, "com.sun.star.awt.UnoControlButton", "com.sun.star.awt.UnoControlButtonModel", x, y, width, height, names, values)
+            values = ("btImport", "\u21e5")
+            btImport = self.createControl(
+                self.ctx,
+                "com.sun.star.awt.UnoControlButton",
+                "com.sun.star.awt.UnoControlButtonModel",
+                x,
+                y,
+                width,
+                height,
+                names,
+                values,
+            )
             btImport.getModel().setPropertyValue("HelpText", "Import symbols")
 
             btImport_listener = ImportButtonListener(self.ctx, self)
@@ -144,8 +185,18 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
             width = self.BUTTON_WIDTH
             height = self.BUTTON_HEIGHT
             names = ("Name", "Label")
-            values = ("btExport", "\u21E4")
-            btExport = self.createControl(self.ctx, "com.sun.star.awt.UnoControlButton", "com.sun.star.awt.UnoControlButtonModel", x, y, width, height, names, values)
+            values = ("btExport", "\u21e4")
+            btExport = self.createControl(
+                self.ctx,
+                "com.sun.star.awt.UnoControlButton",
+                "com.sun.star.awt.UnoControlButtonModel",
+                x,
+                y,
+                width,
+                height,
+                names,
+                values,
+            )
             btExport.getModel().setPropertyValue("HelpText", "Export symbols")
 
             btExport_listener = ExportButtonListener(self.ctx, self)
@@ -154,11 +205,27 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
             # Filter textbox
             x = self.LEFT_MARGIN
             y = self.TOP_MARGIN + self.BUTTON_HEIGHT + self.VERTICAL_SPACING
-            width = 0 # width will be set later in onResize()
+            width = 0  # width will be set later in onResize()
             height = self.TEXTBOX_HEIGHT
-            names = ("Name", "Text",)
-            values = ("tbFilter", "Filtering...",)
-            tbFilter = self.createControl(self.ctx, "com.sun.star.awt.UnoControlEdit", "com.sun.star.awt.UnoControlEditModel", x, y, width, height, names, values)
+            names = (
+                "Name",
+                "Text",
+            )
+            values = (
+                "tbFilter",
+                "Filtering...",
+            )
+            tbFilter = self.createControl(
+                self.ctx,
+                "com.sun.star.awt.UnoControlEdit",
+                "com.sun.star.awt.UnoControlEditModel",
+                x,
+                y,
+                width,
+                height,
+                names,
+                values,
+            )
 
             tb_focus_listener = TextboxFocusListener(tbFilter)
             tbFilter.addFocusListener(tb_focus_listener)
@@ -168,12 +235,28 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
 
             # Tree control
             x = self.LEFT_MARGIN
-            y = self.TOP_MARGIN + self.BUTTON_HEIGHT + self.VERTICAL_SPACING + self.TEXTBOX_HEIGHT + self.BOTTOM_MARGIN
-            width = 0   # width will be set later in onResize()
+            y = (
+                self.TOP_MARGIN
+                + self.BUTTON_HEIGHT
+                + self.VERTICAL_SPACING
+                + self.TEXTBOX_HEIGHT
+                + self.BOTTOM_MARGIN
+            )
+            width = 0  # width will be set later in onResize()
             height = 0  # height will be set later in onResize()
             names = ("Name",)
             values = ("myTree",)
-            treeCtrl = self.createControl(self.ctx, "com.sun.star.awt.tree.TreeControl", "com.sun.star.awt.tree.TreeControlModel", x, y, width, height, names, values)
+            treeCtrl = self.createControl(
+                self.ctx,
+                "com.sun.star.awt.tree.TreeControl",
+                "com.sun.star.awt.tree.TreeControlModel",
+                x,
+                y,
+                width,
+                height,
+                names,
+                values,
+            )
             self.tree_control = treeCtrl
 
             mouse_listener = TreeMouseListener(self.ctx, self, self.sidebar_tree)
@@ -200,19 +283,25 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
             try:
                 # Try to set up drag source
                 try:
-                    drag_gesture_recognizer = toolkit.getDragGestureRecognizer(treeCtrl.getPeer())
+                    drag_gesture_recognizer = toolkit.getDragGestureRecognizer(
+                        treeCtrl.getPeer()
+                    )
                     drag_gesture_recognizer.addDragGestureListener(drag_handler)
                 except Exception as e:
                     print(f"Could not set up drag source: {e}")
 
             except Exception as e:
-                print(f"Could not setup native drag support, falling back to mouse listener: {e}")
+                print(
+                    f"Could not setup native drag support, falling back to mouse listener: {e}"
+                )
 
             return container
         except Exception as e:
             print("Panel window error:", e)
 
-    def createControl(self, ctx, ctrlType, ctrlTypeModel, x, y, width, height, names, values):
+    def createControl(
+        self, ctx, ctrlType, ctrlTypeModel, x, y, width, height, names, values
+    ):
         try:
             sm = ctx.ServiceManager
             ctrl = sm.createInstanceWithContext(ctrlType, ctx)
@@ -225,9 +314,15 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
             print("Control error:", e)
 
     def insert_symbol_node(self, category_name, svg_data, svg_args, is_editing):
-        self.sidebar_tree.create_node(self.root_node, self.mutable_tree_data_model,
-                                      category_name, svg_data, svg_args, is_editing,
-                                      self.selected_node)
+        self.sidebar_tree.create_node(
+            self.root_node,
+            self.mutable_tree_data_model,
+            category_name,
+            svg_data,
+            svg_args,
+            is_editing,
+            self.selected_node,
+        )
 
         self.update_export_button_state()
 
@@ -289,13 +384,17 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
         for file_name in file_list:
             if file_name.lower().endswith(".json"):
                 try:
-                    order_indexes, symbol_params = self.import_json_data(file_name, category_path)
+                    order_indexes, symbol_params = self.import_json_data(
+                        file_name, category_path
+                    )
                     if order_indexes:  # Check if list is not empty
                         order_index_value, svg_name = order_indexes[0]
                     else:
                         # Provide default values if no order_index found in JSON
                         order_index_value = 0  # Default order
-                        svg_name = os.path.splitext(file_name)[0] + ".svg"  # Construct SVG name from JSON name
+                        svg_name = (
+                            os.path.splitext(file_name)[0] + ".svg"
+                        )  # Construct SVG name from JSON name
                     ordered_symbols.append((order_index_value, svg_name, symbol_params))
                 except Exception as e:
                     print(f"Error processing JSON file {file_name}: {e}")
@@ -307,7 +406,9 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
 
     def init_favorites_sidebar(self):
         smgr = self.ctx.ServiceManager
-        self.mutable_tree_data_model = smgr.createInstanceWithContext("com.sun.star.awt.tree.MutableTreeDataModel", self.ctx)
+        self.mutable_tree_data_model = smgr.createInstanceWithContext(
+            "com.sun.star.awt.tree.MutableTreeDataModel", self.ctx
+        )
 
         tree_ctrl = self.tree_control
         tree_model = tree_ctrl.getModel()
@@ -332,8 +433,7 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
                 file_url = systemPathToFileUrl(file_path)
 
                 symbol_node = self.mutable_tree_data_model.createNode(
-                    os.path.splitext(file_name)[0],
-                    False
+                    os.path.splitext(file_name)[0], False
                 )
 
                 symbol_node.DataValue = symbol_params
@@ -413,31 +513,59 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
             treeCtrl = self.toolpanel.getControl("treeCtrl")
             if treeCtrl:
                 rect = treeCtrl.getPosSize()
-                new_treeCtrl_width = toolpanel_width - self.LEFT_MARGIN - self.RIGHT_MARGIN
-                new_treeCtrl_height = toolpanel_height - self.TOP_MARGIN - self.BUTTON_HEIGHT - self.VERTICAL_SPACING \
-                                      - self.TEXTBOX_HEIGHT - self.VERTICAL_SPACING - self.BOTTOM_MARGIN
-                treeCtrl.setPosSize(rect.X, rect.Y , new_treeCtrl_width, new_treeCtrl_height, self.POS_ALL)
+                new_treeCtrl_width = (
+                    toolpanel_width - self.LEFT_MARGIN - self.RIGHT_MARGIN
+                )
+                new_treeCtrl_height = (
+                    toolpanel_height
+                    - self.TOP_MARGIN
+                    - self.BUTTON_HEIGHT
+                    - self.VERTICAL_SPACING
+                    - self.TEXTBOX_HEIGHT
+                    - self.VERTICAL_SPACING
+                    - self.BOTTOM_MARGIN
+                )
+                treeCtrl.setPosSize(
+                    rect.X,
+                    rect.Y,
+                    new_treeCtrl_width,
+                    new_treeCtrl_height,
+                    self.POS_ALL,
+                )
 
             tbFilter = self.toolpanel.getControl("tbFilter")
             if tbFilter:
                 rect = tbFilter.getPosSize()
-                new_tbFilter_width = toolpanel_width - self.LEFT_MARGIN - self.RIGHT_MARGIN
-                tbFilter.setPosSize(rect.X, rect.Y , new_tbFilter_width, rect.Height, self.POS_ALL)
+                new_tbFilter_width = (
+                    toolpanel_width - self.LEFT_MARGIN - self.RIGHT_MARGIN
+                )
+                tbFilter.setPosSize(
+                    rect.X, rect.Y, new_tbFilter_width, rect.Height, self.POS_ALL
+                )
 
             btImport = self.toolpanel.getControl("btImport")
             if btImport:
                 rect = btImport.getPosSize()
-                new_btImport_x_pos = toolpanel_width - (self.BUTTON_WIDTH * 2) - self.LEFT_MARGIN
-                btImport.setPosSize(new_btImport_x_pos, rect.Y , rect.Width, rect.Height, self.POS_ALL)
+                new_btImport_x_pos = (
+                    toolpanel_width - (self.BUTTON_WIDTH * 2) - self.LEFT_MARGIN
+                )
+                btImport.setPosSize(
+                    new_btImport_x_pos, rect.Y, rect.Width, rect.Height, self.POS_ALL
+                )
 
             btExport = self.toolpanel.getControl("btExport")
             if btExport:
                 rect = btExport.getPosSize()
-                new_btExport_x_pos = toolpanel_width - self.BUTTON_WIDTH - self.LEFT_MARGIN
-                btExport.setPosSize(new_btExport_x_pos, rect.Y , rect.Width, rect.Height, self.POS_ALL)
+                new_btExport_x_pos = (
+                    toolpanel_width - self.BUTTON_WIDTH - self.LEFT_MARGIN
+                )
+                btExport.setPosSize(
+                    new_btExport_x_pos, rect.Y, rect.Width, rect.Height, self.POS_ALL
+                )
 
         except Exception as e:
             print("Resize error:", e)
+
 
 class WindowResizeListener(unohelper.Base, XWindowListener):
     def __init__(self, callback):
@@ -446,10 +574,18 @@ class WindowResizeListener(unohelper.Base, XWindowListener):
     def windowResized(self, event):
         self.callback(event)
 
-    def windowHidden(self, event): pass
-    def windowMoved(self, event): pass
-    def windowShown(self, event): pass
-    def disposing(self, event): pass
+    def windowHidden(self, event):
+        pass
+
+    def windowMoved(self, event):
+        pass
+
+    def windowShown(self, event):
+        pass
+
+    def disposing(self, event):
+        pass
+
 
 class NewButtonListener(unohelper.Base, XActionListener):
     def __init__(self, ctx, sidebar_panel):
@@ -463,8 +599,8 @@ class NewButtonListener(unohelper.Base, XActionListener):
     def disposing(self, event):
         pass
 
-class TextboxFocusListener(unohelper.Base, XFocusListener):
 
+class TextboxFocusListener(unohelper.Base, XFocusListener):
     def __init__(self, textbox, placeholder="Filtering..."):
         self.textbox = textbox
         self.placeholder = placeholder
@@ -476,6 +612,7 @@ class TextboxFocusListener(unohelper.Base, XFocusListener):
     def focusLost(self, event):
         if not self.textbox.getText():
             self.textbox.setText(self.placeholder)
+
 
 class TextboxKeyListener(unohelper.Base, XKeyListener):
     def __init__(self, sidebar, textbox):
@@ -502,31 +639,34 @@ class TextboxKeyListener(unohelper.Base, XKeyListener):
         search_text = text.lower()
         root_node = self.sidebar.root_node
 
-        for i in  reversed(range(root_node.getChildCount())):
-                parent_node = root_node.getChildAt(i)
+        for i in reversed(range(root_node.getChildCount())):
+            parent_node = root_node.getChildAt(i)
 
-                for j in reversed(range(parent_node.getChildCount())):
-                    child_node = parent_node.getChildAt(j)
-                    node_name = child_node.getDisplayValue().lower()
-                    found = (node_name.startswith(search_text) or
-                             any(word.startswith(search_text) for word in node_name.split()))
+            for j in reversed(range(parent_node.getChildCount())):
+                child_node = parent_node.getChildAt(j)
+                node_name = child_node.getDisplayValue().lower()
+                found = node_name.startswith(search_text) or any(
+                    word.startswith(search_text) for word in node_name.split()
+                )
 
-                    if not found:
-                        self.sidebar.removed_nodes.append(child_node)
-                        parent_node.removeChildByIndex(j)
-                        if parent_node.getChildCount() == 0:
-                            root_node.removeChildByIndex(i)
+                if not found:
+                    self.sidebar.removed_nodes.append(child_node)
+                    parent_node.removeChildByIndex(j)
+                    if parent_node.getChildCount() == 0:
+                        root_node.removeChildByIndex(i)
 
         for node in self.sidebar.removed_nodes:
             node_name = node.getDisplayValue().lower()
-            matches_search = (node_name.startswith(search_text) or
-                              any(word.startswith(search_text) for word in node_name.split()))
+            matches_search = node_name.startswith(search_text) or any(
+                word.startswith(search_text) for word in node_name.split()
+            )
 
             if matches_search:
                 self.sidebar.init_favorites_sidebar()
                 self.sidebar.removed_nodes.clear()
                 self.filter_sidebar_tree(search_text)
                 break
+
 
 class ImportButtonListener(unohelper.Base, XActionListener):
     def __init__(self, ctx, sidebar):
@@ -535,7 +675,9 @@ class ImportButtonListener(unohelper.Base, XActionListener):
 
     def actionPerformed(self, event):
         try:
-            file_picker = self.ctx.getServiceManager().createInstanceWithContext("com.sun.star.ui.dialogs.FilePicker", self.ctx)
+            file_picker = self.ctx.getServiceManager().createInstanceWithContext(
+                "com.sun.star.ui.dialogs.FilePicker", self.ctx
+            )
             file_picker.initialize((FILEOPEN_SIMPLE,))
             file_picker.appendFilter("JSON File", "*.json")
 
@@ -564,7 +706,9 @@ class ImportButtonListener(unohelper.Base, XActionListener):
                 for symbol_name, symbol_content in symbols.items():
                     json_path = os.path.join(category_path, f"{symbol_name}.json")
                     with open(json_path, "w", encoding="utf-8") as f:
-                        json.dump(symbol_content["data"], f, indent=4, ensure_ascii=False)
+                        json.dump(
+                            symbol_content["data"], f, indent=4, ensure_ascii=False
+                        )
 
                     svg_path = os.path.join(category_path, f"{symbol_name}.svg")
                     with open(svg_path, "w", encoding="utf-8") as f:
@@ -592,10 +736,14 @@ class TreeDragDropHandler(unohelper.Base, XDragGestureListener, XDragSourceListe
         """Handle drag gesture recognition"""
         try:
             # Get the node at the drag start location
-            node = self.tree_control.getNodeForLocation(event.DragOriginX, event.DragOriginY)
+            node = self.tree_control.getNodeForLocation(
+                event.DragOriginX, event.DragOriginY
+            )
             if node and node.getChildCount() == 0:  # Only leaf nodes are draggable
                 # Create transferable data
-                transferable = SymbolTransferable(self.ctx, node, self.sidebar_panel.favorites_dir_path)
+                transferable = SymbolTransferable(
+                    self.ctx, node, self.sidebar_panel.favorites_dir_path
+                )
 
                 # Start the drag operation
                 drag_source = event.DragSource
@@ -646,7 +794,6 @@ class TreeDragDropHandler(unohelper.Base, XDragGestureListener, XDragSourceListe
         except Exception as e:
             print(f"Error focusing document after drop: {e}")
 
-
     def dropActionChanged(self, event):
         pass
 
@@ -664,37 +811,44 @@ class SymbolTransferable(unohelper.Base, XTransferable):
 
         # Setup data flavors
         self.data_flavor = DataFlavor()
-        self.data_flavor.MimeType = "application/x-openoffice-drawing;windows_formatname=\"Drawing Format\""
+        self.data_flavor.MimeType = (
+            'application/x-openoffice-drawing;windows_formatname="Drawing Format"'
+        )
 
     def getTransferData(self, flavor):
         """Get the transferable data"""
         if flavor.MimeType == self.data_flavor.MimeType:
-
             # LibreOffice expects a byte sequence containing a document with the graphic
             # Read the template document from the data folder
             package_path = fileUrlToSystemPath(get_package_location(self.ctx))
-            template_path = os.path.join(package_path, "source", "data", "dragdropgraphic.fodg")
-            with open(template_path, 'r', encoding='utf-8') as f:
+            template_path = os.path.join(
+                package_path, "source", "data", "dragdropgraphic.fodg"
+            )
+            with open(template_path, "r", encoding="utf-8") as f:
                 data_string = f.read()
 
             # Get SVG content from the dragged node
             svg_string = self._get_svg_content_from_node()
             # Base64 encode the SVG content
-            svg_base64 = base64.b64encode(svg_string.encode('utf-8')).decode('utf-8')
+            svg_base64 = base64.b64encode(svg_string.encode("utf-8")).decode("utf-8")
             svg_size = parse_svg_dimensions(svg_string)
             factor = 5
             width_cm = svg_size.Width / 1000.0 * factor  # 1/100mm to cm
-            height_cm = svg_size.Height / 1000.0 * factor # 1/100mm to cm
-            data_string = data_string.replace('SVG_BASE_64_ENCODED', svg_base64)
-            data_string = data_string.replace('SVG_WIDTH_CM', str(width_cm)+'cm')
-            data_string = data_string.replace('SVG_HEIGHT_CM', str(height_cm)+'cm')
-            data_string = data_string.replace('SYMBOL_NAME', self.node.getDisplayValue())
+            height_cm = svg_size.Height / 1000.0 * factor  # 1/100mm to cm
+            data_string = data_string.replace("SVG_BASE_64_ENCODED", svg_base64)
+            data_string = data_string.replace("SVG_WIDTH_CM", str(width_cm) + "cm")
+            data_string = data_string.replace("SVG_HEIGHT_CM", str(height_cm) + "cm")
+            data_string = data_string.replace(
+                "SYMBOL_NAME", self.node.getDisplayValue()
+            )
 
             style_start = data_string.find('<style:style style:name="gr1"')
-            style_end = data_string.find('</style:style>', style_start)
+            style_end = data_string.find("</style:style>", style_start)
 
-            props_start = data_string.find('<style:graphic-properties', style_start, style_end)
-            props_end = data_string.find('/>', props_start)
+            props_start = data_string.find(
+                "<style:graphic-properties", style_start, style_end
+            )
+            props_end = data_string.find("/>", props_start)
             props_tag = data_string[props_start:props_end]
 
             milsym_values = {}
@@ -706,15 +860,13 @@ class SymbolTransferable(unohelper.Base, XTransferable):
             for name, value in milsym_values.items():
                 attrs.append(f'MilSym{name[0].upper() + name[1:]}="{value}"')
 
-            new_props_tag = props_tag + ' ' + ' '.join(attrs) + '/>'
+            new_props_tag = props_tag + " " + " ".join(attrs) + "/>"
 
             data_string = (
-                data_string[:props_start] +
-                new_props_tag +
-                data_string[props_end+2:]
+                data_string[:props_start] + new_props_tag + data_string[props_end + 2 :]
             )
 
-            data_bytes = data_string.encode('utf-8')
+            data_bytes = data_string.encode("utf-8")
             return uno.ByteSequence(data_bytes)
         else:
             raise uno.RuntimeException("Unsupported data flavor", self)
@@ -743,7 +895,7 @@ class SymbolTransferable(unohelper.Base, XTransferable):
 
             # Read and return the SVG content
             if os.path.exists(svg_file_path):
-                with open(svg_file_path, 'r', encoding='utf-8') as f:
+                with open(svg_file_path, "r", encoding="utf-8") as f:
                     return f.read()
             else:
                 print(f"SVG file not found: {svg_file_path}")
@@ -752,6 +904,7 @@ class SymbolTransferable(unohelper.Base, XTransferable):
         except Exception as e:
             print(f"Error reading SVG content: {e}")
             return ""
+
 
 class ExportButtonListener(unohelper.Base, XActionListener):
     def __init__(self, ctx, sidebar):
@@ -764,7 +917,9 @@ class ExportButtonListener(unohelper.Base, XActionListener):
             if state == 1:
                 return
 
-            file_picker = self.ctx.getServiceManager().createInstanceWithContext("com.sun.star.ui.dialogs.FilePicker", self.ctx)
+            file_picker = self.ctx.getServiceManager().createInstanceWithContext(
+                "com.sun.star.ui.dialogs.FilePicker", self.ctx
+            )
             file_picker.initialize((FILESAVE_AUTOEXTENSION,))
             file_picker.setDefaultName("sidebar_data.json")
             file_picker.appendFilter("JOSN File", "*.json")
@@ -803,7 +958,7 @@ class ExportButtonListener(unohelper.Base, XActionListener):
 
                         all_data[category_name][file_base] = {
                             "data": data,
-                            "svg": svg_content
+                            "svg": svg_content,
                         }
 
             with open(path, "w", encoding="utf-8") as f:

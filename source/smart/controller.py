@@ -21,6 +21,7 @@ from com.sun.star.view import XSelectionChangeListener
 
 from smart.diagram.organizationcharts.orgchart.orgchart import OrgChart
 
+
 class Controller(unohelper.Base, XSelectionChangeListener):
     """Controller class for LibreOffice extension"""
 
@@ -108,12 +109,16 @@ class Controller(unohelper.Base, XSelectionChangeListener):
             p = self.get_diagram().get_group_shape_pos()
             self.get_diagram().set_ud_x_pos_prop(p.X)
             self.get_diagram().set_ud_y_pos_prop(p.Y)
-            width = (self.get_diagram().page_props.Width -
-                    self.get_diagram().page_props.BorderLeft -
-                    self.get_diagram().page_props.BorderRight)
-            height = (self.get_diagram().page_props.Height -
-                     self.get_diagram().page_props.BorderTop -
-                     self.get_diagram().page_props.BorderBottom)
+            width = (
+                self.get_diagram().page_props.Width
+                - self.get_diagram().page_props.BorderLeft
+                - self.get_diagram().page_props.BorderRight
+            )
+            height = (
+                self.get_diagram().page_props.Height
+                - self.get_diagram().page_props.BorderTop
+                - self.get_diagram().page_props.BorderBottom
+            )
             x_pos = self.get_diagram().page_props.BorderLeft
             y_pos = self.get_diagram().page_props.BorderTop
 
@@ -214,13 +219,13 @@ class Controller(unohelper.Base, XSelectionChangeListener):
         return 0
 
     def get_current_page(self):
-        model= self._x_frame.getController().getModel()
+        model = self._x_frame.getController().getModel()
         if model.supportsService("com.sun.star.text.TextDocument"):
             return model.getDrawPage()
         elif model.supportsService("com.sun.star.sheet.SpreadsheetDocument"):
-            return self._x_controller.getActiveSheet() # Calc
+            return self._x_controller.getActiveSheet()  # Calc
         else:
-            return self._x_controller.getCurrentPage() # Impress/Draw
+            return self._x_controller.getCurrentPage()  # Impress/Draw
 
     def get_location(self):
         """Get current locale"""
@@ -228,7 +233,8 @@ class Controller(unohelper.Base, XSelectionChangeListener):
         try:
             x_mcf = self._x_context.getServiceManager()
             o_configuration_provider = x_mcf.createInstanceWithContext(
-                "com.sun.star.configuration.ConfigurationProvider", self._x_context)
+                "com.sun.star.configuration.ConfigurationProvider", self._x_context
+            )
             x_localizable = o_configuration_provider
             locale = x_localizable.getLocale()
         except Exception as ex:
@@ -246,7 +252,7 @@ class Controller(unohelper.Base, XSelectionChangeListener):
             i += 1
 
         # Collect digits until dash
-        while i < len(name) and name[i] != '-':
+        while i < len(name) and name[i] != "-":
             s += name[i]
             i += 1
 
@@ -258,7 +264,7 @@ class Controller(unohelper.Base, XSelectionChangeListener):
         i = 0
 
         # Skip to dash
-        while i < len(name) and name[i] != '-':
+        while i < len(name) and name[i] != "-":
             i += 1
 
         # Skip non-digit characters after dash
@@ -306,7 +312,7 @@ class Controller(unohelper.Base, XSelectionChangeListener):
         if obj is not None:
             try:
                 # In Python UNO, check for supported services
-                if hasattr(obj, 'supportsService'):
+                if hasattr(obj, "supportsService"):
                     if obj.supportsService("com.sun.star.drawing.Shape"):
                         is_shape = True
                     if obj.supportsService("com.sun.star.drawing.GroupShape"):
@@ -319,17 +325,24 @@ class Controller(unohelper.Base, XSelectionChangeListener):
         """Create diagram from selected text list"""
         self.remove_selection_listener()
 
-        if (self.get_selected_shape() is not None and
-            self.get_selected_shapes().getCount() == 1 and
-            self.is_shape_service(self.get_selected_shape())):
-
+        if (
+            self.get_selected_shape() is not None
+            and self.get_selected_shapes().getCount() == 1
+            and self.is_shape_service(self.get_selected_shape())
+        ):
             try:
                 x_text = self.get_selected_shape()
-                text_content = x_text.getString() if hasattr(x_text, 'getString') else ""
+                text_content = (
+                    x_text.getString() if hasattr(x_text, "getString") else ""
+                )
 
                 if not text_content or text_content.strip() == "":
-                    title = self._gui.get_dialog_property_value("GenericStrings", "CouldnotCreateDiagram.Title")
-                    message = self._gui.get_dialog_property_value("GenericStrings", "CouldnotCreateDiagram.Message")
+                    title = self._gui.get_dialog_property_value(
+                        "GenericStrings", "CouldnotCreateDiagram.Title"
+                    )
+                    message = self._gui.get_dialog_property_value(
+                        "GenericStrings", "CouldnotCreateDiagram.Message"
+                    )
                     self._gui.show_message_box(title, message)
                 else:
                     # TODO: Implement DataOfDiagram creation from text
@@ -371,7 +384,7 @@ class Controller(unohelper.Base, XSelectionChangeListener):
             # Get shape name
             selected_shape_name = ""
             try:
-                if hasattr(selected_shape, 'getName'):
+                if hasattr(selected_shape, "getName"):
                     selected_shape_name = selected_shape.getName()
             except Exception:
                 selected_shape_name = ""
@@ -393,7 +406,9 @@ class Controller(unohelper.Base, XSelectionChangeListener):
 
                 if Gui._global_control_dlg_listener is not None:
                     try:
-                        global_controller = Gui._global_control_dlg_listener.get_controller()
+                        global_controller = (
+                            Gui._global_control_dlg_listener.get_controller()
+                        )
                         if global_controller != self:
                             self._last_diagram_name = ""
                     except Exception:
@@ -401,10 +416,13 @@ class Controller(unohelper.Base, XSelectionChangeListener):
 
                 # If the previous selected item is not in the same diagram,
                 # need to instantiate the new diagram
-                if (self._last_diagram_name == "" or
-                    self._last_diagram_name != new_diagram_name):
-
-                    diagram_id = int(''.join(c for c in new_diagram_name if c.isdigit()) or '0')
+                if (
+                    self._last_diagram_name == ""
+                    or self._last_diagram_name != new_diagram_name
+                ):
+                    diagram_id = int(
+                        "".join(c for c in new_diagram_name if c.isdigit()) or "0"
+                    )
 
                     # Set diagram types based on shape name
                     if selected_shape_name.startswith("OrbatDiagram"):
@@ -422,8 +440,9 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                         self._gui.set_visible_control_dialog(True)
 
                 # Handle organization chart shape selection
-                if (selected_shape_name.startswith("OrbatDiagram")
-                    and selected_shape_name.endswith("RectangleShape0")):
+                if selected_shape_name.startswith(
+                    "OrbatDiagram"
+                ) and selected_shape_name.endswith("RectangleShape0"):
                     if self.get_diagram() is not None:
                         self.get_diagram().select_shapes()
 
@@ -442,12 +461,13 @@ class Controller(unohelper.Base, XSelectionChangeListener):
             selected_shape = self.get_selected_shape()
             selected_shape_name = selected_shape.getName()
 
-            if (selected_shape_name.startswith("OrbatDiagram") and
-                    "RectangleShape" in selected_shape_name and
-                    not selected_shape_name.endswith("RectangleShape0")):
+            if (
+                selected_shape_name.startswith("OrbatDiagram")
+                and "RectangleShape" in selected_shape_name
+                and not selected_shape_name.endswith("RectangleShape0")
+            ):
                 return True
         return False
-
 
 
 # pythonloader loads a static g_ImplementationHelper variable
@@ -455,4 +475,5 @@ g_ImplementationHelper = unohelper.ImplementationHelper()
 g_ImplementationHelper.addImplementation(
     Controller,  # UNO object class
     "com.collabora.milsymbol.Controller",  # implementation name
-    ("com.sun.star.view.XSelectionChangeListener",), )  # implemented services (only 1)
+    ("com.sun.star.view.XSelectionChangeListener",),
+)  # implemented services (only 1)

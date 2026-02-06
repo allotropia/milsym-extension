@@ -11,6 +11,7 @@ from unohelper import systemPathToFileUrl
 from com.sun.star.awt import XDialogEventHandler
 from com.sun.star.awt.Key import RETURN
 
+
 class RenameDialog:
     def __init__(self, ctx, node, dir_path):
         self.ctx = ctx
@@ -20,9 +21,12 @@ class RenameDialog:
     def run(self):
         try:
             dialog_provider = self.ctx.getServiceManager().createInstanceWithContext(
-                              "com.sun.star.awt.DialogProvider2", self.ctx)
+                "com.sun.star.awt.DialogProvider2", self.ctx
+            )
 
-            dialog_url = "vnd.sun.star.extension://com.collabora.milsymbol/dialog/RenameDlg.xdl"
+            dialog_url = (
+                "vnd.sun.star.extension://com.collabora.milsymbol/dialog/RenameDlg.xdl"
+            )
 
             handler = RenameDlgHandler(self.ctx, self.node, self.favorites_dir_path)
             rename_dialog = dialog_provider.createDialogWithHandler(dialog_url, handler)
@@ -33,6 +37,7 @@ class RenameDialog:
             rename_dialog.execute()
         except Exception as ex:
             print(f"Error creating rename dialog: {ex}")
+
 
 class RenameDlgHandler(unohelper.Base, XDialogEventHandler):
     def __init__(self, ctx, node, dir_path):
@@ -46,14 +51,18 @@ class RenameDlgHandler(unohelper.Base, XDialogEventHandler):
             self.symbol_name = dialog.getControl(methodName).Text
 
             svg_path = self.get_path(self.symbol_name) + ".svg"
-            invalid_button = (
-                self.symbol_name == "" or
-                (self.symbol_name != self.node.getDisplayValue() and os.path.exists(svg_path)))
+            invalid_button = self.symbol_name == "" or (
+                self.symbol_name != self.node.getDisplayValue()
+                and os.path.exists(svg_path)
+            )
 
             dialog.getControl("btOk").getModel().State = 1 if invalid_button else 0
             return True
         elif methodName == "tbNameKeydown":
-            if dialog.getControl("btOk").getModel().State == 0 and eventObject.KeyCode == RETURN:
+            if (
+                dialog.getControl("btOk").getModel().State == 0
+                and eventObject.KeyCode == RETURN
+            ):
                 self.set_symbol_name(dialog, self.symbol_name)
                 return True
         elif methodName == "btOk":

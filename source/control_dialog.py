@@ -42,7 +42,7 @@ from utils import (
     extractGraphicAttributes,
     generate_icon_svg,
     insertGraphicAttributes,
-    createMilSymbolScriptInstance
+    createMilSymbolScriptInstance,
 )
 from unohelper import systemPathToFileUrl
 from translator import translate

@@ -37,11 +37,15 @@ class OrgChartTree(OrganizationChartTree):
             OrgChartTreeItem.init_static_members()
             self.add_to_rectangles(root_item_shape)
             self._root_item = OrgChartTreeItem(self, root_item_shape, None, 0, 0.0)
-        elif control_shape_or_tree is not None and hasattr(control_shape_or_tree, 'get_root_item'):
+        elif control_shape_or_tree is not None and hasattr(
+            control_shape_or_tree, "get_root_item"
+        ):
             # Constructor with existing diagram tree
             super().__init__(organigram, control_shape_or_tree)
             OrgChartTreeItem.init_static_members()
-            self._root_item = OrgChartTreeItem(self, None, control_shape_or_tree.get_root_item())
+            self._root_item = OrgChartTreeItem(
+                self, None, control_shape_or_tree.get_root_item()
+            )
             self._root_item.set_level(0)
             self._root_item.set_pos(0.0)
             self._root_item.convert_tree_items(control_shape_or_tree.get_root_item())
@@ -58,7 +62,11 @@ class OrgChartTree(OrganizationChartTree):
     def get_first_child_shape(self, x_dad_shape):
         """Get first child shape based on position"""
         # The structure of diagram changes below second level
-        level = self.get_tree_item(x_dad_shape).get_level() + 1 if self.get_tree_item(x_dad_shape) else 1
+        level = (
+            self.get_tree_item(x_dad_shape).get_level() + 1
+            if self.get_tree_item(x_dad_shape)
+            else 1
+        )
         x_pos = -1
         y_pos = -1
         x_child_shape = None
@@ -70,13 +78,21 @@ class OrgChartTree(OrganizationChartTree):
 
                 if level <= OrgChartTree.LAST_HOR_LEVEL:
                     # Horizontal layout - find leftmost child
-                    child_pos = x_child_shape.getPosition() if hasattr(x_child_shape, 'getPosition') else None
+                    child_pos = (
+                        x_child_shape.getPosition()
+                        if hasattr(x_child_shape, "getPosition")
+                        else None
+                    )
                     if child_pos and (x_pos == -1 or child_pos.X < x_pos):
                         x_pos = child_pos.X
                         x_first_child_shape = x_child_shape
                 else:
                     # Vertical layout - find topmost child
-                    child_pos = x_child_shape.getPosition() if hasattr(x_child_shape, 'getPosition') else None
+                    child_pos = (
+                        x_child_shape.getPosition()
+                        if hasattr(x_child_shape, "getPosition")
+                        else None
+                    )
                     if child_pos and (y_pos == -1 or child_pos.Y < y_pos):
                         y_pos = child_pos.Y
                         x_first_child_shape = x_child_shape
@@ -85,7 +101,11 @@ class OrgChartTree(OrganizationChartTree):
 
     def get_last_child_shape(self, x_dad_shape):
         """Get last child shape based on position"""
-        level = self.get_tree_item(x_dad_shape).get_level() + 1 if self.get_tree_item(x_dad_shape) else 1
+        level = (
+            self.get_tree_item(x_dad_shape).get_level() + 1
+            if self.get_tree_item(x_dad_shape)
+            else 1
+        )
         x_pos = -1
         y_pos = -1
         x_child_shape = None
@@ -97,13 +117,21 @@ class OrgChartTree(OrganizationChartTree):
 
                 if level <= OrgChartTree.LAST_HOR_LEVEL:
                     # Horizontal layout - find rightmost child
-                    child_pos = x_child_shape.getPosition() if hasattr(x_child_shape, 'getPosition') else None
+                    child_pos = (
+                        x_child_shape.getPosition()
+                        if hasattr(x_child_shape, "getPosition")
+                        else None
+                    )
                     if child_pos and (x_pos == -1 or child_pos.X > x_pos):
                         x_pos = child_pos.X
                         x_last_child_shape = x_child_shape
                 else:
                     # Vertical layout - find bottommost child
-                    child_pos = x_child_shape.getPosition() if hasattr(x_child_shape, 'getPosition') else None
+                    child_pos = (
+                        x_child_shape.getPosition()
+                        if hasattr(x_child_shape, "getPosition")
+                        else None
+                    )
                     if child_pos and (y_pos == -1 or child_pos.Y > y_pos):
                         y_pos = child_pos.Y
                         x_last_child_shape = x_child_shape
@@ -119,7 +147,9 @@ class OrgChartTree(OrganizationChartTree):
         x_dad_shape = dad.get_rectangle_shape()
         x_sibling_shape = None
         x_first_sibling_shape = None
-        base_shape_pos = x_base_shape.getPosition() if hasattr(x_base_shape, 'getPosition') else None
+        base_shape_pos = (
+            x_base_shape.getPosition() if hasattr(x_base_shape, "getPosition") else None
+        )
 
         if not base_shape_pos:
             return None
@@ -130,7 +160,11 @@ class OrgChartTree(OrganizationChartTree):
         for x_conn_shape in self._connector_list:
             if x_dad_shape == self.get_start_shape_of_connector(x_conn_shape):
                 x_sibling_shape = self.get_end_shape_of_connector(x_conn_shape)
-                sibling_pos = x_sibling_shape.getPosition() if hasattr(x_sibling_shape, 'getPosition') else None
+                sibling_pos = (
+                    x_sibling_shape.getPosition()
+                    if hasattr(x_sibling_shape, "getPosition")
+                    else None
+                )
 
                 if not sibling_pos:
                     continue
@@ -173,11 +207,19 @@ class OrgChartTree(OrganizationChartTree):
                 continue
 
             # Get the correct parent from the tree structure
-            parent_tree_item = child_tree_item.get_dad() if hasattr(child_tree_item, 'get_dad') else None
+            parent_tree_item = (
+                child_tree_item.get_dad()
+                if hasattr(child_tree_item, "get_dad")
+                else None
+            )
             if not parent_tree_item:
                 continue
 
-            expected_start_shape = parent_tree_item.get_rectangle_shape() if hasattr(parent_tree_item, 'get_rectangle_shape') else None
+            expected_start_shape = (
+                parent_tree_item.get_rectangle_shape()
+                if hasattr(parent_tree_item, "get_rectangle_shape")
+                else None
+            )
 
             level = child_tree_item.get_level()
             start_pos = 2  # Bottom connection point
@@ -187,4 +229,10 @@ class OrgChartTree(OrganizationChartTree):
             else:
                 end_pos = 3  # Left connection point
 
-            self.get_org_chart().set_connector_shape_props(x_conn_shape, expected_start_shape, start_pos, current_end_shape, end_pos)
+            self.get_org_chart().set_connector_shape_props(
+                x_conn_shape,
+                expected_start_shape,
+                start_pos,
+                current_end_shape,
+                end_pos,
+            )

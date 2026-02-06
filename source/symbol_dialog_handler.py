@@ -26,7 +26,7 @@ from utils import (
     createMilSymbolScriptInstance,
     create_graphic_from_svg,
     insertGraphicAttributes,
-    insertSvgGraphic
+    insertSvgGraphic,
 )
 from translator import Translator
 from com.sun.star.view.SelectionType import SINGLE
@@ -34,10 +34,20 @@ from com.sun.star.awt import XFocusListener, XKeyListener, XMouseListener
 from com.sun.star.awt.Key import UP, DOWN, LEFT, RIGHT, RETURN
 from collections import defaultdict
 
+
 class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
     TREES_CACHE = {}
 
-    def __init__(self, ctx, model, controller, dialog, sidebar_panel, selected_shape, selected_node_value):
+    def __init__(
+        self,
+        ctx,
+        model,
+        controller,
+        dialog,
+        sidebar_panel,
+        selected_shape,
+        selected_node_value,
+    ):
         self.ctx = ctx
         self.model = model
         self.controller = controller
@@ -70,7 +80,9 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
         has_selected_item = False
         if self.selected_shape or self.selected_node_value:
-            has_selected_item = self.init_selected_shape_params(self.dialog, self.selected_shape, self.selected_node_value)
+            has_selected_item = self.init_selected_shape_params(
+                self.dialog, self.selected_shape, self.selected_node_value
+            )
 
         if not has_selected_item:
             self.init_buttons()
@@ -80,29 +92,31 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
     def init_textboxes(self):
         # Mapping of dialog textbox control names to their corresponding option names
         self.textbox_map = {
-            "tbSpecialHeadquart":   "specialHeadquarters",
+            "tbSpecialHeadquart": "specialHeadquarters",
             "tbUnitNameUniqDesign": "uniqueDesignation",
-            "tbHigherFormation":    "higherFormation",
-            "tbAdditionalInfo":     "additionalInformation",
-            "tbAltitudeDepth":      "altitudeDepth",
-            "tbCombatEffect":       "combatEffectiveness",
-            "tbCommonIdentifier":   "commonIdentifier",
-            "tbDateTimeGroup":      "dtg",
-            "tbEngageBarText":      "engagementBar",
-            "tbEquipTeardownTime":  "equipmentTeardownTime",
-            "tbEvaluatRating":      "evaluationRating",
-            "tbGuardedUnit":        "guardedUnit",
-            "tbIFF_SIF_AIS":        "iffSif",
-            "tbLocation":           "location",
-            "tbPlatformType":       "platformType",
-            "tbQuantity":           "quantity",
-            "tbSpecialDesign":      "specialDesignator",
-            "tbSpeed":              "speed",
-            "tbStaffComments":      "staffComments",
-            "tbType":               "type",
-            "tbDirection":          "direction"
+            "tbHigherFormation": "higherFormation",
+            "tbAdditionalInfo": "additionalInformation",
+            "tbAltitudeDepth": "altitudeDepth",
+            "tbCombatEffect": "combatEffectiveness",
+            "tbCommonIdentifier": "commonIdentifier",
+            "tbDateTimeGroup": "dtg",
+            "tbEngageBarText": "engagementBar",
+            "tbEquipTeardownTime": "equipmentTeardownTime",
+            "tbEvaluatRating": "evaluationRating",
+            "tbGuardedUnit": "guardedUnit",
+            "tbIFF_SIF_AIS": "iffSif",
+            "tbLocation": "location",
+            "tbPlatformType": "platformType",
+            "tbQuantity": "quantity",
+            "tbSpecialDesign": "specialDesignator",
+            "tbSpeed": "speed",
+            "tbStaffComments": "staffComments",
+            "tbType": "type",
+            "tbDirection": "direction",
         }
-        self.reverse_textbox_map = {value: key for key, value in self.textbox_map.items()}
+        self.reverse_textbox_map = {
+            value: key for key, value in self.textbox_map.items()
+        }
 
         tbSearch_ctrl = self.dialog.getControl("tbSearch")
         self.search_placeholder = tbSearch_ctrl.Text
@@ -118,7 +132,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             self.dialog.getControl("btReality").getModel().State = 1
             self.dialog.getControl("btFriend").getModel().State = 1
             self.context = symbols_data.BUTTONS["CONTEXT"]["btReality"]
-            self.affiliation= symbols_data.BUTTONS["AFFILIATION"]["btFriend"]
+            self.affiliation = symbols_data.BUTTONS["AFFILIATION"]["btFriend"]
 
         self.dialog.getControl("btPresent").getModel().State = 1
         self.dialog.getControl("btNotApplicableReinReduc").getModel().State = 1
@@ -129,7 +143,9 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
         self.version = symbols_data.VERSION
         self.status = symbols_data.BUTTONS["STATUS"]["btPresent"]
-        self.reinforced = symbols_data.BUTTONS["REINFORCED_REDUCED"]["btNotApplicableReinReduc"]
+        self.reinforced = symbols_data.BUTTONS["REINFORCED_REDUCED"][
+            "btNotApplicableReinReduc"
+        ]
         self.stack = symbols_data.BUTTONS["STACK"]["btStack1"]
         self.color = symbols_data.BUTTONS["COLOR"]["btLight"]
         self.signature = symbols_data.BUTTONS["SIGNATURE"]["btNotApplicableSignature"]
@@ -144,18 +160,12 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             "treeHeadTaskDummy",
             "treeEchelonMobility",
             "treeCountry",
-            "treeSearch"
+            "treeSearch",
         )
 
-        self.tree_map = {
-            name: name[4].lower() + name[5:]
-            for name in tree_names
-        }
+        self.tree_map = {name: name[4].lower() + name[5:] for name in tree_names}
 
-        self.tree_ctrls = {
-            name: self.dialog.getControl(name)
-            for name in tree_names
-        }
+        self.tree_ctrls = {name: self.dialog.getControl(name) for name in tree_names}
 
     def init_tree_controls(self):
         self.tree_mapping()
@@ -183,7 +193,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             tree_key_listener = TreeKeyListener(self, listbox_ctrl)
             tree_ctrl.addKeyListener(tree_key_listener)
 
-    def init_default_values(self, selected_index = 4, update_country = True):
+    def init_default_values(self, selected_index=4, update_country=True):
         self.init_default_tree(update_country)
 
         label = self.translator.translate(symbols_data.SYMBOLS[selected_index]["label"])
@@ -200,13 +210,17 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         listbox_control.selectItemPos(0, True)
         self.mainIcon = current_symbol["MainIcon"][0]["value"]
 
-        label = self.translator.translate(current_symbol["FirstIconModifier"][0]["label"])
+        label = self.translator.translate(
+            current_symbol["FirstIconModifier"][0]["label"]
+        )
         listbox_control = self.dialog.getControl("ltbFirstIcon")
         listbox_control.addItems([label], 0)
         listbox_control.selectItemPos(0, True)
         self.firstIcon = current_symbol["FirstIconModifier"][0]["value"]
 
-        label = self.translator.translate(current_symbol["SecondIconModifier"][0]["label"])
+        label = self.translator.translate(
+            current_symbol["SecondIconModifier"][0]["label"]
+        )
         listbox_control = self.dialog.getControl("ltbSecondIcon")
         listbox_control.addItems([label], 0)
         listbox_control.selectItemPos(0, True)
@@ -218,7 +232,9 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         listbox_control.selectItemPos(0, True)
         self.echelonMobility = current_symbol["EchelonMobility"][0]["value"]
 
-        label = self.translator.translate(current_symbol["HeadquartersTaskforceDummy"][0]["label"])
+        label = self.translator.translate(
+            current_symbol["HeadquartersTaskforceDummy"][0]["label"]
+        )
         listbox_control = self.dialog.getControl("ltbHeadTaskDummy")
         listbox_control.addItems([label], 0)
         listbox_control.selectItemPos(0, True)
@@ -235,9 +251,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         for tree_ctrl in self.tree_ctrls.values():
             data_model = tree_ctrl.getModel().DataModel
             if data_model:
-                if (tree_ctrl.getModel().Name == "treeCountry"
-                    and not update_country
-                ):
+                if tree_ctrl.getModel().Name == "treeCountry" and not update_country:
                     continue
 
                 root_node = tree_ctrl.getModel().DataModel.getRoot()
@@ -256,22 +270,34 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
     def populate_firstIcon(self, current_symbol, selected_index):
         self.fill_tree_control(
-            "treeFirstIcon", "ltbFirstIcon", current_symbol["FirstIconModifier"], selected_index
+            "treeFirstIcon",
+            "ltbFirstIcon",
+            current_symbol["FirstIconModifier"],
+            selected_index,
         )
 
     def populate_secondIcon(self, current_symbol, selected_index):
         self.fill_tree_control(
-            "treeSecondIcon", "ltbSecondIcon", current_symbol["SecondIconModifier"], selected_index
+            "treeSecondIcon",
+            "ltbSecondIcon",
+            current_symbol["SecondIconModifier"],
+            selected_index,
         )
 
     def populate_echelonMobility(self, current_symbol, selected_index):
         self.fill_tree_control(
-            "treeEchelonMobility", "ltbEchelonMobility", current_symbol["EchelonMobility"], selected_index
+            "treeEchelonMobility",
+            "ltbEchelonMobility",
+            current_symbol["EchelonMobility"],
+            selected_index,
         )
 
     def populate_headTaskDummy(self, current_symbol, selected_index):
         self.fill_tree_control(
-            "treeHeadTaskDummy", "ltbHeadTaskDummy", current_symbol["HeadquartersTaskforceDummy"], selected_index
+            "treeHeadTaskDummy",
+            "ltbHeadTaskDummy",
+            current_symbol["HeadquartersTaskforceDummy"],
+            selected_index,
         )
 
     def populate_country(self, selected_index):
@@ -314,8 +340,11 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
                 BASE_ICON_URL = "vnd.sun.star.extension://com.collabora.milsymbol/img/preview/symbol_set"
             else:
                 category = self.symbol_id.lower()
-                sub_category = re.sub(r'(?<!^)(?=[A-Z])', '_', tree_name[4:]).lower()
-                BASE_ICON_URL = f"vnd.sun.star.extension://com.collabora.milsymbol/img/preview/"f"{category}/{sub_category}"
+                sub_category = re.sub(r"(?<!^)(?=[A-Z])", "_", tree_name[4:]).lower()
+                BASE_ICON_URL = (
+                    f"vnd.sun.star.extension://com.collabora.milsymbol/img/preview/"
+                    f"{category}/{sub_category}"
+                )
 
             for idx, item in enumerate(items):
                 img_file = item.get("img")
@@ -330,7 +359,9 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
                 root_node.appendChild(node)
 
             tree_model.setPropertyValue("DataModel", mutable_tree_data_model)
-            SymbolDialogHandler.TREES_CACHE[symbolset_index][tree_name] = mutable_tree_data_model
+            SymbolDialogHandler.TREES_CACHE[symbolset_index][tree_name] = (
+                mutable_tree_data_model
+            )
 
         if root_node is None:
             root_node = tree_control.getModel().DataModel.getRoot()
@@ -359,7 +390,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
                 if isinstance(item, dict)
                 and self.translator.translate(item.get("label")) == node_name
             ),
-            None
+            None,
         )
 
         if self.search_index is not None:
@@ -371,7 +402,9 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             self.reset_symbol(self.dialog, symbolSet_index)
 
             current_symbol = self.get_current_symbol(symbolSet_index)
-            label = self.translator.translate(current_symbol["MainIcon"][index]["label"])
+            label = self.translator.translate(
+                current_symbol["MainIcon"][index]["label"]
+            )
             listbox_control = self.dialog.getControl("ltbMainIcon")
             listbox_control.addItems([label], 0)
             listbox_control.selectItemPos(0, True)
@@ -423,7 +456,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         symbol_meta = symbols_data.SYMBOLS[selected_index]
         self.symbol_id = symbol_meta["id"]
         current_symbol = symbols_data.SYMBOL_DETAILS[self.symbol_id]
-        self.tree_category_name=self.translator.translate(symbol_meta["label"])
+        self.tree_category_name = self.translator.translate(symbol_meta["label"])
         return current_symbol
 
     def update_ui_state(self):
@@ -448,11 +481,11 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
                 self.hex_color = hex_color
                 self.button_handler(dialog, methodName)
             return True
-        elif methodName.startswith("focus"): # textboxes
+        elif methodName.startswith("focus"):  # textboxes
             if self.active_tree_ctrl:
                 self.active_tree_ctrl.setVisible(False)
             return True
-        elif methodName.startswith("tb"): # textboxes
+        elif methodName.startswith("tb"):  # textboxes
             self.textbox_handler(dialog, methodName)
             return True
         elif methodName.startswith("tabbed"):
@@ -472,20 +505,24 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
                 self.updatePreview()
 
             if self.controller is not None:
-                shape = self.controller.get_diagram().set_svg_data(
-                    self.final_svg_data)
-                insertGraphicAttributes(shape,
-                                        self.final_svg_args)
+                shape = self.controller.get_diagram().set_svg_data(self.final_svg_data)
+                insertGraphicAttributes(shape, self.final_svg_args)
             elif self.sidebar_panel is not None:
-                self.sidebar_panel.insert_symbol_node(self.tree_category_name, self.sidebar_symbol_svg_data,
-                                                      self.final_svg_args, self.is_editing)
-            else: # document
+                self.sidebar_panel.insert_symbol_node(
+                    self.tree_category_name,
+                    self.sidebar_symbol_svg_data,
+                    self.final_svg_args,
+                    self.is_editing,
+                )
+            else:  # document
                 insertSvgGraphic(
-                    self.ctx, self.model,
+                    self.ctx,
+                    self.model,
                     self.final_svg_data,
                     self.final_svg_args,
                     self.selected_shape,
-                    "Symbol " + "(" + self.sidc + ")")
+                    "Symbol " + "(" + self.sidc + ")",
+                )
             dialog.endExecute()
             return True
         elif methodName == "dialog_btCancel":
@@ -503,7 +540,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
     def disposing(self, event):
         pass
 
-    def reset_symbol(self, dialog, selected_index = None):
+    def reset_symbol(self, dialog, selected_index=None):
         self.ignore_event = True
         for textbox, option_name in self.textbox_map.items():
             dialog.getControl(textbox).Text = ""
@@ -513,8 +550,14 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         if selected_index is not None:
             index = selected_index
         else:
-            symbolSet_item = next((item for item in symbols_data.SYMBOLS
-                                   if item["value"] == self.symbolSet),None)
+            symbolSet_item = next(
+                (
+                    item
+                    for item in symbols_data.SYMBOLS
+                    if item["value"] == self.symbolSet
+                ),
+                None,
+            )
             index = symbols_data.SYMBOLS.index(symbolSet_item)
             self.search_index = None
 
@@ -544,9 +587,9 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         return None
 
     def color_to_hex(self, color_val):
-        red   = (color_val >> 16) & 0xFF
+        red = (color_val >> 16) & 0xFF
         green = (color_val >> 8) & 0xFF
-        blue  = color_val & 0xFF
+        blue = color_val & 0xFF
         return f"#{red:02X}{green:02X}{blue:02X}"
 
     def show_help_dialog(self, field_name):
@@ -585,7 +628,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         if text:
             self.sidc_options[options_name] = text
         else:
-            self.sidc_options.pop(options_name, None) # remove
+            self.sidc_options.pop(options_name, None)  # remove
 
         self.updatePreview()
 
@@ -600,7 +643,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             dialog.Model.Step = 2
             self.tree_ctrls["treeCountry"].setVisible(False)
 
-    def button_handler(self, dialog, active_button_id, updatePreview = True):
+    def button_handler(self, dialog, active_button_id, updatePreview=True):
         group_name = None
         group_buttons = None
 
@@ -614,14 +657,18 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             return False
 
         for button_id in group_buttons:
-            self.update_button(dialog, button_id, active_button_id, group_name, updatePreview)
+            self.update_button(
+                dialog, button_id, active_button_id, group_name, updatePreview
+            )
         return True
 
-    def update_button(self, dialog, button_id, active_button_id, group_name, updatePreview):
+    def update_button(
+        self, dialog, button_id, active_button_id, group_name, updatePreview
+    ):
         state = 0
         if button_id == active_button_id:
             state = 1
-            group_buttons= symbols_data.BUTTONS.get(group_name)
+            group_buttons = symbols_data.BUTTONS.get(group_name)
             value = group_buttons.get(button_id)
 
             if group_name == "CONTEXT":
@@ -650,7 +697,9 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         imgPreview = self.dialog.getModel().getByName("imgPreview")
         imgPreview.ScaleImage = True
         imgPreview.ScaleMode = ISOTROPIC
-        imgPreview.ImageURL =  "vnd.sun.star.extension://com.collabora.milsymbol/img/base.svg"
+        imgPreview.ImageURL = (
+            "vnd.sun.star.extension://com.collabora.milsymbol/img/base.svg"
+        )
 
     def updatePreview(self):
         svg_data = None
@@ -682,9 +731,9 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             self.firstIcon[0],
             self.secondIcon[0],
             "00000",
-            "000" # Country flag
+            "000",  # Country flag
         ]
-        self.sidc = ''.join(sidc)
+        self.sidc = "".join(sidc)
 
         return self.sidc
 
@@ -705,18 +754,20 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             NamedValue("stack", self.stack),
             NamedValue("reinforced", self.reinforced),
             NamedValue("signature", self.signature),
-            NamedValue("engagementType", self.engagement)
+            NamedValue("engagementType", self.engagement),
         ]
 
         if self.country:
-            args.extend([
-                NamedValue("country", self.country),
-                NamedValue("country_flag", "true")
-            ])
+            args.extend(
+                [
+                    NamedValue("country", self.country),
+                    NamedValue("country_flag", "true"),
+                ]
+            )
 
         if self.color == "Custom":
             args.append(NamedValue("fillColor", self.hex_color))
-        elif self.color== "NoFill":
+        elif self.color == "NoFill":
             args.append(NamedValue("fill", "false"))
         else:
             args.append(NamedValue("colorMode", self.color))
@@ -730,7 +781,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
             if self.sidebar_panel is not None:
                 args[1] = NamedValue("size", 20.0)
-                self.sidebar_symbol_svg_data  = str(self.script.invoke(args, (), ())[0])
+                self.sidebar_symbol_svg_data = str(self.script.invoke(args, (), ())[0])
 
             # Assuming the result contains SVG data
             if result and len(result) > 0:
@@ -762,12 +813,18 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
                 self.dialog.getControl(textbox).Text = value
                 self.ignore_event = False
             else:
-                if element   == "MilSymStack":          self.stack      = value
-                elif element == "MilSymReinforced":     self.reinforced = value
-                elif element == "MilSymColorMode":      self.color      = value
-                elif element == "MilSymSignature":      self.signature  = value
-                elif element == "MilSymEngagementType": self.engagement = value
-                elif element == "MilSymFillColor":      self.hex_color  = value
+                if element == "MilSymStack":
+                    self.stack = value
+                elif element == "MilSymReinforced":
+                    self.reinforced = value
+                elif element == "MilSymColorMode":
+                    self.color = value
+                elif element == "MilSymSignature":
+                    self.signature = value
+                elif element == "MilSymEngagementType":
+                    self.engagement = value
+                elif element == "MilSymFillColor":
+                    self.hex_color = value
 
         if not self.color:
             if self.hex_color:
@@ -850,19 +907,23 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
     def find_index_and_label(self, items, value):
         return next(
-            ((i, item["label"]) for i, item in enumerate(items) if item["value"] == value),
-            (0, None)
+            (
+                (i, item["label"])
+                for i, item in enumerate(items)
+                if item["value"] == value
+            ),
+            (0, None),
         )
 
     def update_buttons_state(self, dialog):
-        self.set_button_state(dialog, self.stack,       "STACK")
-        self.set_button_state(dialog, self.reinforced,  "REINFORCED_REDUCED")
-        self.set_button_state(dialog, self.signature,   "SIGNATURE")
-        self.set_button_state(dialog, self.engagement,  "ENGAGEMENT")
-        self.set_button_state(dialog, self.color,       "COLOR")
-        self.set_button_state(dialog, self.context,     "CONTEXT")
+        self.set_button_state(dialog, self.stack, "STACK")
+        self.set_button_state(dialog, self.reinforced, "REINFORCED_REDUCED")
+        self.set_button_state(dialog, self.signature, "SIGNATURE")
+        self.set_button_state(dialog, self.engagement, "ENGAGEMENT")
+        self.set_button_state(dialog, self.color, "COLOR")
+        self.set_button_state(dialog, self.context, "CONTEXT")
         self.set_button_state(dialog, self.affiliation, "AFFILIATION")
-        self.set_button_state(dialog, self.status,      "STATUS")
+        self.set_button_state(dialog, self.status, "STATUS")
 
     def set_button_state(self, dialog, option, group_button):
         group_buttons = symbols_data.BUTTONS.get(group_button, {})
@@ -891,7 +952,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         for element, value in other_attrs.items():
             if element == "MilSymCode":
                 self.version = value[0:2]
-                self.context= value[2]
+                self.context = value[2]
                 self.affiliation = value[3]
                 self.symbolSet = value[4:6]
                 self.status = value[6]
@@ -907,6 +968,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
                 attrs[element] = value
 
         return attrs
+
 
 class SearchTreeMouseListener(unohelper.Base, XMouseListener):
     def __init__(self, dialog_handler):
@@ -970,7 +1032,7 @@ class SearchTextboxKeyListener(unohelper.Base, XKeyListener):
 
     def build_token_index(self):
         index = defaultdict(set)
-        TOKEN_SPLIT = re.compile(r'[ /-]+').split
+        TOKEN_SPLIT = re.compile(r"[ /-]+").split
         translate = self.dialog_handler.translator.translate
 
         for category_name, data in symbols_data.SYMBOL_DETAILS.items():
@@ -1069,8 +1131,11 @@ class SearchTextboxKeyListener(unohelper.Base, XKeyListener):
         return list(matches)
 
     def rebuild_tree(self, items):
-        mutable_tree_data_model = self.ctx.getServiceManager().createInstanceWithContext(
-            "com.sun.star.awt.tree.MutableTreeDataModel", self.ctx)
+        mutable_tree_data_model = (
+            self.ctx.getServiceManager().createInstanceWithContext(
+                "com.sun.star.awt.tree.MutableTreeDataModel", self.ctx
+            )
+        )
 
         root_node = mutable_tree_data_model.createNode("root_node", False)
         mutable_tree_data_model.setRoot(root_node)
@@ -1136,22 +1201,28 @@ class ListboxMouseListener(unohelper.Base, XMouseListener):
             elif control_name == "treeSecondIcon":
                 self.dialog_handler.populate_secondIcon(current_symbol, selected_index)
             elif control_name == "treeEchelonMobility":
-                self.dialog_handler.populate_echelonMobility(current_symbol, selected_index)
+                self.dialog_handler.populate_echelonMobility(
+                    current_symbol, selected_index
+                )
             elif control_name == "treeHeadTaskDummy":
-                self.dialog_handler.populate_headTaskDummy(current_symbol, selected_index)
+                self.dialog_handler.populate_headTaskDummy(
+                    current_symbol, selected_index
+                )
             elif control_name == "treeCountry":
                 self.dialog_handler.populate_country(selected_index)
 
         self.tree_ctrl.getPeer().setFocus()
         self.tree_ctrl.setVisible(not self.tree_ctrl.isVisible())
 
-        if (self.dialog_handler.active_tree_ctrl
+        if (
+            self.dialog_handler.active_tree_ctrl
             and self.dialog_handler.active_tree_ctrl != self.tree_ctrl
         ):
             self.dialog_handler.active_tree_ctrl.setVisible(False)
 
     def get_selected_index(self, control_name):
-        if (control_name == "treeMainIcon"
+        if (
+            control_name == "treeMainIcon"
             and self.dialog_handler.search_index is not None
         ):
             idx = self.dialog_handler.search_index
@@ -1194,7 +1265,8 @@ class TreeKeyListener(unohelper.Base, XKeyListener):
                 node, event.Source, self.current_listbox
             )
 
-    def keyReleased(self, event): pass
+    def keyReleased(self, event):
+        pass
 
     def disposing(self, event):
         pass

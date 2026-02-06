@@ -13,17 +13,24 @@ from symbol_dialog import open_symbol_dialog
 
 from unohelper import systemPathToFileUrl
 from com.sun.star.awt import Key, MouseButton, MenuItemStyle
-from com.sun.star.awt import XKeyListener, XMenuListener, XMouseListener, XMouseMotionListener
+from com.sun.star.awt import (
+    XKeyListener,
+    XMenuListener,
+    XMouseListener,
+    XMouseMotionListener,
+)
 from com.sun.star.view import XSelectionChangeListener
 
-class SidebarTree():
 
+class SidebarTree:
     def __init__(self, ctx, sidebar_panel):
         self.ctx = ctx
         self.sidebar_panel = sidebar_panel
 
     def create_svg_file_path(self, category_name, svg_name):
-        category_dir_path = os.path.join(self.sidebar_panel.favorites_dir_path, category_name)
+        category_dir_path = os.path.join(
+            self.sidebar_panel.favorites_dir_path, category_name
+        )
         os.makedirs(category_dir_path, exist_ok=True)
         symbol_full_path = os.path.join(category_dir_path, f"{svg_name}.svg")
         return symbol_full_path
@@ -52,7 +59,7 @@ class SidebarTree():
             m += 1
 
     def create_svg_file(self, symbol_full_path, svg_data):
-        with open(symbol_full_path, 'w', encoding='utf-8') as preview_file:
+        with open(symbol_full_path, "w", encoding="utf-8") as preview_file:
             preview_file.write(svg_data)
 
     def serialize_svg_args(self, svg_args):
@@ -82,8 +89,7 @@ class SidebarTree():
 
     def reorder_symbols(self, category_path):
         json_files = [
-            name for name in os.listdir(category_path)
-            if name.lower().endswith(".json")
+            name for name in os.listdir(category_path) if name.lower().endswith(".json")
         ]
 
         items = []
@@ -101,8 +107,16 @@ class SidebarTree():
             with open(full_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=4)
 
-    def create_node(self, root_node, tree_data_model, category_name,
-                    svg_data, svg_args, is_editing, selected_node):
+    def create_node(
+        self,
+        root_node,
+        tree_data_model,
+        category_name,
+        svg_data,
+        svg_args,
+        is_editing,
+        selected_node,
+    ):
         try:
             if svg_data is None:
                 return
@@ -125,7 +139,9 @@ class SidebarTree():
                     root_node.removeChildByIndex(parent_idx)
 
                 node_name = selected_node.getDisplayValue()
-                path = os.path.join(favorites_dir_path, selected_node_category_name, node_name)
+                path = os.path.join(
+                    favorites_dir_path, selected_node_category_name, node_name
+                )
                 json_path = f"{path}.json"
                 if os.path.exists(json_path):
                     order_index = self.get_order_index_from_json(json_path)
@@ -137,7 +153,11 @@ class SidebarTree():
                     count = 0
                     category_path = os.path.join(favorites_dir_path, category_name)
                     if os.path.exists(category_path):
-                        count = sum(1 for name in os.listdir(category_path) if name.lower().endswith(".json"))
+                        count = sum(
+                            1
+                            for name in os.listdir(category_path)
+                            if name.lower().endswith(".json")
+                        )
                     order_index = count + 1
 
                     svg_path = f"{path}.svg"
@@ -148,10 +168,15 @@ class SidebarTree():
 
                     # Delete category folder when it's empty
                     category_dir = os.path.dirname(svg_path)
-                    if os.path.exists(category_dir) and len(os.listdir(category_dir)) == 0:
+                    if (
+                        os.path.exists(category_dir)
+                        and len(os.listdir(category_dir)) == 0
+                    ):
                         os.rmdir(category_dir)
 
-                    old_category_path = os.path.join(favorites_dir_path, selected_node_category_name)
+                    old_category_path = os.path.join(
+                        favorites_dir_path, selected_node_category_name
+                    )
                     if os.path.exists(old_category_path):
                         self.reorder_symbols(old_category_path)
 
@@ -168,9 +193,13 @@ class SidebarTree():
 
             if is_editing:
                 node_name = selected_node.getDisplayValue()
-                is_name_exists = self.node_name_exists(existing_category_node, node_name)
+                is_name_exists = self.node_name_exists(
+                    existing_category_node, node_name
+                )
                 if is_name_exists:
-                    node_name = self.generate_unique_name(existing_category_node, node_name)
+                    node_name = self.generate_unique_name(
+                        existing_category_node, node_name
+                    )
             else:
                 node_name = self.generate_unique_name(existing_category_node, None)
                 order_index = existing_category_node.getChildCount() + 1
@@ -187,13 +216,15 @@ class SidebarTree():
             svg_params["order_index"] = order_index
 
             json_file_name = f"{node_name}.json"
-            json_file_path = os.path.join(os.path.dirname(symbol_full_path), json_file_name)
-            with open(json_file_path, 'w', encoding='utf-8') as json_file:
+            json_file_path = os.path.join(
+                os.path.dirname(symbol_full_path), json_file_name
+            )
+            with open(json_file_path, "w", encoding="utf-8") as json_file:
                 json.dump(svg_params, json_file, indent=4)
 
             symbol_child.DataValue = svg_args
             if is_editing:
-                existing_category_node.insertChildByIndex(order_index-1, symbol_child)
+                existing_category_node.insertChildByIndex(order_index - 1, symbol_child)
             else:
                 existing_category_node.appendChild(symbol_child)
 
@@ -204,6 +235,7 @@ class SidebarTree():
 
         except Exception as e:
             print("Error creating symbol node:", e)
+
 
 class TreeSelectionChangeListener(unohelper.Base, XSelectionChangeListener):
     def __init__(self, sidebar_panel):
@@ -222,6 +254,7 @@ class TreeSelectionChangeListener(unohelper.Base, XSelectionChangeListener):
                 return
 
             self.sidebar_panel.rename_symbol_files()
+
 
 class TreeKeyListener(unohelper.Base, XKeyListener):
     def __init__(self, sidebar_panel, sidebar_tree):
@@ -284,6 +317,7 @@ class TreeKeyListener(unohelper.Base, XKeyListener):
     def keyReleased(self, event):
         pass
 
+
 class TreeMouseListener(unohelper.Base, XMouseListener, XMouseMotionListener):
     def __init__(self, ctx, sidebar_panel, sidebar_tree):
         self.ctx = ctx
@@ -334,7 +368,11 @@ class TreeMouseListener(unohelper.Base, XMouseListener, XMouseMotionListener):
     def mouseReleased(self, event):
         try:
             node = self.sidebar_panel.selected_node
-            if (event.Buttons == MouseButton.RIGHT and node and node.getChildCount() == 0):
+            if (
+                event.Buttons == MouseButton.RIGHT
+                and node
+                and node.getChildCount() == 0
+            ):
                 tree_ctrl = event.Source
                 tree_ctrl.select(node)
 
@@ -367,9 +405,12 @@ class TreeMouseListener(unohelper.Base, XMouseListener, XMouseMotionListener):
         popup.insertItem(2, "Rename symbol", MenuItemStyle.AUTOCHECK, 1)
         popup.insertItem(3, "Delete symbol", MenuItemStyle.AUTOCHECK, 2)
 
-        popup.addMenuListener(PopupMenuHandler(self.ctx, self.sidebar_panel, self.sidebar_tree))
+        popup.addMenuListener(
+            PopupMenuHandler(self.ctx, self.sidebar_panel, self.sidebar_tree)
+        )
 
         return popup
+
 
 class PopupMenuHandler(unohelper.Base, XMenuListener):
     def __init__(self, ctx, sidebar_panel, sidebar_tree):
@@ -379,15 +420,22 @@ class PopupMenuHandler(unohelper.Base, XMenuListener):
 
     def itemSelected(self, event):
         menu_id = event.MenuId
-        if menu_id == 1: # Edit
+        if menu_id == 1:  # Edit
             node_value = self.sidebar_panel.selected_node.DataValue
             model = self.sidebar_panel.desktop.getCurrentComponent()
-            open_symbol_dialog(self.ctx, model, None, self.sidebar_panel, None, node_value)
-        elif menu_id == 2: # Delete
+            open_symbol_dialog(
+                self.ctx, model, None, self.sidebar_panel, None, node_value
+            )
+        elif menu_id == 2:  # Delete
             self.sidebar_panel.rename_symbol()
-        elif menu_id == 3: # Delete
+        elif menu_id == 3:  # Delete
             self.key_listener.delete_selected_node()
 
-    def itemActivated(self, event): pass
-    def itemHighlighted(self, event): pass
-    def itemDeactivated(self, event): pass
+    def itemActivated(self, event):
+        pass
+
+    def itemHighlighted(self, event):
+        pass
+
+    def itemDeactivated(self, event):
+        pass

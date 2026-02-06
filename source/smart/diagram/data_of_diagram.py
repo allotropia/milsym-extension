@@ -44,7 +44,7 @@ class DataOfDiagram:
         """Add a new data point"""
         self._datas.append(self.Data(level, value))
 
-    def get(self, index: int) -> 'DataOfDiagram.Data':
+    def get(self, index: int) -> "DataOfDiagram.Data":
         """Get data point at index"""
         return self._datas[index]
 

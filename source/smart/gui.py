@@ -17,19 +17,18 @@ if base_dir not in sys.path:
 
 from symbol_dialog import open_symbol_dialog
 from control_dialog import ControlDlgHandler
-from .. utils import get_package_location
+from ..utils import get_package_location
 
 from com.sun.star.awt import WindowAttribute, WindowDescriptor
 from com.sun.star.awt.WindowClass import MODALTOP
+
 
 class Gui:
     # Class-level variables to ensure only one dialog exists globally
     _global_control_dialog = None
     _global_control_dlg_listener = None
     # Track if user explicitly closed the dialog this session
-    _user_closed_dialog = (
-        False
-    )
+    _user_closed_dialog = False
 
     def __init__(self, controller, x_context, x_frame):
         """Initialize GUI"""
@@ -66,10 +65,14 @@ class Gui:
                 need_new_dialog = True  # Can't get controller, recreate dialog
 
         if not need_new_dialog:
-            if ((self.get_controller().get_last_diagram_type() != -1 or
-                self.get_controller().get_last_diagram_id() != -1) and
-                (self.get_controller().get_last_diagram_type() != self.get_controller().get_diagram_type() or
-                self.get_controller().get_last_diagram_id() != new_diagram_id)):
+            if (
+                self.get_controller().get_last_diagram_type() != -1
+                or self.get_controller().get_last_diagram_id() != -1
+            ) and (
+                self.get_controller().get_last_diagram_type()
+                != self.get_controller().get_diagram_type()
+                or self.get_controller().get_last_diagram_id() != new_diagram_id
+            ):
                 need_new_dialog = True
 
         if Gui._global_control_dialog is None or need_new_dialog:
@@ -93,7 +96,9 @@ class Gui:
                 self._x_control_dialog.setVisible(False)
                 self._is_visible_control_dialog = False
 
-        self.get_controller().set_last_diagram_type(self.get_controller().get_diagram_type())
+        self.get_controller().set_last_diagram_type(
+            self.get_controller().get_diagram_type()
+        )
         self.get_controller().set_last_diagram_id(new_diagram_id)
 
     def create_control_dialog(self):
@@ -103,15 +108,23 @@ class Gui:
             self._dispose_global_dialog()
 
         try:
-            dialog_provider = self._x_context.getServiceManager().createInstanceWithContext("com.sun.star.awt.DialogProvider2", self._x_context)
-            s_dialog_url = "vnd.sun.star.extension://com.collabora.milsymbol/dialog/ControlDlg.xdl"
+            dialog_provider = (
+                self._x_context.getServiceManager().createInstanceWithContext(
+                    "com.sun.star.awt.DialogProvider2", self._x_context
+                )
+            )
+            s_dialog_url = (
+                "vnd.sun.star.extension://com.collabora.milsymbol/dialog/ControlDlg.xdl"
+            )
 
             # Create handler first
             model = self._x_frame.getController().getModel()
             new_listener = ControlDlgHandler(self, self._x_context, model)
 
             # Create dialog with handler to ensure proper binding
-            new_dialog = dialog_provider.createDialogWithHandler(s_dialog_url, new_listener)
+            new_dialog = dialog_provider.createDialogWithHandler(
+                s_dialog_url, new_listener
+            )
 
             if new_dialog is not None:
                 new_dialog.addTopWindowListener(new_listener)
@@ -135,13 +148,17 @@ class Gui:
         if Gui._global_control_dialog is not None:
             try:
                 if Gui._global_control_dlg_listener is not None:
-                    if hasattr(Gui._global_control_dlg_listener, 'cleanup'):
+                    if hasattr(Gui._global_control_dlg_listener, "cleanup"):
                         Gui._global_control_dlg_listener.cleanup()
-                    Gui._global_control_dialog.removeTopWindowListener(Gui._global_control_dlg_listener)
+                    Gui._global_control_dialog.removeTopWindowListener(
+                        Gui._global_control_dlg_listener
+                    )
                 Gui._global_control_dialog.setVisible(False)
 
                 # Dispose through XComponent interface
-                x_component = Gui._global_control_dialog.queryInterface(uno.getTypeByName("com.sun.star.lang.XComponent"))
+                x_component = Gui._global_control_dialog.queryInterface(
+                    uno.getTypeByName("com.sun.star.lang.XComponent")
+                )
                 if x_component is not None:
                     x_component.dispose()
                 else:
@@ -188,7 +205,9 @@ class Gui:
     def show_message_box(self, s_title: str, s_message: str):
         """Show message box dialog"""
         try:
-            o_toolkit = self._x_context.getServiceManager().createInstanceWithContext("com.sun.star.awt.Toolkit", self._x_context)
+            o_toolkit = self._x_context.getServiceManager().createInstanceWithContext(
+                "com.sun.star.awt.Toolkit", self._x_context
+            )
             x_toolkit = o_toolkit
 
             if self._x_frame is not None and x_toolkit is not None:
@@ -197,7 +216,11 @@ class Gui:
                 a_descriptor.WindowServiceName = "infobox"
                 a_descriptor.ParentIndex = -1
                 a_descriptor.Parent = self._x_frame.getContainerWindow()
-                a_descriptor.WindowAttributes = WindowAttribute.BORDER | WindowAttribute.MOVEABLE | WindowAttribute.CLOSEABLE
+                a_descriptor.WindowAttributes = (
+                    WindowAttribute.BORDER
+                    | WindowAttribute.MOVEABLE
+                    | WindowAttribute.CLOSEABLE
+                )
 
                 x_message_box = x_toolkit.createWindow(a_descriptor)
                 if x_message_box is not None:
@@ -220,8 +243,23 @@ class Gui:
         m_res_root_url = get_package_location(self._x_context) + "/dialog/"
 
         try:
-            args = (m_res_root_url, True, self.get_locale(), dialog_name, '', uno.Any("com.sun.star.task.XInteractionHandler", None))
-            x_resources = uno.invoke(self._x_context.ServiceManager, 'createInstanceWithArgumentsAndContext', ('com.sun.star.resource.StringResourceWithLocation', args, self._x_context))
+            args = (
+                m_res_root_url,
+                True,
+                self.get_locale(),
+                dialog_name,
+                "",
+                uno.Any("com.sun.star.task.XInteractionHandler", None),
+            )
+            x_resources = uno.invoke(
+                self._x_context.ServiceManager,
+                "createInstanceWithArgumentsAndContext",
+                (
+                    "com.sun.star.resource.StringResourceWithLocation",
+                    args,
+                    self._x_context,
+                ),
+            )
         except Exception as ex:
             print(f"Error creating string resource: {ex}")
 
@@ -240,12 +278,10 @@ class Gui:
         try:
             x_mcf = self._x_context.getServiceManager()
             o_configuration_provider = x_mcf.createInstanceWithContext(
-                "com.sun.star.configuration.ConfigurationProvider",
-                self._x_context
+                "com.sun.star.configuration.ConfigurationProvider", self._x_context
             )
             x_localizable = o_configuration_provider
             locale = x_localizable.getLocale()
         except Exception as ex:
             print(f"Error getting locale: {ex}")
         return locale
-
