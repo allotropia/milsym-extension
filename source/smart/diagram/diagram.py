@@ -14,17 +14,9 @@ Base Diagram class - stub implementation
 Python port of Diagram.java
 """
 
-import os
-import sys
-
 import uno
 
-# Add parent directory to path to import utils
-base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-if base_dir not in sys.path:
-    sys.path.insert(0, base_dir)
-
-from utils import parse_svg_dimensions
+from ..utils import parse_svg_dimensions
 
 from abc import ABC, abstractmethod
 from com.sun.star.awt import Point, Size

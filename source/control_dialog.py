@@ -8,16 +8,10 @@
 
 import json
 import os
-import sys
 import shutil
 
 import uno
 import unohelper
-
-base_dir = os.path.dirname(__file__)
-if base_dir not in sys.path:
-    sys.path.insert(0, base_dir)
-
 from com.sun.star.awt import (
     KeyModifier,
     XDialogEventHandler,

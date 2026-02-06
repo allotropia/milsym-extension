@@ -7,14 +7,9 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import os
-import sys
 import xml.etree.ElementTree as ET
 
 import uno
-
-base_dir = os.path.dirname(__file__)
-if base_dir not in sys.path:
-    sys.path.insert(0, base_dir)
 
 from com.sun.star.awt import Point, Size
 from com.sun.star.beans import NamedValue, PropertyValue

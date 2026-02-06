@@ -6,14 +6,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import os
-import sys
-
 import uno
-
-base_dir = os.path.dirname(__file__)
-if base_dir not in sys.path:
-    sys.path.insert(0, base_dir)
 
 from symbol_dialog import open_symbol_dialog
 from control_dialog import ControlDlgHandler

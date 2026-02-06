@@ -6,20 +6,13 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import os
 import re
-import sys
 
 import uno
 import unohelper
 from com.sun.star.awt import XDialogEventHandler
 from com.sun.star.awt.ImageScaleMode import ISOTROPIC
 from com.sun.star.beans import NamedValue
-
-base_dir = os.path.dirname(__file__)
-if base_dir not in sys.path:
-    sys.path.insert(0, base_dir)
-
 from data import symbols_data
 from data import country_data
 from utils import (
