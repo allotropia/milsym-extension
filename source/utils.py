@@ -18,7 +18,6 @@ if base_dir not in sys.path:
 
 from com.sun.star.awt import Point, Size
 from com.sun.star.beans import NamedValue, PropertyValue
-from com.sun.star.text.TextContentAnchorType import AT_PARAGRAPH
 from com.sun.star.xml import AttributeData
 
 

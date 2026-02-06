@@ -203,13 +203,12 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
 
     def set_measure_props(self):
         """Set measure properties"""
-        hidden_element_num = 0
         if self.get_diagram_tree().get_org_chart().is_hidden_root_element_prop():
-            hidden_element_num = 1
+            pass
 
         base_shape_size = self.get_diagram_tree().get_control_shape_size()
-        base_shape_width = OrgChartTreeItem._shape_width = base_shape_size.Width if base_shape_size else 1000
-        base_shape_height = OrgChartTreeItem._shape_height = base_shape_size.Height if base_shape_size else 1000
+        OrgChartTreeItem._shape_width = base_shape_size.Width if base_shape_size else 1000
+        OrgChartTreeItem._shape_height = base_shape_size.Height if base_shape_size else 1000
 
         OrgChartTreeItem._hor_space = OrgChartTreeItem._ver_space = 0
 

@@ -9,14 +9,11 @@ import uno
 import json
 import unohelper
 
-from utils import insertSvgGraphic
 from symbol_dialog import open_symbol_dialog
 
-from unohelper import systemPathToFileUrl, fileUrlToSystemPath
-from com.sun.star.beans import PropertyValue
-from com.sun.star.awt import SystemPointer, Key, MouseButton, MenuItemStyle, Rectangle
+from unohelper import systemPathToFileUrl
+from com.sun.star.awt import Key, MouseButton, MenuItemStyle
 from com.sun.star.awt import XKeyListener, XMenuListener, XMouseListener, XMouseMotionListener
-from com.sun.star.awt.tree import XMutableTreeDataModel, XMutableTreeNode, XTreeControl, XTreeNode
 from com.sun.star.view import XSelectionChangeListener
 
 class SidebarTree():

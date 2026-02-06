@@ -55,7 +55,6 @@ class OrganizationChartTreeItem(ABC):
     def hide_element(self):
         """Hide the element by setting fill and line style to none"""
         try:
-            x_conn_props = None
 
             if self.get_diagram_tree().get_org_chart().is_hidden_root_element_prop():
                 self._x_rectangle_shape.setPropertyValue("FillStyle", FILL_STYLE_NONE)

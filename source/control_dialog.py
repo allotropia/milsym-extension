@@ -1315,7 +1315,7 @@ class ControlDlgHandler(
                     return result
 
             return None
-        except Exception as e:
+        except Exception:
             return None
 
     def move_tree_item(self, source_node_names, target_node_name, drop_position):
@@ -2451,7 +2451,7 @@ class TreeSelectionListener(unohelper.Base, XSelectionChangeListener):
             selection = event.Source.getSelection()
             if selection and selection.getCount() > 0:
                 self.dialog_handler.sync_document_selection_to_tree(selection)
-        except Exception as e:
+        except Exception:
             # Silently ignore selection errors to avoid spam
             pass
         finally:
