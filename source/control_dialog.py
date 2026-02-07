@@ -1084,6 +1084,60 @@ class ControlDlgHandler(
         finally:
             self._update_button_states()
 
+    def move_selected_shape(self, event):
+        """Move single selected shape around in the hierarchy"""
+
+        # Get all selected tree items
+        tree_items = self._get_selected_tree_items()
+        if not tree_items:
+            return
+
+        controller = self.get_controller()
+        diagram = controller.get_diagram()
+
+        tree_item = tree_items[0]
+
+        if tree_item:
+            if event.KeyCode == Key.LEFT:
+                # move one level up, as next sibling of immediate parent
+                parent_item = tree_item.get_dad()
+                if parent_item != None:
+                    diagram.move_tree_item(tree_item, parent_item, "sibling")
+            elif event.KeyCode == Key.RIGHT:
+                # move one level down, relative to next-upwards sibling
+                insert_child_item = diagram.get_diagram_tree().get_previous_sibling(tree_item)
+                if insert_child_item != None:
+                    diagram.move_tree_item(tree_item, insert_child_item, "child")
+            elif event.KeyCode == Key.UP:
+                # move one sibling position up - stop at index 0
+                insert_before_item = diagram.get_diagram_tree().get_previous_sibling(tree_item)
+                parent_item = tree_item.get_dad()
+                if insert_before_item != None:
+                    insert_before_item2 = diagram.get_diagram_tree().get_previous_sibling(insert_before_item)
+                    diagram._remove_item_from_tree(tree_item)
+                    if insert_before_item2 != None:
+                        diagram._insert_as_sibling_after(tree_item, insert_before_item2)
+                    elif parent_item != None:
+                        tree_item.set_dad(parent_item)
+                        tree_item.set_first_sibling(insert_before_item)
+                        parent_item.set_first_child(tree_item)
+            elif event.KeyCode == Key.DOWN:
+                # move one sibling position down - stop at index n-1
+                if tree_item.get_last_sibling() != tree_item:
+                    insert_after_item = tree_item.get_first_sibling()
+                    diagram._remove_item_from_tree(tree_item)
+                    diagram._insert_as_sibling_after(tree_item, insert_after_item)
+
+            # refresh diagram and tree list
+            diagram.refresh_diagram()
+            self.refresh_tree()
+
+            # make sure same entry is still selected
+            curr_shape = tree_item.get_rectangle_shape()
+            if curr_shape:
+                controller.set_selected_shape(curr_shape)
+
+
     def sync_all_selected_shapes_to_document(self):
         """Sync all selected tree items' shapes to document selection"""
         try:
@@ -2337,9 +2391,13 @@ class TreeKeyHandler(unohelper.Base, XKeyListener):
                     selection = tree_control.getSelection()
                     if selection is not None:
                         is_shift = bool(event.Modifiers & KeyModifier.SHIFT)
+                        is_ctrl = bool(event.Modifiers & KeyModifier.MOD1)
 
                         if is_shift:
                             self.dialog_handler.sync_all_selected_shapes_to_document()
+                        elif is_ctrl:
+                            self.dialog_handler.move_selected_shape(event)
+                            return
                         else:
                             selected_node = None
                             if hasattr(selection, "getDisplayValue"):
