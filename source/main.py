@@ -7,6 +7,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import sys
+import uno
 import unohelper
 import officehelper
 import os
@@ -19,6 +20,7 @@ from symbol_dialog import open_symbol_dialog
 from smart.controller import Controller
 from smart.diagram.data_of_diagram import DataOfDiagram
 from sidebar import SidebarFactory
+from utils import is_orbat_feature_enabled
 
 from com.sun.star.task import XJobExecutor, XJob
 from com.sun.star.view import XSelectionChangeListener
@@ -26,6 +28,8 @@ from com.sun.star.util import XCloseListener
 from com.sun.star.ui import XContextMenuInterceptor
 from com.sun.star.ui.ContextMenuInterceptorAction import EXECUTE_MODIFIED
 from com.sun.star.ui.ContextMenuInterceptorAction import IGNORED
+from com.sun.star.frame import XDispatchProvider, XDispatch
+from com.sun.star.lang import XInitialization
 from translator import translate
 
 
@@ -120,6 +124,7 @@ class ControllerManager:
         if cls._instance is None:
             cls._instance = super(ControllerManager, cls).__new__(cls)
             cls._instance.ctx = ctx
+            cls._instance.orbat_enabled = is_orbat_feature_enabled(ctx)
         return cls._instance
 
     def get_or_create_controller(self, ctx, frame):
@@ -149,6 +154,9 @@ class ControllerManager:
 
     def document_has_smart_diagrams(self, model):
         """Check if document contains smart diagram shapes"""
+        if not self.orbat_enabled:
+            return False
+
         try:
             # Check different document types for shapes
             if model.supportsService("com.sun.star.text.TextDocument"):
@@ -192,9 +200,13 @@ class ContextMenuInterceptor(unohelper.Base, XContextMenuInterceptor):
 
     def __init__(self, ctx):
         self.ctx = ctx
+        self.orbat_enabled = is_orbat_feature_enabled(ctx)
 
     def notifyContextMenuExecute(self, event):
         """Called when a context menu is about to be displayed"""
+        if not self.orbat_enabled:
+            return IGNORED
+
         try:
             orbat_shape = self._get_orbat_group_shape(event)
             if orbat_shape is not None:
@@ -391,8 +403,9 @@ class StartupJob(unohelper.Base, XJob, XSelectionChangeListener):
 # The MainJob is a UNO component derived from unohelper.Base class
 # and also the XJobExecutor, the implemented interface
 class MainJob(unohelper.Base, XJobExecutor):
-    def __init__(self, ctx):
+    def __init__(self, ctx, orbat_enabled=True):
         self.ctx = ctx
+        self.orbat_enabled = orbat_enabled
         # handling different situations (inside LibreOffice or other process)
         try:
             self.sm = ctx.getServiceManager()
@@ -412,9 +425,9 @@ class MainJob(unohelper.Base, XJobExecutor):
         if args == "symbolDialog":
             selected_shape = ListenerRegistry.instance().get_selected_shape()
             open_symbol_dialog(self.ctx, self.model, None, None, selected_shape, None)
-        if args == "orgChart":
+        if self.orbat_enabled and args == "orgChart":
             self.onOrgChart()
-        if args == "editOrbat":
+        if self.orbat_enabled and args == "editOrbat":
             self.onEditOrbat()
 
     def onEditOrbat(self):
@@ -510,6 +523,64 @@ class MainJob(unohelper.Base, XJobExecutor):
             print(f"Error initializing controllers for open documents: {e}")
 
 
+class Dispatcher(unohelper.Base, XDispatch):
+    """Dispatch handler for com.collabora.milsymbol protocol URLs.
+
+    Added to control menu item enabled/disabled state. Not dynamic,
+    only gets called once.
+    """
+
+    def __init__(self, ctx, orbat_enabled=True):
+        self.ctx = ctx
+        self.orbat_enabled = orbat_enabled
+        self.job = MainJob(self.ctx, orbat_enabled)
+
+    def dispatch(self, url, args):
+        self.job.trigger(url.Path)
+
+    def addStatusListener(self, listener, url):
+        event = uno.createUnoStruct("com.sun.star.frame.FeatureStateEvent")
+        event.Source = self
+        event.FeatureURL = url
+        event.IsEnabled = True
+        if url.Path == 'orgChart' and not self.orbat_enabled:
+            event.IsEnabled = False
+        event.Requery = False
+        listener.statusChanged(event)
+
+    def removeStatusListener(self, listener, url):
+        pass
+
+
+class ProtocolHandler(unohelper.Base, XDispatchProvider, XInitialization):
+    """Protocol handler for com.collabora.milsymbol protocol URLs.
+
+    Registered via ProtocolHandler.xcu. Used to insert XDispatch objects that control
+    menu item state via the dispatch framework.
+    """
+
+    def __init__(self, ctx):
+        self.ctx = ctx
+        self._frame = None
+        self.orbat_enabled = is_orbat_feature_enabled(ctx)
+
+    def initialize(self, args):
+        if args:
+            self._frame = args[0]
+
+    def queryDispatch(self, url, target_frame_name, search_flags):
+        if url.Protocol == "com.collabora.milsymbol:":
+            # create our custom dispatcher, which can disable menu items
+            return Dispatcher(self.ctx, self.orbat_enabled)
+        return None
+
+    def queryDispatches(self, requests):
+        return [
+            self.queryDispatch(r.FeatureURL, r.FrameName, r.SearchFlags)
+            for r in requests
+        ]
+
+
 # Starting from Python IDE
 def main():
     try:
@@ -548,3 +619,10 @@ g_ImplementationHelper.addImplementation(
     "com.collabora.milsymbol.StartupJob",
     ("com.sun.star.task.Job",),
 )
+
+g_ImplementationHelper.addImplementation(
+    ProtocolHandler,
+    "com.collabora.milsymbol.ProtocolHandler",
+    ("com.sun.star.frame.ProtocolHandler",),
+)
+

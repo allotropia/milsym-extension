@@ -53,6 +53,42 @@ def get_default_symbol_height_cm(ctx):
     return default_height
 
 
+def is_orbat_feature_enabled(ctx):
+    """Check if hidden feature flag for Orbat handling is enabled.
+
+    Returns True or False
+    """
+    default_state = True
+
+    try:
+        # Create configuration provider
+        config_provider = ctx.ServiceManager.createInstanceWithContext(
+            "com.sun.star.configuration.ConfigurationProvider", ctx
+        )
+
+        # Create property for configuration access
+        prop = PropertyValue()
+        prop.Name = "nodepath"
+        prop.Value = "/com.collabora.milsymbol.Configuration/Settings"
+
+        # Create configuration access
+        config_access = config_provider.createInstanceWithArguments(
+            "com.sun.star.configuration.ConfigurationAccess", (prop,)
+        )
+
+        # Get the OrbatFeatureFlag setting
+        if config_access.hasByName("OrbatFeatureFlag"):
+            status = config_access.getByName("OrbatFeatureFlag")
+            default_state = bool(status)
+
+    except Exception as e:
+        print(
+            f"Warning: Could not read Orbat feature flag, using default: {e}"
+        )
+
+    return default_state
+
+
 def parse_svg_dimensions(svg_data, scale_factor=1):
     """Parse SVG dimensions and return width and height in 1/100mm units.
 

@@ -22,6 +22,12 @@ SPDX-License-Identifier: MPL-2.0
                 </info>
                 <value>1.0</value>
             </prop>
+            <prop oor:name="OrbatFeatureFlag" oor:type="xs:boolean">
+                <info>
+                    <desc>Feature flag for Orbat dialog and smart shapes</desc>
+                </info>
+                <value>true</value>
+            </prop>
         </group>
     </component>
 

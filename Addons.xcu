@@ -16,7 +16,7 @@
               <value xml:lang="de-DE">Symbol einfügen...</value>
             </prop>
             <prop oor:name="URL">
-              <value>service:com.collabora.milsymbol.do?symbolDialog</value>
+              <value>com.collabora.milsymbol:symbolDialog</value>
             </prop>
             <prop oor:name="Target" oor:type="xs:string">
               <value>_self</value>
@@ -28,7 +28,7 @@
               <value xml:lang="de-DE">Orbat einfügen</value>
             </prop>
             <prop oor:name="URL">
-              <value>service:com.collabora.milsymbol.do?orgChart</value>
+              <value>com.collabora.milsymbol:orgChart</value>
             </prop>
             <prop oor:name="Target" oor:type="xs:string">
               <value>_self</value>
