@@ -204,12 +204,12 @@ class ContextMenuInterceptor(unohelper.Base, XContextMenuInterceptor):
 
     def notifyContextMenuExecute(self, event):
         """Called when a context menu is about to be displayed"""
-        if not self.orbat_enabled:
-            return IGNORED
-
         try:
             orbat_shape = self._get_orbat_group_shape(event)
+
             if orbat_shape is not None:
+                if not self.orbat_enabled:
+                    return IGNORED
                 menu_container = event.ActionTriggerContainer
                 self._insert_edit_orbat_menu_item(menu_container)
                 return EXECUTE_MODIFIED
