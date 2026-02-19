@@ -19,7 +19,7 @@ from sidebar_tree import (
     TreeSelectionChangeListener,
 )
 from symbol_dialog import open_symbol_dialog
-from utils import get_package_location, parse_svg_dimensions
+from utils import get_package_location, parse_svg_dimensions, get_default_symbol_height_cm
 from sidebar_rename_dialog import RenameDialog
 
 from unohelper import fileUrlToSystemPath, systemPathToFileUrl
@@ -832,9 +832,14 @@ class SymbolTransferable(unohelper.Base, XTransferable):
             # Base64 encode the SVG content
             svg_base64 = base64.b64encode(svg_string.encode("utf-8")).decode("utf-8")
             svg_size = parse_svg_dimensions(svg_string)
-            factor = 5
-            width_cm = svg_size.Width / 1000.0 * factor  # 1/100mm to cm
-            height_cm = svg_size.Height / 1000.0 * factor  # 1/100mm to cm
+            # Normalize height based on configuration while maintaining aspect ratio
+            target_height = get_default_symbol_height_cm(self.ctx)
+            if svg_size.Height > 0:
+                aspect_scale = target_height / svg_size.Height
+                svg_size.Width = int(svg_size.Width * aspect_scale)
+                svg_size.Height = target_height
+            width_cm = svg_size.Width / 1000.0  # 1/100mm to cm
+            height_cm = svg_size.Height / 1000.0  # 1/100mm to cm
             data_string = data_string.replace("SVG_BASE_64_ENCODED", svg_base64)
             data_string = data_string.replace("SVG_WIDTH_CM", str(width_cm) + "cm")
             data_string = data_string.replace("SVG_HEIGHT_CM", str(height_cm) + "cm")
