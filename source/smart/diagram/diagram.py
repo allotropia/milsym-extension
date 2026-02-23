@@ -478,7 +478,7 @@ class Diagram(ABC):
         elif self._x_model.supportsService(
             "com.sun.star.sheet.SpreadsheetDocument"
         ):  # Calc
-            self._x_draw_page.getDrawPage().add(self._x_group_shape)
+            self._x_draw_page.add(self._x_group_shape)
         else:  # Impress/Draw
             self._x_draw_page.add(self._x_group_shape)
 

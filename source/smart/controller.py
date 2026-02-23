@@ -223,7 +223,7 @@ class Controller(unohelper.Base, XSelectionChangeListener):
         if model.supportsService("com.sun.star.text.TextDocument"):
             return model.getDrawPage()
         elif model.supportsService("com.sun.star.sheet.SpreadsheetDocument"):
-            return self._x_controller.getActiveSheet()  # Calc
+            return self._x_controller.getActiveSheet().getDrawPage()  # Calc
         else:
             return self._x_controller.getCurrentPage()  # Impress/Draw
 
