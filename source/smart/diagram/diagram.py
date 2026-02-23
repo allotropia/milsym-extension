@@ -204,11 +204,15 @@ class Diagram(ABC):
                 pipe.closeOutput()
                 media_properties = (PropertyValue("InputStream", 0, pipe, 0),)
                 graphic = graphic_provider.queryGraphic(media_properties)
-                shape.setPropertyValue("Graphic", graphic)
 
-                # Parse SVG dimensions and resize shape to maintain proportions
-                size = parse_svg_dimensions(svg_data)
-                shape.setSize(size)
+                # Preserve user's custom size; only use SVG dimensions for new (unsized) shapes
+                existing_size = shape.getSize()
+                shape.setPropertyValue("Graphic", graphic)
+                if existing_size.Width > 0 and existing_size.Height > 0:
+                    shape.setSize(existing_size)
+                else:
+                    size = parse_svg_dimensions(svg_data)
+                    shape.setSize(size)
 
         except Exception as ex:
             print(f"Error setting shape properties: {ex}")

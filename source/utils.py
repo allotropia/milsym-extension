@@ -166,18 +166,24 @@ def insertSvgGraphic(
         else:
             shape = selected_shape
 
+        # Preserve user's custom size when editing an existing shape
+        existing_size = selected_shape.getSize() if selected_shape is not None else None
+
         shape.setPropertyValue("Graphic", graphic)
 
-        size = parse_svg_dimensions(svg_data, scale_factor)
+        if existing_size is not None and existing_size.Width > 0 and existing_size.Height > 0:
+            shape.setSize(existing_size)
+        else:
+            size = parse_svg_dimensions(svg_data, scale_factor)
 
-        # Normalize height based on configuration while maintaining aspect ratio
-        target_height = get_default_symbol_height_cm(ctx)
-        if size.Height > 0:
-            aspect_scale = target_height / size.Height
-            size.Width = int(size.Width * aspect_scale)
-            size.Height = target_height
+            # Normalize height based on configuration while maintaining aspect ratio
+            target_height = get_default_symbol_height_cm(ctx)
+            if size.Height > 0:
+                aspect_scale = target_height / size.Height
+                size.Width = int(size.Width * aspect_scale)
+                size.Height = target_height
 
-        shape.setSize(size)
+            shape.setSize(size)
 
         # set MilSym-specific user defined attributes
         insertGraphicAttributes(shape, params)
