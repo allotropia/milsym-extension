@@ -318,6 +318,94 @@ def create_graphic_from_svg(ctx, svg_data):
     except Exception as e:
         print(f"Error creating graphic from SVG: {e}")
         return None
+    
+def extract_symbol_params_from_shape(ctx, model, shape):
+    """Extract symbol parameters from a selected shape for sidebar insertion.
+    
+    Converts a shape's MilSym attributes into the format required by
+    sidebar_panel.insert_symbol_node(). The category name is derived from
+    the SIDC code by looking up the symbol set in the symbols_data.
+    
+    Args:
+        ctx: LibreOffice component context
+        model: Current document model
+        shape: The shape object to extract parameters from
+    
+    Returns:
+        Tuple of (category_name, svg_data, svg_args, is_editing) or (None, None, None, None) on error
+    """
+    try:        
+        from data import symbols_data
+        from translator import Translator
+    
+        # Extract attributes from shape
+        attributes = extractGraphicAttributes(shape)
+        
+        if not attributes or "MilSymCode" not in attributes:
+            print("Shape has no MilSym attributes")
+            return None, None, None, None
+        
+        # Get script instance
+        script = createMilSymbolScriptInstance(ctx, model)
+        
+        # Build svg_args parameter list with ALL attributes
+        svg_args = []
+        
+        # First element: SIDC code
+        sidc_code = attributes.get("MilSymCode", "")
+        svg_args.append(sidc_code)
+        
+        # Add size for sidebar preview
+        svg_args.append(NamedValue("size", 20.0))
+        
+        # Add all other MilSym* attributes as NamedValue objects
+        for key, value in attributes.items():
+            if key in ("MilSymCode", "MilSymSize"):
+                continue  # Already handled
+            if key.startswith("MilSym"):
+                # e.g. convert "MilSymStack" -> "stack"
+                attr_name = key[6:]  # Remove "MilSym" prefix
+                attr_name = attr_name[0].lower() + attr_name[1:]  # Lowercase first letter
+                
+                nv = NamedValue()
+                nv.Name = attr_name
+                nv.Value = value
+                svg_args.append(nv)
+        
+        # Generate SVG with ALL parameters
+        try:
+            svg_data = str(script.invoke(svg_args, (), ())[0])
+        except Exception as e:
+            print(f"Failed to generate SVG data: {e}")
+            return None, None, None, None
+        
+        if not svg_data:
+            print("Generated SVG is empty")
+            return None, None, None, None
+        
+        # Determine category name from SIDC code (symbol set)
+        # SIDC format: positions 4-5 contain the symbol set
+        symbol_set = sidc_code[4:6] if len(sidc_code) >= 6 else ""
+        
+        # Look up the symbol set in symbols_data to get the translated category name
+        category_name = None
+        
+        if symbol_set:
+            translator = Translator(ctx)
+            symbol_meta = next(
+                (item for item in symbols_data.SYMBOLS if item["value"] == symbol_set),
+                None
+            )
+            if symbol_meta:
+                # Get translated category name (like in symbol_dialog_handler.py)
+                category_name = translator.translate(symbol_meta["label"])
+        
+        # Return parameters
+        return category_name, svg_data, svg_args, False
+        
+    except Exception as e:
+        print(f"Error extracting symbol parameters from shape: {e}")
+        return None, None, None, None
 
 
 def get_package_location(ctx, extensionName="com.collabora.milsymbol"):
