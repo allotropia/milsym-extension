@@ -20,7 +20,7 @@ from symbol_dialog import open_symbol_dialog
 from smart.controller import Controller
 from smart.diagram.data_of_diagram import DataOfDiagram
 from sidebar import SidebarFactory
-from utils import is_orbat_feature_enabled
+from utils import is_orbat_feature_enabled, extract_symbol_params_from_shape
 
 from com.sun.star.task import XJobExecutor, XJob
 from com.sun.star.view import XSelectionChangeListener
@@ -294,14 +294,22 @@ class ContextMenuInterceptor(unohelper.Base, XContextMenuInterceptor):
             print(f"_insert_edit_orbat_menu_item error: {e}")
 
     def _insert_menu_item(self, menu_container):
-        """Insert 'Edit Military Symbol' menu item"""
+        """Insert 'Edit Military Symbol' and 'Add to Favorites' menu items"""
         try:
-            menu_item = menu_container.createInstance("com.sun.star.ui.ActionTrigger")
+            menu_item_1 = menu_container.createInstance("com.sun.star.ui.ActionTrigger")
 
-            menu_text = translate(self.ctx, "ContextMenu.EditMilitarySymbol")
-            menu_item.setPropertyValue("Text", menu_text)
-            menu_item.setPropertyValue(
+            menu_text_1 = translate(self.ctx, "ContextMenu.EditMilitarySymbol")
+            menu_item_1.setPropertyValue("Text", menu_text_1)
+            menu_item_1.setPropertyValue(
                 "CommandURL", "service:com.collabora.milsymbol.do?symbolDialog"
+            )
+
+            menu_item_2 = menu_container.createInstance("com.sun.star.ui.ActionTrigger")
+
+            menu_text_2 = translate(self.ctx, "ContextMenu.AddToFavorites")
+            menu_item_2.setPropertyValue("Text", menu_text_2)
+            menu_item_2.setPropertyValue(
+                "CommandURL", "service:com.collabora.milsymbol.do?addToFavorites"
             )
 
             separator = menu_container.createInstance(
@@ -309,7 +317,8 @@ class ContextMenuInterceptor(unohelper.Base, XContextMenuInterceptor):
             )
 
             menu_container.insertByIndex(0, separator)
-            menu_container.insertByIndex(0, menu_item)
+            menu_container.insertByIndex(0, menu_item_2)
+            menu_container.insertByIndex(0, menu_item_1)
         except Exception as e:
             print(f"_insert_menu_item error: {e}")
 
@@ -429,6 +438,22 @@ class MainJob(unohelper.Base, XJobExecutor):
             self.onOrgChart()
         if self.orbat_enabled and args == "editOrbat":
             self.onEditOrbat()
+        if self.orbat_enabled and args == "addToFavorites":
+            selected_shape = ListenerRegistry.instance().get_selected_shape()
+            sidebar_panel = SidebarFactory.get_sidebar_panel()
+            category_name, svg_data, svg_args, is_editing = extract_symbol_params_from_shape(
+                self.ctx,
+                self.model,
+                selected_shape,
+            )
+
+            if category_name is not None:
+                sidebar_panel.insert_symbol_node(
+                    category_name,
+                    svg_data,
+                    svg_args,
+                    is_editing,
+                )
 
     def onEditOrbat(self):
         """Open the ORBAT dialog for the currently selected ORBAT group"""
