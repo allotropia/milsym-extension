@@ -43,6 +43,8 @@ from com.sun.star.datatransfer.dnd.DNDConstants import ACTION_COPY
 
 
 class SidebarFactory(unohelper.Base, XUIElementFactory):
+    _sidebar_panel = None
+
     def __init__(self, ctx):
         self.ctx = ctx
 
@@ -58,9 +60,17 @@ class SidebarFactory(unohelper.Base, XUIElementFactory):
             xUIElement.getRealInterface()
             panelWin = xUIElement.Window
             panelWin.Visible = True
+
+            if xUIElement is not None:
+                SidebarFactory._sidebar_panel = xUIElement
+
             return xUIElement
         except Exception as e:
             print("Sidebar factory error:", e)
+
+    @classmethod
+    def get_sidebar_panel(cls):
+        return cls._sidebar_panel
 
 
 class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
