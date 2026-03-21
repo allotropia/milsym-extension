@@ -32,6 +32,7 @@ class Translator:
         if not Translator._initialized:
             self._x_context = x_context
             self._resource_cache = {}
+            self._resource_ids_cache = {}
             Translator._initialized = True
 
     def get_locale(self):
@@ -75,7 +76,9 @@ class Translator:
                     self._x_context,
                 ),
             )
-            # Cache the resource
+
+            # Cache resource + id
+            self._resource_ids_cache[dialog_name] = set(x_resources.getResourceIDs())
             self._resource_cache[dialog_name] = x_resources
         except Exception as ex:
             print(f"Error creating string resource for {dialog_name}: {ex}")
@@ -97,10 +100,9 @@ class Translator:
 
         if x_resources is not None:
             try:
-                ids = x_resources.getResourceIDs()
-                for resource_id in ids:
-                    if key == resource_id:
-                        return x_resources.resolveString(resource_id)
+                ids = self._resource_ids_cache.get(dialog_name, set())
+                if key in ids:
+                    return x_resources.resolveString(key)
             except Exception as ex:
                 print(f"Error translating key '{key}': {ex}")
 
