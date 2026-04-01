@@ -439,7 +439,9 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
         self.root_node = self.mutable_tree_data_model.createNode("Favorites", True)
         self.mutable_tree_data_model.setRoot(self.root_node)
 
-        for category_name in sorted(os.listdir(self.favorites_dir_path)):
+        for category_name in sorted(
+                [d for d in os.listdir(self.favorites_dir_path)
+                 if os.path.isdir(os.path.join(self.favorites_dir_path, d))]):
             category_node = self.mutable_tree_data_model.createNode(category_name, True)
             self.root_node.appendChild(category_node)
 
