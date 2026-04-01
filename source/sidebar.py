@@ -40,7 +40,10 @@ from com.sun.star.view.SelectionType import SINGLE
 from com.sun.star.datatransfer.dnd import XDragGestureListener, XDragSourceListener
 from com.sun.star.datatransfer import DataFlavor, XTransferable
 from com.sun.star.datatransfer.dnd.DNDConstants import ACTION_COPY
+from com.sun.star.uno import RuntimeException
 
+# we now version our sidebar JSON export and local config
+SIDEBAR_FILE_VERSION = 1
 
 class SidebarFactory(unohelper.Base, XUIElementFactory):
     _sidebar_panel = None
@@ -100,6 +103,10 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
         self.sidebar_tree = SidebarTree(ctx, self)
 
         self.favorites_dir_path = self.get_favorites_dir_path(ctx)
+
+        version_file = os.path.join(self.favorites_dir_path, "versioninfo")
+        with open(version_file, "w", encoding="utf-8") as f:
+            f.write(str(SIDEBAR_FILE_VERSION))
 
         self.desktop = self.ctx.getServiceManager().createInstanceWithContext(
             "com.sun.star.frame.Desktop", self.ctx
@@ -709,6 +716,14 @@ class ImportButtonListener(unohelper.Base, XActionListener):
             favorites_dir = self.sidebar.favorites_dir_path
             os.makedirs(favorites_dir, exist_ok=True)
 
+            # check if import file is versioned:
+            # - if so, check that we know how to parse it
+            # - if not, assume it's an old version and use existing importer code
+            if "fileversion" in all_data:
+                if all_data["fileversion"] > SIDEBAR_FILE_VERSION:
+                    raise RuntimeException("Unsupported favourite file version", self)
+                all_data = all_data["favourites"]
+
             for category_name, symbols in all_data.items():
                 category_path = os.path.join(favorites_dir, category_name)
                 os.makedirs(category_path, exist_ok=True)
@@ -884,7 +899,7 @@ class SymbolTransferable(unohelper.Base, XTransferable):
             data_bytes = data_string.encode("utf-8")
             return uno.ByteSequence(data_bytes)
         else:
-            raise uno.RuntimeException("Unsupported data flavor", self)
+            raise RuntimeException("Unsupported data flavor", self)
 
     def getTransferDataFlavors(self):
         """Get available data flavors"""
@@ -977,7 +992,8 @@ class ExportButtonListener(unohelper.Base, XActionListener):
                         }
 
             with open(path, "w", encoding="utf-8") as f:
-                json.dump(all_data, f, indent=4, ensure_ascii=False)
+                json.dump({"fileversion": SIDEBAR_FILE_VERSION,
+                           "favourites": all_data}, f, indent=4, ensure_ascii=False)
 
         except Exception as e:
             print("Save file error:", e)
