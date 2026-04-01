@@ -936,7 +936,7 @@ class ExportButtonListener(unohelper.Base, XActionListener):
                 "com.sun.star.ui.dialogs.FilePicker", self.ctx
             )
             file_picker.initialize((FILESAVE_AUTOEXTENSION,))
-            file_picker.setDefaultName("sidebar_data.json")
+            file_picker.setDefaultName("milsym_favourites.json")
             file_picker.appendFilter("JOSN File", "*.json")
 
             if file_picker.execute() != 1:
