@@ -1087,21 +1087,28 @@ class ControlDlgHandler(
     def move_selected_shape(self, event):
         """Move single selected shape around in the hierarchy"""
 
-        # Get all selected tree items
-        tree_items = self._get_selected_tree_items()
-        if not tree_items:
-            return
-
         controller = self.get_controller()
         diagram = controller.get_diagram()
 
-        tree_item = tree_items[0]
+        curr_shape = controller.get_selected_shape()
+        if curr_shape is None:
+            return
+
+        tree_item = None
+        for ti in self._node_to_tree_item_map.values():
+            if ti.get_rectangle_shape() == curr_shape:
+                tree_item = ti
+                break
+
+        if tree_item is None:
+            return
 
         if tree_item:
             if event.KeyCode == Key.LEFT:
                 # move one level up, as next sibling of immediate parent
                 parent_item = tree_item.get_dad()
-                if parent_item != None:
+                # prevent a direct child element of root being moved up the hierarchy
+                if parent_item != None and parent_item.get_dad() != None:
                     diagram.move_tree_item(tree_item, parent_item, "sibling")
             elif event.KeyCode == Key.RIGHT:
                 # move one level down, relative to next-upwards sibling
@@ -1135,7 +1142,7 @@ class ControlDlgHandler(
             # make sure same entry is still selected
             curr_shape = tree_item.get_rectangle_shape()
             if curr_shape:
-                controller.set_selected_shape(curr_shape)
+                self.select_tree_node_for_shape(curr_shape)
 
 
     def sync_all_selected_shapes_to_document(self):
