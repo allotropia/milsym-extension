@@ -106,7 +106,7 @@ def is_orbat_feature_enabled(ctx):
     return default_state
 
 
-def parse_svg_dimensions(svg_data, scale_factor=1):
+def parse_svg_dimensions(svg_data):
     """Parse SVG dimensions and return width and height in 1/100mm units.
 
     Args:
@@ -131,19 +131,19 @@ def parse_svg_dimensions(svg_data, scale_factor=1):
             # Remove units like 'px', 'pt', etc. and extract numeric value
             width_num = "".join(c for c in width_str if c.isdigit() or c == ".")
             if width_num:
-                width = int(float(width_num) * factor)
+                width = float(width_num) * factor
 
         if height_str:
             # Remove units like 'px', 'pt', etc. and extract numeric value
             height_num = "".join(c for c in height_str if c.isdigit() or c == ".")
             if height_num:
-                height = int(float(height_num) * factor)
+                height = float(height_num) * factor
     except Exception as e:
         print(f"Warning: Could not parse SVG dimensions, using defaults: {e}")
 
     shape_size = Size()
-    shape_size.Height = height * scale_factor
-    shape_size.Width = width * scale_factor
+    shape_size.Height = height
+    shape_size.Width = width
     return shape_size
 
 
@@ -166,7 +166,7 @@ def extractGraphicAttributes(shape):
 
 
 def insertSvgGraphic(
-    ctx, model, svg_data, params, selected_shape, smybol_name, scale_factor=1
+    ctx, model, svg_data, params, selected_shape, smybol_name
 ):
     is_writer = model.supportsService("com.sun.star.text.TextDocument")
     is_calc = model.supportsService("com.sun.star.sheet.SpreadsheetDocument")
@@ -193,7 +193,7 @@ def insertSvgGraphic(
         else:
             # The SVG is generated so that its intrinsic size gives the frame octagon the
             # configured height. Decorations enlarge the shape beyond that.
-            shape.setSize(parse_svg_dimensions(svg_data, scale_factor))
+            shape.setSize(parse_svg_dimensions(svg_data))
 
         # set MilSym-specific user defined attributes
         insertGraphicAttributes(shape, params)
