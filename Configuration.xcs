@@ -18,7 +18,10 @@ SPDX-License-Identifier: MPL-2.0
 
             <prop oor:name="DefaultSymbolHeightCm" oor:type="xs:double">
                 <info>
-                    <desc>Default height for military symbols in centimeters</desc>
+                    <desc>Default height of the symbol frame (octagon)
+                    in centimeters. Decorations such as echelon
+                    markers or text labels are excluded here, and
+                    might extend the symbol beyond this height.</desc>
                 </info>
                 <value>1.0</value>
             </prop>

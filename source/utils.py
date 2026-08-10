@@ -15,11 +15,14 @@ from com.sun.star.awt import Point, Size
 from com.sun.star.beans import NamedValue, PropertyValue
 from com.sun.star.xml import AttributeData
 
+# Conversion factor from pixels to 1/100mm, assuming 96 DPI (2540 / 96)
+PX_TO_MM100 = 26.46
+
 
 def get_default_symbol_height_cm(ctx):
-    """Get default symbol height in cm from LibreOffice configuration.
+    """Get the default height of the symbol frame (octagon) from the configuration.
 
-    Returns height in 1/100mm units (1cm = 1000 units)
+    Returns height in 1/100mm units (1cm = 1000 units), hidden config item name is: DefaultSymbolHeightCm
     """
     default_height = 1000  # 1cm in 1/100mm units
 
@@ -51,6 +54,20 @@ def get_default_symbol_height_cm(ctx):
         )
 
     return default_height
+
+
+def get_symbol_generation_size_px(ctx):
+    """Get the milsymbol size argument that makes the symbol frame (octagon) come out at
+    the configured default height.
+
+    The milsymbol size argument is the height of the frame octagon in pixels. An SVG
+    generated with this size and inserted at its intrinsic pixel dimensions (at 96 DPI)
+    has a frame of exactly the configured height, independent of decorations like
+    echelon markers or text labels that enlarge the whole symbol.
+
+    Returns the size in pixels as a float.
+    """
+    return get_default_symbol_height_cm(ctx) / PX_TO_MM100
 
 
 def is_orbat_feature_enabled(ctx):
@@ -100,7 +117,7 @@ def parse_svg_dimensions(svg_data, scale_factor=1):
     """
     width = 4000  # Default width
     height = 930  # Default height
-    factor = 26.46  # Conversion factor from pixels to 1/100mm (assuming 96 DPI)
+    factor = PX_TO_MM100
 
     try:
         # Parse SVG using ElementTree
@@ -174,16 +191,9 @@ def insertSvgGraphic(
         if existing_size is not None and existing_size.Width > 0 and existing_size.Height > 0:
             shape.setSize(existing_size)
         else:
-            size = parse_svg_dimensions(svg_data, scale_factor)
-
-            # Normalize height based on configuration while maintaining aspect ratio
-            target_height = get_default_symbol_height_cm(ctx)
-            if size.Height > 0:
-                aspect_scale = target_height / size.Height
-                size.Width = int(size.Width * aspect_scale)
-                size.Height = target_height
-
-            shape.setSize(size)
+            # The SVG is generated so that its intrinsic size gives the frame octagon the
+            # configured height. Decorations enlarge the shape beyond that.
+            shape.setSize(parse_svg_dimensions(svg_data, scale_factor))
 
         # set MilSym-specific user defined attributes
         insertGraphicAttributes(shape, params)

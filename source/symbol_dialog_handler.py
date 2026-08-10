@@ -18,6 +18,7 @@ from data import country_data
 from utils import (
     createMilSymbolScriptInstance,
     create_graphic_from_svg,
+    get_symbol_generation_size_px,
     insertGraphicAttributes,
     insertSvgGraphic,
 )
@@ -732,7 +733,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
     def get_tree_node_svg_data(self):
         args = list(self.selected_node_value)
-        args[1] = NamedValue("size", 150.0)
+        args[1] = NamedValue("size", get_symbol_generation_size_px(self.ctx))
         result = self.script.invoke(args, (), ())
         svg_data = str(result[0]) if result else None
         self.selected_node_value = None
@@ -743,7 +744,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
         args = [
             sidc_code,
-            NamedValue("size", 150.0),
+            NamedValue("size", get_symbol_generation_size_px(self.ctx)),
             NamedValue("stack", self.stack),
             NamedValue("reinforced", self.reinforced),
             NamedValue("signature", self.signature),

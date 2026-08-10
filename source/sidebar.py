@@ -19,7 +19,12 @@ from sidebar_tree import (
     TreeSelectionChangeListener,
 )
 from symbol_dialog import open_symbol_dialog
-from utils import get_package_location, parse_svg_dimensions, get_default_symbol_height_cm
+from utils import (
+    PX_TO_MM100,
+    get_package_location,
+    parse_svg_dimensions,
+    get_default_symbol_height_cm,
+)
 from sidebar_rename_dialog import RenameDialog
 
 from unohelper import fileUrlToSystemPath, systemPathToFileUrl
@@ -859,12 +864,19 @@ class SymbolTransferable(unohelper.Base, XTransferable):
             # Base64 encode the SVG content
             svg_base64 = base64.b64encode(svg_string.encode("utf-8")).decode("utf-8")
             svg_size = parse_svg_dimensions(svg_string)
-            # Normalize height based on configuration while maintaining aspect ratio
+            # The stored SVG was generated with a milsymbol size argument that sets the
+            # height of the frame octagon in pixels. Scale the whole symbol so the frame
+            # comes out at the configured height; decorations such as echelon markers or
+            # text labels extend the symbol beyond that.
+            generation_size_px = 20.0
+            for item in self.node.DataValue[1:]:
+                if item.Name == "size":
+                    generation_size_px = float(item.Value)
+                    break
             target_height = get_default_symbol_height_cm(self.ctx)
-            if svg_size.Height > 0:
-                aspect_scale = target_height / svg_size.Height
-                svg_size.Width = int(svg_size.Width * aspect_scale)
-                svg_size.Height = target_height
+            frame_scale = target_height / (generation_size_px * PX_TO_MM100)
+            svg_size.Width = int(svg_size.Width * frame_scale)
+            svg_size.Height = int(svg_size.Height * frame_scale)
             width_cm = svg_size.Width / 1000.0  # 1/100mm to cm
             height_cm = svg_size.Height / 1000.0  # 1/100mm to cm
             data_string = data_string.replace("SVG_BASE_64_ENCODED", svg_base64)
