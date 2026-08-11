@@ -6,6 +6,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import hashlib
 import json
 import os
 import shutil
@@ -59,6 +60,12 @@ class ControlDlgHandler(
         self._temp_dir: str | None = None
         self._clipboard = None
         self._node_to_tree_item_map = {}
+        # Display name of a tree node, to the node itself, and the name of the shape an
+        # item carries, to that display name. Filled while the tree is built.
+        self._node_by_node_name = {}
+        self._node_name_by_shape_name = {}
+        # Symbol attributes read while building the current tree, by shape name
+        self._attributes_by_shape_name = {}
         self._syncing_selection = False
         self._syncing_from_tree = False
         self._is_dragging = False
@@ -360,9 +367,7 @@ class ControlDlgHandler(
             if selection and selection.getCount() > 0:
                 selected_shape = selection.getByIndex(0)
                 # Find the tree item for this shape
-                for tree_item in self._node_to_tree_item_map.values():
-                    if tree_item.get_rectangle_shape() == selected_shape:
-                        return tree_item
+                return self._find_tree_item_for_shape(selected_shape)
         except Exception as e:
             print(f"Error getting selected tree item: {e}")
         return None
@@ -778,17 +783,6 @@ class ControlDlgHandler(
             data_model.setRoot(root_node)
             tree_model = self.tree_control.getModel()
 
-            # Add icon preview before setting data_model
-            diagram_tree = diagram.get_diagram_tree()
-            if diagram_tree is not None:
-                root_item = diagram_tree.get_root_item()
-                if root_item is not None:
-                    shape = root_item.get_rectangle_shape()
-                    root_name = self._get_tree_node_display_name(root_item, 1)
-                    self._add_icon_preview_tree_node(shape, root_name, root_node)
-
-            tree_model.setPropertyValue("DataModel", data_model)
-
             diagram_tree = diagram.get_diagram_tree()
             if diagram_tree is not None:
                 root_item = diagram_tree.get_root_item()
@@ -797,9 +791,12 @@ class ControlDlgHandler(
                     root_name = self._get_tree_node_display_name(root_item, 1)
 
                     # Store root item in mapping for selection
-                    self._node_to_tree_item_map = {}
-                    self._node_to_tree_item_map.clear()
-                    self._node_to_tree_item_map[root_name] = root_item
+                    self._clear_node_maps()
+                    self._remember_node(root_name, root_item, root_node)
+
+                    self._add_icon_preview_tree_node(
+                        root_item.get_rectangle_shape(), root_node
+                    )
 
                     # Populate children of root item
                     self._populate_tree_children(data_model, root_node, root_item)
@@ -807,6 +804,10 @@ class ControlDlgHandler(
                     print("No root item found in diagram tree")
             else:
                 print("No diagram tree available or invalid structure")
+
+            # The control is given the finished model, so that it lays the tree out once
+            # instead of once for every node that is added to it
+            tree_model.setPropertyValue("DataModel", data_model)
 
             # Expand all nodes in the tree to show full structure
             try:
@@ -857,6 +858,18 @@ class ControlDlgHandler(
             counter += 1
         return f"{base_name} #{counter}"
 
+    def _remember_node(self, display_name, tree_item, node):
+        """Record a tree node so that it can be found from a shape without searching.
+
+        Three ways in: by display name to the item behind it, by the name of the shape
+        the item carries to that display name, and by display name to the node itself.
+        """
+        self._node_to_tree_item_map[display_name] = tree_item
+        self._node_by_node_name[display_name] = node
+        shape_name = tree_item.get_rectangle_name() if tree_item is not None else ""
+        if shape_name:
+            self._node_name_by_shape_name[shape_name] = display_name
+
     def _populate_tree_node(self, data_model, parent_node, tree_item, display_name):
         """Recursively populate tree nodes from organization chart tree items"""
         try:
@@ -870,10 +883,10 @@ class ControlDlgHandler(
             # Store reference to tree item in a class attribute for later selection
             if not hasattr(self, "_node_to_tree_item_map"):
                 self._node_to_tree_item_map = {}
-            self._node_to_tree_item_map[display_name] = tree_item
+            self._remember_node(display_name, tree_item, node)
 
             shape = tree_item.get_rectangle_shape()
-            self._add_icon_preview_tree_node(shape, display_name, node)
+            self._add_icon_preview_tree_node(shape, node)
 
             # Add children
             child_count = 0
@@ -897,12 +910,38 @@ class ControlDlgHandler(
         except Exception as e:
             print(f"Error populating tree node: {e}")
 
+    def _attributes_of(self, shape):
+        """Symbol attributes of a shape, read once while one tree is being built.
+
+        Reading them costs a call across the bridge for the container and two more for
+        every attribute in it, and each node is asked twice, once for its label and once
+        for its picture.
+        """
+        try:
+            name = shape.getName()
+        except Exception:
+            return extractGraphicAttributes(shape)
+
+        if name in self._attributes_by_shape_name:
+            return self._attributes_by_shape_name[name]
+
+        attributes = extractGraphicAttributes(shape)
+        self._attributes_by_shape_name[name] = attributes
+        return attributes
+
+    def _clear_node_maps(self):
+        """Empty the three lookups that point at the tree nodes."""
+        self._node_to_tree_item_map.clear()
+        self._node_by_node_name.clear()
+        self._node_name_by_shape_name.clear()
+        self._attributes_by_shape_name.clear()
+
     def refresh_tree(self):
         """Refresh the tree structure"""
         try:
             if self.tree_control is not None:
-                # Clear the node mapping before repopulating
-                self._node_to_tree_item_map.clear()
+                # Clear the node mappings before repopulating
+                self._clear_node_maps()
                 self.populate_tree()
         except Exception as e:
             print(f"Error refreshing tree: {e}")
@@ -959,7 +998,7 @@ class ControlDlgHandler(
         except Exception as e:
             print(f"Error setting up drag & drop: {e}")
 
-    def _add_icon_preview_tree_node(self, shape, name, node):
+    def _add_icon_preview_tree_node(self, shape, node):
         try:
             if shape is None:
                 node.setNodeGraphicURL(
@@ -967,11 +1006,11 @@ class ControlDlgHandler(
                 )
                 return
 
-            attributes = extractGraphicAttributes(shape)
+            attributes = self._attributes_of(shape)
             if attributes and attributes.get("MilSymCode"):
                 svg_data = generate_icon_svg(self.script, attributes, 14.0)
                 if svg_data:
-                    svg_url = self._save_svg_to_temp_and_get_url(svg_data, name)
+                    svg_url = self._save_svg_to_temp_and_get_url(svg_data)
                     if svg_url:
                         node.setNodeGraphicURL(svg_url)
             else:
@@ -981,12 +1020,15 @@ class ControlDlgHandler(
         except Exception as e:
             print(f"Error adding root node icon: {e}")
 
-    def _save_svg_to_temp_and_get_url(self, svg_data, node_identifier):
+    def _save_svg_to_temp_and_get_url(self, svg_data):
         """Save SVG to temp file and return file URL for setNodeGraphicURL()
+
+        The file is named after the content, so two nodes showing the same symbol share
+        one file and the office reads and parses that drawing once. It also means a file
+        that is already there holds exactly the wanted content and can be left alone.
 
         Args:
             svg_data: SVG content as string
-            node_identifier: Unique identifier for the node (used in filename)
 
         Returns:
             file:// URL string or None if save fails
@@ -995,18 +1037,16 @@ class ControlDlgHandler(
             if not svg_data:
                 return None
 
-            safe_name = "".join(
-                c if c.isalnum() or c in ("-", "_") else "_" for c in node_identifier
-            )
-            safe_name = safe_name[:50]
+            digest = hashlib.sha256(svg_data.encode("utf-8")).hexdigest()[:32]
 
             if not hasattr(self, "_temp_dir") or self._temp_dir is None:
                 self._temp_dir = tempfile.mkdtemp(prefix="orbat_icons_")
 
-            temp_path = os.path.join(self._temp_dir, f"{safe_name}.svg")
+            temp_path = os.path.join(self._temp_dir, f"{digest}.svg")
 
-            with open(temp_path, "w", encoding="utf-8") as f:
-                f.write(svg_data)
+            if not os.path.exists(temp_path):
+                with open(temp_path, "w", encoding="utf-8") as f:
+                    f.write(svg_data)
 
             file_url = systemPathToFileUrl(temp_path)
             return file_url
@@ -1023,7 +1063,7 @@ class ControlDlgHandler(
             if shape is not None:
                 # Try to get MilSym information
                 milsym_code = ""
-                attributes = extractGraphicAttributes(shape)
+                attributes = self._attributes_of(shape)
                 if attributes and attributes.get("MilSymCode"):
                     milsym_code = attributes.get("MilSymCode").rstrip("0")
 
@@ -1099,11 +1139,7 @@ class ControlDlgHandler(
         if curr_shape is None:
             return
 
-        tree_item = None
-        for ti in self._node_to_tree_item_map.values():
-            if ti.get_rectangle_shape() == curr_shape:
-                tree_item = ti
-                break
+        tree_item = self._find_tree_item_for_shape(curr_shape)
 
         if tree_item is None:
             return
@@ -1221,12 +1257,9 @@ class ControlDlgHandler(
             for shape in shapes:
                 if shape is None:
                     continue
-                for node_name, tree_item in self._node_to_tree_item_map.items():
-                    if tree_item.get_rectangle_shape() == shape:
-                        node = self._find_node_in_tree(node_name)
-                        if node:
-                            matching_nodes.append(node)
-                        break
+                node = self._find_node_for_shape(shape)
+                if node:
+                    matching_nodes.append(node)
 
             if not matching_nodes:
                 return
@@ -1264,11 +1297,7 @@ class ControlDlgHandler(
                 return
 
             # Find the tree item that matches this shape
-            matching_node_name = None
-            for node_name, tree_item in self._node_to_tree_item_map.items():
-                if tree_item.get_rectangle_shape() == shape:
-                    matching_node_name = node_name
-                    break
+            matching_node_name = self._node_name_by_shape_name.get(shape.getName())
 
             if matching_node_name:
                 # Find and select the corresponding tree node
@@ -1296,14 +1325,9 @@ class ControlDlgHandler(
                 try:
                     shape = selection.getByIndex(i)
                     if shape:
-                        # Find the tree node for this shape
-                        for node_name, tree_item in self._node_to_tree_item_map.items():
-                            count("dialog: node map entry compared")
-                            if tree_item.get_rectangle_shape() == shape:
-                                node = self._find_node_in_tree(node_name)
-                                if node:
-                                    matching_nodes.append(node)
-                                break
+                        node = self._find_node_for_shape(shape)
+                        if node:
+                            matching_nodes.append(node)
                 except Exception:
                     continue
 
@@ -1323,6 +1347,22 @@ class ControlDlgHandler(
         finally:
             self._update_button_states()
 
+    def _find_node_for_shape(self, shape):
+        """Find the tree node standing for a shape, or None when the tree has no such node."""
+        try:
+            display_name = self._node_name_by_shape_name.get(shape.getName())
+        except Exception:
+            return None
+        return self._node_by_node_name.get(display_name) if display_name else None
+
+    def _find_tree_item_for_shape(self, shape):
+        """Find the tree item carrying a shape, or None when the tree has no such item."""
+        try:
+            display_name = self._node_name_by_shape_name.get(shape.getName())
+        except Exception:
+            return None
+        return self._node_to_tree_item_map.get(display_name) if display_name else None
+
     def _find_node_in_tree(self, node_name):
         """Find a tree node by name in the current tree model
 
@@ -1332,6 +1372,10 @@ class ControlDlgHandler(
         Returns:
             Tree node or None if not found
         """
+        node = self._node_by_node_name.get(node_name)
+        if node is not None:
+            return node
+
         try:
             tree_model = self.tree_control.getModel()
             data_model = tree_model.getPropertyValue("DataModel")
@@ -1480,10 +1524,10 @@ class ControlDlgHandler(
             if selection and selection.getCount() > 0:
                 selected_shape = selection.getByIndex(0)
                 # Find the tree item for this shape
-                for tree_item in self._node_to_tree_item_map.values():
-                    if tree_item.get_rectangle_shape() == selected_shape:
-                        self._parent_before_add = tree_item
-                        return
+                tree_item = self._find_tree_item_for_shape(selected_shape)
+                if tree_item is not None:
+                    self._parent_before_add = tree_item
+                    return
             self._parent_before_add = None
         except Exception as e:
             print(f"Error storing selection before add: {e}")
@@ -1508,11 +1552,11 @@ class ControlDlgHandler(
             if not parent_node_name:
                 # Try to find parent by shape
                 parent_shape = parent_tree_item.get_rectangle_shape()
-                for node_name, tree_item in self._node_to_tree_item_map.items():
-                    if tree_item.get_rectangle_shape() == parent_shape:
-                        parent_node_name = node_name
-                        parent_tree_item = tree_item
-                        break
+                parent_node_name = self._node_name_by_shape_name.get(
+                    parent_shape.getName()
+                )
+                if parent_node_name:
+                    parent_tree_item = self._node_to_tree_item_map[parent_node_name]
 
             if parent_tree_item and parent_tree_item.get_first_child():
                 # Look for the last (newest) child
@@ -1587,7 +1631,7 @@ class ControlDlgHandler(
                 self._selection_listener = None
 
             if hasattr(self, "_node_to_tree_item_map"):
-                self._node_to_tree_item_map.clear()
+                self._clear_node_maps()
 
             if hasattr(self, "_clipboard"):
                 self._clipboard = None
@@ -2102,10 +2146,7 @@ class PasteShapeUndoAction(unohelper.Base, XUndoAction):
 
     def _find_tree_item_for_shape(self, shape):
         """Find the tree item corresponding to a shape"""
-        for tree_item in self.dialog_handler._node_to_tree_item_map.values():
-            if tree_item.get_rectangle_shape() == shape:
-                return tree_item
-        return None
+        return self.dialog_handler._find_tree_item_for_shape(shape)
 
     def redo(self):
         """Redo the paste by re-pasting all clipboard items"""
