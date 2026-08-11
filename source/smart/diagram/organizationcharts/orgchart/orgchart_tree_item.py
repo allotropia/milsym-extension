@@ -365,10 +365,6 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
 
         return self._graphic_aspect_ratio
 
-    def forget_graphic_aspect_ratio(self):
-        """Drop the kept ratio, so that a replaced picture is measured again."""
-        self._graphic_aspect_ratio = None
-
     def _calculate_size_for_aspect_ratio(self):
         """Calculate size with fixed height and proportional width"""
         default_width = OrgChartTreeItem._shape_width

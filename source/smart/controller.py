@@ -20,9 +20,77 @@ from utils import locked_controllers
 
 from .gui import Gui
 
+from com.sun.star.document import XUndoManagerListener
 from com.sun.star.view import XSelectionChangeListener
 
 from smart.diagram.organizationcharts.orgchart.orgchart import OrgChart
+
+
+class DocumentUndoWatch(unohelper.Base, XUndoManagerListener):
+    """Tells the diagram to forget what it keeps about its shapes when the document is undone.
+
+    Laying a diagram out asks the office as little as it can. It decides whether a shape
+    needs moving or resizing by comparing against the position and size it last wrote, and
+    it keeps the proportions of each symbol's picture. Undoing or redoing puts an earlier
+    state of the document back without telling the extension, so from then on those answers
+    describe a document that is no longer there, and every write they would save is a write
+    the diagram needs.
+
+    What is kept is dropped rather than read again. Asking a shape inside a group where it
+    is makes the office work out the bounding box of the group and route every connector in
+    it again, so the next layout writes each shape once instead, which is what it did before
+    any of this was kept.
+    """
+
+    def __init__(self, controller):
+        self._controller = controller
+
+    def _forget_kept_shape_state(self):
+        """Drop what the diagram keeps, if there is a diagram to tell."""
+        try:
+            diagram = self._controller.get_diagram()
+            if diagram is not None:
+                diagram.forget_kept_shape_state()
+        except Exception as ex:
+            print(f"Error clearing what the diagram keeps: {ex}")
+
+    # The two events that put an earlier state of the document back
+    def actionUndone(self, event):
+        self._forget_kept_shape_state()
+
+    def actionRedone(self, event):
+        self._forget_kept_shape_state()
+
+    # The rest leave the document as it is, and only say what the undo stacks now hold
+    def undoActionAdded(self, event):
+        pass
+
+    def allActionsCleared(self, event):
+        pass
+
+    def redoActionsCleared(self, event):
+        pass
+
+    def resetAll(self, event):
+        pass
+
+    def enteredContext(self, event):
+        pass
+
+    def enteredHiddenContext(self, event):
+        pass
+
+    def leftContext(self, event):
+        pass
+
+    def leftHiddenContext(self, event):
+        pass
+
+    def cancelledContext(self, event):
+        pass
+
+    def disposing(self, event):
+        pass
 
 
 class Controller(unohelper.Base, XSelectionChangeListener):
@@ -66,13 +134,17 @@ class Controller(unohelper.Base, XSelectionChangeListener):
         self._last_diagram_type = -1
         self._last_diagram_id = -1
 
+        self._undo_watch = None
+
         self._gui = Gui(self, self._x_context, self._x_frame)
         self.add_selection_listener()
+        self.add_undo_listener()
 
     def dispose(self):
         """Dispose controller and all associated resources"""
         try:
             self.remove_selection_listener()
+            self.remove_undo_listener()
 
             if self._gui is not None:
                 self._gui.close_and_dispose_control_dialog()
@@ -214,6 +286,49 @@ class Controller(unohelper.Base, XSelectionChangeListener):
         """Remove selection change listener"""
         if self._x_selection_supplier is not None:
             self._x_selection_supplier.removeSelectionChangeListener(self)
+
+    def _get_undo_manager(self):
+        """The undo manager of the document, or None where it has none."""
+        try:
+            model = self._x_controller.getModel() if self._x_controller else None
+            if model is None:
+                return None
+            if hasattr(model, "getUndoManager"):
+                return model.getUndoManager()
+            return getattr(model, "UndoManager", None)
+        except Exception as ex:
+            print(f"Could not get undo manager: {ex}")
+        return None
+
+    def add_undo_listener(self):
+        """Listen for undo and redo, so that a diagram can be told the document changed."""
+        if self._undo_watch is not None:
+            return
+
+        undo_manager = self._get_undo_manager()
+        if undo_manager is None:
+            return
+
+        try:
+            self._undo_watch = DocumentUndoWatch(self)
+            undo_manager.addUndoManagerListener(self._undo_watch)
+        except Exception as ex:
+            self._undo_watch = None
+            print(f"Error listening for undo: {ex}")
+
+    def remove_undo_listener(self):
+        """Stop listening for undo and redo"""
+        if self._undo_watch is None:
+            return
+
+        try:
+            undo_manager = self._get_undo_manager()
+            if undo_manager is not None:
+                undo_manager.removeUndoManagerListener(self._undo_watch)
+        except Exception as ex:
+            print(f"Error giving up the undo listener: {ex}")
+
+        self._undo_watch = None
 
     def execute_gallery_dialog(self):
         """Execute gallery dialog"""
