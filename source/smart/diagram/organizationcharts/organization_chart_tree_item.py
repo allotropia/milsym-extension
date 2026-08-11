@@ -16,11 +16,23 @@ Python port of OrganizationChartTreeItem.java
 
 from abc import ABC
 
+from perf import SKIP_GEOMETRY_WRITES, count
+
 from com.sun.star.drawing.FillStyle import GRADIENT, NONE as FILL_STYLE_NONE, SOLID
 from com.sun.star.drawing.LineStyle import (
     NONE as LINE_STYLE_NONE,
     SOLID as LINE_STYLE_SOLID,
 )
+
+# Writer holds the geometry of a drawing object in twips while the drawing API speaks
+# 1/100 mm, so a coordinate reads back up to two units away from the one that was
+# written. Two units is 0.02 mm, below what a renderer or a reader can tell apart.
+GEOMETRY_TOLERANCE_MM100 = 2
+
+
+def _is_same_coordinate(one, other):
+    """Say whether two lengths in 1/100 mm describe the same place on the page."""
+    return abs(one - other) <= GEOMETRY_TOLERANCE_MM100
 
 
 class OrganizationChartTreeItem(ABC):
@@ -36,6 +48,7 @@ class OrganizationChartTreeItem(ABC):
         self._first_sibling = None
         self._level = -1
         self._pos = -1.0
+        self._graphic_aspect_ratio = None
 
         if item is not None:
             # Copy constructor
@@ -229,13 +242,23 @@ class OrganizationChartTreeItem(ABC):
         """Get rectangle shape"""
         return self._x_rectangle_shape
 
+    def get_rectangle_name(self):
+        """Name of the rectangle this item carries, empty when it has none."""
+        return self._rectangle_name or ""
+
     def get_position(self):
         """Get position of shape"""
         return self._x_rectangle_shape.getPosition()
 
     def set_position(self, point):
         """Set position of shape"""
+        count("shape: setPosition")
+        if SKIP_GEOMETRY_WRITES:
+            return
         self._x_rectangle_shape.setPosition(point)
+        self.get_diagram_tree().note_rect_position(
+            self.get_rectangle_name(), point.X, point.Y
+        )
 
     def get_size(self):
         """Get size of shape"""
@@ -243,10 +266,49 @@ class OrganizationChartTreeItem(ABC):
 
     def set_size(self, size):
         """Set size of shape"""
+        count("shape: setSize")
+        if SKIP_GEOMETRY_WRITES:
+            return
         try:
             self._x_rectangle_shape.setSize(size)
         except Exception as ex:
             print(f"Error setting size: {ex}")
+
+    def set_position_if_changed(self, point):
+        """Move the rectangle to point, leaving it where it is when it is already there.
+
+        Writing the position of a shape that is glued to connectors makes the office
+        reroute every connector attached to it, recompute the bounding box of the group
+        it sits in, and lay out the text the group is anchored in. Skipping a write that
+        would not move the shape avoids all of that.
+        """
+        try:
+            current = self._x_rectangle_shape.getPosition()
+        except Exception:
+            current = None
+
+        if current is not None and _is_same_coordinate(
+            current.X, point.X
+        ) and _is_same_coordinate(current.Y, point.Y):
+            count("shape: setPosition skipped")
+            return
+
+        self.set_position(point)
+
+    def set_size_if_changed(self, size):
+        """Resize the rectangle, leaving it alone when it already has that size."""
+        try:
+            current = self._x_rectangle_shape.getSize()
+        except Exception:
+            current = None
+
+        if current is not None and _is_same_coordinate(
+            current.Width, size.Width
+        ) and _is_same_coordinate(current.Height, size.Height):
+            count("shape: setSize skipped")
+            return
+
+        self.set_size(size)
 
     def get_diagram_tree(self):
         """Get diagram tree reference"""
@@ -289,13 +351,21 @@ class OrganizationChartTreeItem(ABC):
         return previous_sibling
 
     def search_item(self, x_shape):
-        """Search for item with matching shape"""
-        if self._first_child is not None:
-            self._first_child.search_item(x_shape)
+        """Search the subtree for the item carrying this shape, and stop at the first match.
+
+        Returns True once the item has been found, so that the rest of the tree is left
+        alone. The found item is also handed to the tree as its selected item, which is
+        how the callers that predate the return value read the result.
+        """
+        count("tree: search_item node visit")
         if x_shape == self._x_rectangle_shape:
             self.get_diagram_tree().set_selected_item(self)
-        if self._first_sibling is not None:
-            self._first_sibling.search_item(x_shape)
+            return True
+        if self._first_child is not None and self._first_child.search_item(x_shape):
+            return True
+        if self._first_sibling is not None and self._first_sibling.search_item(x_shape):
+            return True
+        return False
 
     def display(self):
         """Display the item - calls set_pos_of_rect and recurses to children"""
@@ -341,6 +411,7 @@ class OrganizationChartTreeItem(ABC):
                 x_conn_shape
             )
 
+        self.get_diagram_tree().unregister_item(self)
         self.get_diagram_tree().remove_from_rectangles(self._x_rectangle_shape)
         self.get_diagram_tree().get_org_chart().remove_shape_from_group(
             self._x_rectangle_shape

@@ -17,6 +17,7 @@ Python port of Diagram.java
 import uno
 
 from utils import fit_size_to_aspect_ratio, parse_svg_dimensions
+from perf import timed
 
 from abc import ABC, abstractmethod
 from com.sun.star.awt import Point, Size
@@ -220,8 +221,24 @@ class Diagram(ABC):
                     size = parse_svg_dimensions(svg_data)
                     shape.setSize(size)
 
+                self.forget_graphic_aspect_ratio_of(shape)
+
         except Exception as ex:
             print(f"Error setting shape properties: {ex}")
+
+    def forget_graphic_aspect_ratio_of(self, shape):
+        """Tell the tree that this shape carries a different picture now."""
+        try:
+            diagram_tree = (
+                self.get_diagram_tree() if hasattr(self, "get_diagram_tree") else None
+            )
+            if diagram_tree is None:
+                return
+            item = diagram_tree.get_tree_item(shape)
+            if item is not None:
+                item.forget_graphic_aspect_ratio()
+        except Exception as ex:
+            print(f"Error clearing the kept graphic aspect ratio: {ex}")
 
     def set_shape_properties(self, shape, shape_type: str):
         """Set shape properties"""
@@ -238,6 +255,7 @@ class Diagram(ABC):
                 media_properties = (PropertyValue("URL", 0, svg_url, 0),)
                 graphic = graphic_provider.queryGraphic(media_properties)
                 shape.setPropertyValue("Graphic", graphic)
+                self.forget_graphic_aspect_ratio_of(shape)
 
                 self.set_font_properties_of_shape(shape)
 
@@ -375,9 +393,22 @@ class Diagram(ABC):
             else:
                 connector_shape.setPropertyValue("TextFitToSize", 0)  # NONE
 
+            diagram_tree = (
+                self.get_diagram_tree() if hasattr(self, "get_diagram_tree") else None
+            )
+            if diagram_tree is not None:
+                diagram_tree.note_connector_ends(
+                    connector_shape,
+                    start_shape,
+                    end_shape,
+                    start_conn_pos,
+                    end_conn_pos,
+                )
+
         except Exception as ex:
             print(f"Error setting connector shape properties: {ex}")
 
+    @timed("refresh_diagram")
     def refresh_diagram(self):
         """Refresh the diagram display"""
         self.get_diagram_tree().refresh()
@@ -393,6 +424,7 @@ class Diagram(ABC):
         """Get diagram ID"""
         return self._diagram_id
 
+    @timed("init_diagram: find group shape")
     def init_diagram(self, diagram_id=None):
         """Initialize diagram"""
         try:

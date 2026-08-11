@@ -14,6 +14,8 @@ OrgChart Tree class
 Python port of OrgChartTree.java
 """
 
+from perf import count, timed
+
 from ..organization_chart_tree import OrganizationChartTree
 from .orgchart_tree_item import OrgChartTreeItem
 
@@ -53,96 +55,127 @@ class OrgChartTree(OrganizationChartTree):
             # Basic constructor
             super().__init__(organigram)
 
+    @timed("init_tree_items")
     def init_tree_items(self):
         """Initialize tree items"""
         OrgChartTreeItem.init_static_members()
         self._root_item = OrgChartTreeItem(self, self._x_root_shape, None, 0, 0)
         self._root_item.init_tree_items()
 
+    def _level_below(self, x_dad_shape):
+        """Level of the children of this shape, counting the root as level zero."""
+        dad_item = self.get_tree_item(x_dad_shape)
+        return dad_item.get_level() + 1 if dad_item else 1
+
+    def _extreme_child_shape(self, x_dad_shape, want_last):
+        """Return the child of this shape that sits furthest along the axis of its level.
+
+        Children of the upper levels are laid out side by side, so they are ordered by
+        their distance from the left edge. Below that they are stacked, so they are
+        ordered by their distance from the top.
+        """
+        children = self.get_child_rect_names(self.name_of_shape(x_dad_shape))
+        if not children:
+            return None
+
+        use_x = self._level_below(x_dad_shape) <= OrgChartTree.LAST_HOR_LEVEL
+        chosen_name = None
+        chosen_distance = None
+
+        for child_name in children:
+            position = self.get_rect_position(child_name)
+            if position is None:
+                continue
+            distance = position[0] if use_x else position[1]
+            if (
+                chosen_distance is None
+                or (want_last and distance > chosen_distance)
+                or (not want_last and distance < chosen_distance)
+            ):
+                chosen_distance = distance
+                chosen_name = child_name
+
+        return self.get_shape_by_name(chosen_name) if chosen_name else None
+
     def get_first_child_shape(self, x_dad_shape):
         """Get first child shape based on position"""
-        # The structure of diagram changes below second level
-        level = (
-            self.get_tree_item(x_dad_shape).get_level() + 1
-            if self.get_tree_item(x_dad_shape)
-            else 1
-        )
-        x_pos = -1
-        y_pos = -1
-        x_child_shape = None
-        x_first_child_shape = None
-
-        for x_conn_shape in self._connector_list:
-            if x_dad_shape == self.get_start_shape_of_connector(x_conn_shape):
-                x_child_shape = self.get_end_shape_of_connector(x_conn_shape)
-
-                if level <= OrgChartTree.LAST_HOR_LEVEL:
-                    # Horizontal layout - find leftmost child
-                    child_pos = (
-                        x_child_shape.getPosition()
-                        if hasattr(x_child_shape, "getPosition")
-                        else None
-                    )
-                    if child_pos and (x_pos == -1 or child_pos.X < x_pos):
-                        x_pos = child_pos.X
-                        x_first_child_shape = x_child_shape
-                else:
-                    # Vertical layout - find topmost child
-                    child_pos = (
-                        x_child_shape.getPosition()
-                        if hasattr(x_child_shape, "getPosition")
-                        else None
-                    )
-                    if child_pos and (y_pos == -1 or child_pos.Y < y_pos):
-                        y_pos = child_pos.Y
-                        x_first_child_shape = x_child_shape
-
-        return x_first_child_shape
+        if self._names_are_unique:
+            return self._extreme_child_shape(x_dad_shape, want_last=False)
+        return self._extreme_child_shape_by_searching(x_dad_shape, want_last=False)
 
     def get_last_child_shape(self, x_dad_shape):
         """Get last child shape based on position"""
-        level = (
-            self.get_tree_item(x_dad_shape).get_level() + 1
-            if self.get_tree_item(x_dad_shape)
-            else 1
-        )
-        x_pos = -1
-        y_pos = -1
-        x_child_shape = None
-        x_last_child_shape = None
+        if self._names_are_unique:
+            return self._extreme_child_shape(x_dad_shape, want_last=True)
+        return self._extreme_child_shape_by_searching(x_dad_shape, want_last=True)
+
+    def _extreme_child_shape_by_searching(self, x_dad_shape, want_last):
+        """Find the outermost child by asking every connector which shapes it joins."""
+        level = self._level_below(x_dad_shape)
+        use_x = level <= OrgChartTree.LAST_HOR_LEVEL
+        chosen_shape = None
+        chosen_distance = None
 
         for x_conn_shape in self._connector_list:
-            if x_dad_shape == self.get_start_shape_of_connector(x_conn_shape):
-                x_child_shape = self.get_end_shape_of_connector(x_conn_shape)
+            if x_dad_shape != self.get_start_shape_of_connector(x_conn_shape):
+                continue
 
-                if level <= OrgChartTree.LAST_HOR_LEVEL:
-                    # Horizontal layout - find rightmost child
-                    child_pos = (
-                        x_child_shape.getPosition()
-                        if hasattr(x_child_shape, "getPosition")
-                        else None
-                    )
-                    if child_pos and (x_pos == -1 or child_pos.X > x_pos):
-                        x_pos = child_pos.X
-                        x_last_child_shape = x_child_shape
-                else:
-                    # Vertical layout - find bottommost child
-                    child_pos = (
-                        x_child_shape.getPosition()
-                        if hasattr(x_child_shape, "getPosition")
-                        else None
-                    )
-                    if child_pos and (y_pos == -1 or child_pos.Y > y_pos):
-                        y_pos = child_pos.Y
-                        x_last_child_shape = x_child_shape
+            x_child_shape = self.get_end_shape_of_connector(x_conn_shape)
+            child_pos = (
+                x_child_shape.getPosition()
+                if hasattr(x_child_shape, "getPosition")
+                else None
+            )
+            if not child_pos:
+                continue
 
-        return x_last_child_shape
+            distance = child_pos.X if use_x else child_pos.Y
+            if (
+                chosen_distance is None
+                or (want_last and distance > chosen_distance)
+                or (not want_last and distance < chosen_distance)
+            ):
+                chosen_distance = distance
+                chosen_shape = x_child_shape
+
+        return chosen_shape
 
     def get_first_sibling_shape(self, x_base_shape, dad):
         """Get first sibling shape after base shape"""
         if dad is None or dad.get_rectangle_shape() is None:
             return None
 
+        if self._names_are_unique:
+            return self._first_sibling_shape_from_indexes(x_base_shape, dad)
+        return self._first_sibling_shape_by_searching(x_base_shape, dad)
+
+    def _first_sibling_shape_from_indexes(self, x_base_shape, dad):
+        """Return the next shape along from the base shape among the children of dad."""
+        base_name = self.name_of_shape(x_base_shape)
+        base_position = self.get_rect_position(base_name)
+        if base_position is None:
+            return None
+
+        use_x = dad.get_level() + 1 <= OrgChartTree.LAST_HOR_LEVEL
+        base_distance = base_position[0] if use_x else base_position[1]
+
+        chosen_name = None
+        chosen_distance = None
+        for sibling_name in self.get_child_rect_names(dad.get_rectangle_name()):
+            position = self.get_rect_position(sibling_name)
+            if position is None:
+                continue
+            distance = position[0] if use_x else position[1]
+            if distance <= base_distance:
+                continue
+            if chosen_distance is None or distance < chosen_distance:
+                chosen_distance = distance
+                chosen_name = sibling_name
+
+        return self.get_shape_by_name(chosen_name) if chosen_name else None
+
+    def _first_sibling_shape_by_searching(self, x_base_shape, dad):
+        """Find the next sibling by asking every connector which shapes it joins."""
         level = dad.get_level() + 1
         x_dad_shape = dad.get_rectangle_shape()
         x_sibling_shape = None
@@ -184,19 +217,32 @@ class OrgChartTree(OrganizationChartTree):
 
         return x_first_sibling_shape
 
+    @timed("tree refresh")
     def refresh(self):
         """Refresh the tree"""
         OrgChartTreeItem.init_static_members()
         self._root_item.set_level(0)
         self._root_item.set_pos(0.0)
-        self._root_item.set_positions_of_items()
+        with timed("set_positions_of_items"):
+            self._root_item.set_positions_of_items()
         self._root_item.set_measure_props()
-        self._root_item.display()
+        with timed("display"):
+            self._root_item.display()
 
+    @timed("refresh_connector_props")
     def refresh_connector_props(self):
         """Refresh connector properties when tree structure has changed"""
         for x_conn_shape in self._connector_list:
-            current_end_shape = self.get_end_shape_of_connector(x_conn_shape)
+            connector_name = self.name_of_shape(x_conn_shape)
+            if self._names_are_unique:
+                recorded_start, recorded_end, recorded_start_glue, recorded_end_glue = (
+                    self.get_connector_ends(connector_name)
+                )
+                current_end_shape = self.get_shape_by_name(recorded_end)
+            else:
+                recorded_start = recorded_end = None
+                recorded_start_glue = recorded_end_glue = None
+                current_end_shape = self.get_end_shape_of_connector(x_conn_shape)
 
             if not current_end_shape:
                 continue
@@ -228,6 +274,17 @@ class OrgChartTree(OrganizationChartTree):
                 end_pos = 0  # Top connection point
             else:
                 end_pos = 3  # Left connection point
+
+            # Writing the ends of a connector makes the office reroute it, so leave alone
+            # the connectors that already join the shapes they should at the right points
+            if self._names_are_unique and (
+                recorded_start == self.name_of_shape(expected_start_shape)
+                and recorded_end == self.name_of_shape(current_end_shape)
+                and recorded_start_glue == start_pos
+                and recorded_end_glue == end_pos
+            ):
+                count("connector: rewiring skipped")
+                continue
 
             self.get_org_chart().set_connector_shape_props(
                 x_conn_shape,
