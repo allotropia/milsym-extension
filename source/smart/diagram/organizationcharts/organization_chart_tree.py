@@ -352,6 +352,17 @@ class OrganizationChartTree(ABC):
         self._position_by_rect_name.clear()
         self._size_by_rect_name.clear()
 
+    def forget_graphic_aspect_ratios(self):
+        """Forget the proportions of every symbol's picture, so that each is measured again."""
+        pending = [self._root_item] if self._root_item is not None else []
+        while pending:
+            item = pending.pop()
+            item.forget_graphic_aspect_ratio()
+            if item.get_first_child() is not None:
+                pending.append(item.get_first_child())
+            if item.get_first_sibling() is not None:
+                pending.append(item.get_first_sibling())
+
     def forget_geometry_of(self, rect_name):
         """Forget where one rectangle was put, so that the next layout writes it again."""
         if not rect_name:

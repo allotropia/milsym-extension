@@ -258,6 +258,25 @@ class Diagram(ABC):
         except Exception as ex:
             print(f"Error clearing the kept geometry: {ex}")
 
+    def forget_kept_shape_state(self):
+        """Drop what is kept about every shape, after the document changed on its own.
+
+        The corner the layout is measured from stays. It is the position of the control
+        shape, which cannot be moved on its own, and a group that moves takes its shapes
+        with it, so it still describes the diagram. There is also no safe way to read it
+        back here, and without it the layout would start from the corner of the group.
+        """
+        try:
+            diagram_tree = (
+                self.get_diagram_tree() if hasattr(self, "get_diagram_tree") else None
+            )
+            if diagram_tree is None:
+                return
+            diagram_tree.forget_geometry()
+            diagram_tree.forget_graphic_aspect_ratios()
+        except Exception as ex:
+            print(f"Error clearing what is kept about the shapes: {ex}")
+
     def set_shape_properties(self, shape, shape_type: str):
         """Set shape properties"""
         try:

@@ -294,6 +294,10 @@ class OrganizationChartTreeItem(ABC):
 
         self.set_size(size)
 
+    def forget_graphic_aspect_ratio(self):
+        """Drop the kept proportions, so that a replaced picture is measured again."""
+        self._graphic_aspect_ratio = None
+
     def get_diagram_tree(self):
         """Get diagram tree reference"""
         return self._diagram_tree
