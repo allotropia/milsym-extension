@@ -96,17 +96,10 @@ class OrganizationChartTreeItem(ABC):
                     .get_controller()
                     .TABLEHIERARCHYDIAGRAM
                 ):
-                    for x_conn_shape in self.get_diagram_tree().connector_list:
-                        if (
-                            self._x_rectangle_shape
-                            == self.get_diagram_tree().get_start_shape_of_connector(
-                                x_conn_shape
-                            )
-                        ):
-                            if x_conn_shape is not None:
-                                x_conn_shape.setPropertyValue(
-                                    "LineStyle", LINE_STYLE_NONE
-                                )
+                    for x_conn_shape in self.get_diagram_tree().get_child_connector_shapes(
+                        self.get_rectangle_name()
+                    ):
+                        x_conn_shape.setPropertyValue("LineStyle", LINE_STYLE_NONE)
 
                 if (
                     self.get_diagram_tree()
@@ -143,17 +136,10 @@ class OrganizationChartTreeItem(ABC):
                     .get_controller()
                     .TABLEHIERARCHYDIAGRAM
                 ):
-                    for x_conn_shape in self.get_diagram_tree().connector_list:
-                        if (
-                            self._x_rectangle_shape
-                            == self.get_diagram_tree().get_start_shape_of_connector(
-                                x_conn_shape
-                            )
-                        ):
-                            if x_conn_shape is not None:
-                                x_conn_shape.setPropertyValue(
-                                    "LineStyle", LINE_STYLE_SOLID
-                                )
+                    for x_conn_shape in self.get_diagram_tree().get_child_connector_shapes(
+                        self.get_rectangle_name()
+                    ):
+                        x_conn_shape.setPropertyValue("LineStyle", LINE_STYLE_SOLID)
 
         except Exception as ex:
             print(f"Error hiding element: {ex}")

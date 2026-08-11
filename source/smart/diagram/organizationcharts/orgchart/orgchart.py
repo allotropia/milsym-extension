@@ -174,7 +174,6 @@ class OrgChart(OrganizationChart):
                         dad_item.get_last_child().set_first_sibling(new_tree_item)
 
                     last_tree_item = new_tree_item
-                    self.refresh_diagram()
 
                 # Handle root visibility
                 if not is_root_item:
