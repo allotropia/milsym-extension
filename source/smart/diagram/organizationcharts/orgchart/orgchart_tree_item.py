@@ -261,16 +261,6 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
         if self.get_diagram_tree().get_org_chart().is_hidden_root_element_prop():
             pass
 
-        base_shape_size = self.get_diagram_tree().get_control_shape_size()
-        OrgChartTreeItem._shape_width = (
-            base_shape_size.Width if base_shape_size else 1000
-        )
-        OrgChartTreeItem._shape_height = (
-            base_shape_size.Height if base_shape_size else 1000
-        )
-
-        OrgChartTreeItem._hor_space = OrgChartTreeItem._ver_space = 0
-
         # Use fixed dimensions instead of scaling to fit available space
         org_chart = self.get_diagram_tree().get_org_chart()
         configured_height = get_default_symbol_height_cm(org_chart._x_context)

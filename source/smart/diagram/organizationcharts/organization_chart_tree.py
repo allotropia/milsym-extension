@@ -16,6 +16,8 @@ Python port of OrganizationChartTree.java
 
 from abc import ABC, abstractmethod
 
+from com.sun.star.awt import Point
+
 from perf import SKIP_NAME_INDEX, count, timed
 
 from ..diagram import Diagram
@@ -48,6 +50,8 @@ class OrganizationChartTree(ABC):
             self._shape_by_name = diagram_tree._shape_by_name
             self._position_by_rect_name = diagram_tree._position_by_rect_name
             self._size_by_rect_name = diagram_tree._size_by_rect_name
+            self._control_shape_pos = diagram_tree._control_shape_pos
+            self._may_read_geometry = diagram_tree._may_read_geometry
             self._start_name_by_connector_name = (
                 diagram_tree._start_name_by_connector_name
             )
@@ -79,6 +83,12 @@ class OrganizationChartTree(ABC):
         # name is missing until one of those has happened.
         self._position_by_rect_name = {}
         self._size_by_rect_name = {}
+        # Where the control shape sits, as an (x, y) pair, or None while unknown
+        self._control_shape_pos = None
+        # False while the office must not be asked where a shape is. Asking works out the
+        # bounding box of the group, which recomputes the route of every connector in it,
+        # and that needs a lock a menu command does not hold.
+        self._may_read_geometry = True
         # Name of a connector, to the name of the rectangle each of its ends is glued to
         self._start_name_by_connector_name = {}
         self._end_name_by_connector_name = {}
@@ -123,6 +133,7 @@ class OrganizationChartTree(ABC):
         self._shape_by_name = {}
         self._position_by_rect_name = {}
         self._size_by_rect_name = {}
+        self._control_shape_pos = None
         self._start_name_by_connector_name = {}
         self._end_name_by_connector_name = {}
         self._glue_by_connector_name = {}
@@ -130,6 +141,7 @@ class OrganizationChartTree(ABC):
         self._child_names_by_rect_name = {}
         self._item_by_rect_name = {}
         self._names_are_unique = not SKIP_NAME_INDEX
+        self._may_read_geometry = read_geometry or not self._connector_list
 
         for shape in self._rectangle_list + self._connector_list:
             name = self.name_of_shape(shape)
@@ -150,10 +162,15 @@ class OrganizationChartTree(ABC):
             )
             return
 
+        # Learn the origin while it is safe to ask, which is either because the caller
+        # said so or because the group holds no connector yet
+        self.get_control_shape_pos()
+
         if read_geometry:
             for shape in self._rectangle_list:
                 name = self.name_of_shape(shape)
                 try:
+                    count("shape: read position and size")
                     position = shape.getPosition()
                     size = shape.getSize()
                 except Exception:
@@ -296,6 +313,11 @@ class OrganizationChartTree(ABC):
         if rect_name:
             self._position_by_rect_name[rect_name] = (x, y)
 
+    def forget_geometry(self):
+        """Forget where the shapes were put, so that the next layout writes them again."""
+        self._position_by_rect_name.clear()
+        self._size_by_rect_name.clear()
+
     def note_rect_size(self, rect_name, width, height):
         """Record how big a rectangle now is."""
         if rect_name:
@@ -342,16 +364,22 @@ class OrganizationChartTree(ABC):
         return self._x_control_shape
 
     def get_control_shape_pos(self):
-        """Get control shape position"""
-        if self._x_control_shape:
-            return self._x_control_shape.getPosition()
-        return None
+        """Where the control shape sits, which is the origin the layout is measured from.
 
-    def get_control_shape_size(self):
-        """Get control shape size"""
-        if self._x_control_shape:
-            return self._x_control_shape.getSize()
-        return None
+        Answered from what was read when the diagram was opened, so that laying a diagram
+        out never has to ask the office where a shape is. Returns None when the origin was
+        never learned, and the layout then starts from the corner of the group.
+        """
+        if self._control_shape_pos is not None:
+            return Point(X=self._control_shape_pos[0], Y=self._control_shape_pos[1])
+
+        if self._x_control_shape is None or not self._may_read_geometry:
+            return None
+
+        count("shape: read control shape position")
+        position = self._x_control_shape.getPosition()
+        self._control_shape_pos = (position.X, position.Y)
+        return position
 
     def add_to_rectangles(self, shape):
         """Add shape to rectangles list"""

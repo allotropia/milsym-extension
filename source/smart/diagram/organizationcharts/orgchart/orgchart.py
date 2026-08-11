@@ -200,6 +200,14 @@ class OrgChart(OrganizationChart):
 
                 self.refresh_diagram()
 
+                # Writer states the position of a shape in a group relative to the
+                # bounding box of that group, and the box only reaches its final extent
+                # once every shape has been placed. The shapes placed early therefore sit
+                # in a frame that no longer applies. Place them all a second time, now
+                # that the box has settled, so that they agree with each other.
+                self._diagram_tree.forget_geometry()
+                self.refresh_diagram()
+
     def _create_diagram_with_count(self, n: int):
         """Create diagram with n simple shapes"""
         if self._x_draw_page is not None and self._x_shapes is not None and n > 0:
