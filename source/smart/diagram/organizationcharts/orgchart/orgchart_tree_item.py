@@ -16,7 +16,7 @@ Python port of OrgChartTreeItem.java
 
 from typing import List
 
-from ....utils import get_default_symbol_height_cm
+from utils import get_default_symbol_height_cm
 
 from ..organization_chart_tree_item import OrganizationChartTreeItem
 
