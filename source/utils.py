@@ -147,6 +147,41 @@ def parse_svg_dimensions(svg_data):
     return shape_size
 
 
+def fit_size_to_aspect_ratio(bounding_size, intrinsic_size):
+    """Fit a size to the aspect ratio of another size by shrinking one dimension.
+
+    Returns a Size with the aspect ratio of intrinsic_size that fits inside
+    bounding_size. One dimension of bounding_size is kept, the other is reduced.
+    If either size has a non-positive dimension, bounding_size is returned
+    unchanged.
+    """
+    if (
+        bounding_size.Width <= 0
+        or bounding_size.Height <= 0
+        or intrinsic_size.Width <= 0
+        or intrinsic_size.Height <= 0
+    ):
+        return bounding_size
+
+    fitted = Size()
+    fitted.Width = bounding_size.Width
+    fitted.Height = bounding_size.Height
+    if (
+        bounding_size.Width * intrinsic_size.Height
+        > bounding_size.Height * intrinsic_size.Width
+    ):
+        # The box is proportionally wider than the content, so the width shrinks
+        fitted.Width = int(
+            bounding_size.Height * intrinsic_size.Width / intrinsic_size.Height
+        )
+    else:
+        # The box is proportionally taller than the content, so the height shrinks
+        fitted.Height = int(
+            bounding_size.Width * intrinsic_size.Height / intrinsic_size.Width
+        )
+    return fitted
+
+
 def extractGraphicAttributes(shape):
     """Extract symbol attributes from shape's UserDefinedAttributes
 
@@ -189,7 +224,11 @@ def insertSvgGraphic(
         shape.setPropertyValue("Graphic", graphic)
 
         if existing_size is not None and existing_size.Width > 0 and existing_size.Height > 0:
-            shape.setSize(existing_size)
+            # Keep the user's size, adjusted to the aspect ratio of the new graphic so
+            # the content is not distorted
+            shape.setSize(
+                fit_size_to_aspect_ratio(existing_size, parse_svg_dimensions(svg_data))
+            )
         else:
             # The SVG is generated so that its intrinsic size gives the frame octagon the
             # configured height. Decorations enlarge the shape beyond that.

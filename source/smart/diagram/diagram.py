@@ -16,7 +16,7 @@ Python port of Diagram.java
 
 import uno
 
-from ..utils import parse_svg_dimensions
+from ..utils import fit_size_to_aspect_ratio, parse_svg_dimensions
 
 from abc import ABC, abstractmethod
 from com.sun.star.awt import Point, Size
@@ -209,7 +209,13 @@ class Diagram(ABC):
                 existing_size = shape.getSize()
                 shape.setPropertyValue("Graphic", graphic)
                 if existing_size.Width > 0 and existing_size.Height > 0:
-                    shape.setSize(existing_size)
+                    # Keep the user's size, adjusted to the aspect ratio of the new
+                    # graphic so the content is not distorted
+                    shape.setSize(
+                        fit_size_to_aspect_ratio(
+                            existing_size, parse_svg_dimensions(svg_data)
+                        )
+                    )
                 else:
                     size = parse_svg_dimensions(svg_data)
                     shape.setSize(size)
