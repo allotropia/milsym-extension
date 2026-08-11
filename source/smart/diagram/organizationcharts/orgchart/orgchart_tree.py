@@ -217,14 +217,25 @@ class OrgChartTree(OrganizationChartTree):
 
         return x_first_sibling_shape
 
-    @timed("tree refresh")
-    def refresh(self):
-        """Refresh the tree"""
+    def recompute_levels_and_positions(self):
+        """Work out the level and the layout position of every item from the tree shape.
+
+        An item is told its level when it is made, but its level really follows from
+        where it ends up in the tree, and code that builds a tree node by node reads the
+        level of the node it added last to decide where the next one goes. Nothing here
+        is written to the shapes, so it costs nothing to call while a tree is being
+        built.
+        """
         OrgChartTreeItem.init_static_members()
         self._root_item.set_level(0)
         self._root_item.set_pos(0.0)
+        self._root_item.set_positions_of_items()
+
+    @timed("tree refresh")
+    def refresh(self):
+        """Refresh the tree"""
         with timed("set_positions_of_items"):
-            self._root_item.set_positions_of_items()
+            self.recompute_levels_and_positions()
         self._root_item.set_measure_props()
         with timed("display"):
             self._root_item.display()
