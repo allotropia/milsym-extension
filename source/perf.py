@@ -19,6 +19,11 @@ MILSYM_PERF_NO_TREE=1 leaves the control dialog tree empty.
 
 A document edited with either switch set will be laid out wrongly, so they are for
 measurement runs only.
+
+MILSYM_PERF_NO_NAME_INDEX=1 makes the diagram tree behave as though the shapes did not
+have a name each, which is the path taken for a document whose shapes were renamed or
+copied. It is slow but correct, so it is safe to set, and it is the only way to reach
+that path deliberately.
 """
 
 import os
@@ -29,6 +34,7 @@ from contextlib import contextmanager
 ENABLED = os.environ.get("MILSYM_PERF") == "1"
 SKIP_GEOMETRY_WRITES = os.environ.get("MILSYM_PERF_NO_WRITES") == "1"
 SKIP_TREE_REBUILD = os.environ.get("MILSYM_PERF_NO_TREE") == "1"
+SKIP_NAME_INDEX = os.environ.get("MILSYM_PERF_NO_NAME_INDEX") == "1"
 
 _counters = {}
 _depth = 0
