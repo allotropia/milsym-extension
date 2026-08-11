@@ -246,13 +246,22 @@ class OrganizationChart(Diagram):
 
         The names already gathered by the tree are used where they are trustworthy, so
         that this does not have to ask the office for every shape in the group.
+
+        They are used only while the tree accounts for every shape the group holds. The
+        answer names the next symbol the diagram makes, so one worked out from fewer shapes
+        than there are would hand a new symbol a name another symbol already answers to,
+        and every lookup that goes by name would then have two shapes to choose from.
         """
         i_top_shape_id = -1
 
         try:
             diagram_tree = self.get_diagram_tree()
             names = None
-            if diagram_tree is not None and diagram_tree.has_trustworthy_names():
+            if (
+                diagram_tree is not None
+                and diagram_tree.has_trustworthy_names()
+                and diagram_tree.knows_every_shape_in_the_group()
+            ):
                 names = diagram_tree.get_all_shape_names()
             if names is None:
                 names = [
