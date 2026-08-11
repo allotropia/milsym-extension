@@ -222,6 +222,7 @@ class Diagram(ABC):
                     shape.setSize(size)
 
                 self.forget_graphic_aspect_ratio_of(shape)
+                self.forget_kept_geometry_of(shape)
 
         except Exception as ex:
             print(f"Error setting shape properties: {ex}")
@@ -239,6 +240,23 @@ class Diagram(ABC):
                 item.forget_graphic_aspect_ratio()
         except Exception as ex:
             print(f"Error clearing the kept graphic aspect ratio: {ex}")
+
+    def forget_kept_geometry_of(self, shape):
+        """Tell the tree that this shape was moved or resized without going through it.
+
+        The tree decides whether a shape needs writing by comparing against the position
+        and size it last wrote, so a shape sized anywhere else has to leave that record for
+        the layout to give it the size it should have.
+        """
+        try:
+            diagram_tree = (
+                self.get_diagram_tree() if hasattr(self, "get_diagram_tree") else None
+            )
+            if diagram_tree is None:
+                return
+            diagram_tree.forget_geometry_of(diagram_tree.name_of_shape(shape))
+        except Exception as ex:
+            print(f"Error clearing the kept geometry: {ex}")
 
     def set_shape_properties(self, shape, shape_type: str):
         """Set shape properties"""

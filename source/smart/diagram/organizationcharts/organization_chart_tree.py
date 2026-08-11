@@ -352,6 +352,13 @@ class OrganizationChartTree(ABC):
         self._position_by_rect_name.clear()
         self._size_by_rect_name.clear()
 
+    def forget_geometry_of(self, rect_name):
+        """Forget where one rectangle was put, so that the next layout writes it again."""
+        if not rect_name:
+            return
+        self._position_by_rect_name.pop(rect_name, None)
+        self._size_by_rect_name.pop(rect_name, None)
+
     def note_rect_size(self, rect_name, width, height):
         """Record how big a rectangle now is."""
         if rect_name:
