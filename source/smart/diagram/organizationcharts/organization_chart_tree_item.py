@@ -232,10 +232,6 @@ class OrganizationChartTreeItem(ABC):
         """Name of the rectangle this item carries, empty when it has none."""
         return self._rectangle_name or ""
 
-    def get_position(self):
-        """Get position of shape"""
-        return self._x_rectangle_shape.getPosition()
-
     def set_position(self, point):
         """Set position of shape"""
         count("shape: setPosition")
@@ -245,10 +241,6 @@ class OrganizationChartTreeItem(ABC):
         self.get_diagram_tree().note_rect_position(
             self.get_rectangle_name(), point.X, point.Y
         )
-
-    def get_size(self):
-        """Get size of shape"""
-        return self._x_rectangle_shape.getSize()
 
     def set_size(self, size):
         """Set size of shape"""
