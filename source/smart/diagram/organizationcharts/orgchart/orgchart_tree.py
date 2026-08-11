@@ -260,11 +260,15 @@ class OrgChartTree(OrganizationChartTree):
                 recorded_start, recorded_end, recorded_start_glue, recorded_end_glue = (
                     self.get_connector_ends(connector_name)
                 )
-                current_end_shape = self.get_shape_by_name(recorded_end)
             else:
                 recorded_start = recorded_end = None
                 recorded_start_glue = recorded_end_glue = None
-                current_end_shape = self.get_end_shape_of_connector(x_conn_shape)
+
+            # The shape a connector ends on is asked of the office rather than taken from
+            # the record. The record holds what the extension last wrote, and the document
+            # can hold something else, for instance where an undo put an earlier state
+            # back, and then this is the pass that has to join the two ends up again.
+            current_end_shape = self.get_end_shape_of_connector(x_conn_shape)
 
             if not current_end_shape:
                 continue
