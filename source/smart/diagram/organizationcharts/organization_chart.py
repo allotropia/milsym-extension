@@ -242,16 +242,25 @@ class OrganizationChart(Diagram):
         # Stub implementation
 
     def get_top_shape_id(self) -> int:
-        """Get top shape ID"""
+        """Highest numbered symbol shape in the diagram, or -1 when it holds none.
+
+        The names already gathered by the tree are used where they are trustworthy, so
+        that this does not have to ask the office for every shape in the group.
+        """
         i_top_shape_id = -1
-        x_curr_shape = None
-        curr_shape_name = ""
-        shape_id = 0
 
         try:
-            for i in range(self._x_shapes.getCount()):
-                x_curr_shape = self._x_shapes.getByIndex(i)
-                curr_shape_name = self.get_shape_name(x_curr_shape)
+            diagram_tree = self.get_diagram_tree()
+            names = None
+            if diagram_tree is not None and diagram_tree.has_trustworthy_names():
+                names = diagram_tree.get_all_shape_names()
+            if names is None:
+                names = [
+                    self.get_shape_name(self._x_shapes.getByIndex(i))
+                    for i in range(self._x_shapes.getCount())
+                ]
+
+            for curr_shape_name in names:
                 if Diagram.DIAGRAM_SHAPE_TYPE in curr_shape_name:
                     shape_id = self.get_controller().get_shape_id(curr_shape_name)
                     if shape_id > i_top_shape_id:

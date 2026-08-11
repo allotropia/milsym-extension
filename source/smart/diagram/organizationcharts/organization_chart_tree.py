@@ -177,6 +177,25 @@ class OrganizationChartTree(ABC):
         """Return the names of the rectangles hanging below the named rectangle."""
         return self._child_names_by_rect_name.get(rect_name, [])
 
+    def get_child_connector_shapes(self, rect_name):
+        """Return the connectors that run from the named rectangle down to its children."""
+        if self._names_are_unique:
+            shapes = []
+            for child_name in self.get_child_rect_names(rect_name):
+                connector_name = self._connector_name_by_child_name.get(child_name)
+                connector = self._shape_by_name.get(connector_name)
+                if connector is not None:
+                    shapes.append(connector)
+            return shapes
+
+        rect_shape = self._shape_by_name.get(rect_name)
+        return [
+            connector
+            for connector in self._connector_list
+            if rect_shape is not None
+            and rect_shape == self.get_start_shape_of_connector(connector)
+        ]
+
     def get_rect_position(self, rect_name):
         """Return the last known position of the named rectangle as an (x, y) pair."""
         return self._position_by_rect_name.get(rect_name)
@@ -184,6 +203,14 @@ class OrganizationChartTree(ABC):
     def get_shape_by_name(self, name):
         """Return the shape with this name, or None when the group holds no such shape."""
         return self._shape_by_name.get(name)
+
+    def has_trustworthy_names(self):
+        """Say whether every shape in the group has a name of its own."""
+        return self._names_are_unique
+
+    def get_all_shape_names(self):
+        """Names of every rectangle and connector the group holds."""
+        return list(self._shape_by_name.keys())
 
     def get_tree_item_by_name(self, rect_name):
         """Return the tree item carrying the named rectangle, without touching the office."""
