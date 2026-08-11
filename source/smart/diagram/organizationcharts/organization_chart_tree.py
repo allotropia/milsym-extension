@@ -127,13 +127,21 @@ class OrganizationChartTree(ABC):
         this code without that lock, because the office lets go of it before handing a
         command to an extension. Right after drawing a diagram the routes are all out of
         date, so that is exactly when the question is dangerous to ask. Where the geometry
-        is not read, the order shapes appear in the group stands in for their order on
-        the page, and the sizes and positions are learned as they are written.
+        is not read, what an earlier pass learned is kept, the order shapes appear in the
+        group stands in for their order on the page, and the sizes and positions that are
+        still unknown are learned as they are written.
         """
+        self._may_read_geometry = read_geometry or not self._connector_list
+
+        # What an earlier pass learned about where the shapes are is kept unless the
+        # caller means to measure them again, because a pass that may not ask the office
+        # has no other way to know it.
+        if read_geometry:
+            self._position_by_rect_name = {}
+            self._size_by_rect_name = {}
+            self._control_shape_pos = None
+
         self._shape_by_name = {}
-        self._position_by_rect_name = {}
-        self._size_by_rect_name = {}
-        self._control_shape_pos = None
         self._start_name_by_connector_name = {}
         self._end_name_by_connector_name = {}
         self._glue_by_connector_name = {}
@@ -141,7 +149,6 @@ class OrganizationChartTree(ABC):
         self._child_names_by_rect_name = {}
         self._item_by_rect_name = {}
         self._names_are_unique = not SKIP_NAME_INDEX
-        self._may_read_geometry = read_geometry or not self._connector_list
 
         for shape in self._rectangle_list + self._connector_list:
             name = self.name_of_shape(shape)
@@ -156,11 +163,17 @@ class OrganizationChartTree(ABC):
                 self._shape_by_name.setdefault(control_name, self._x_control_shape)
 
         if not self._names_are_unique:
+            # Two shapes answering to one name make a position or a size held against
+            # that name belong to either of them, so drop what was learned
+            self._position_by_rect_name = {}
+            self._size_by_rect_name = {}
             print(
                 "Milsymbol: the shapes in this diagram do not have unique names, "
                 "falling back to searching them"
             )
             return
+
+        self._forget_geometry_of_departed_shapes()
 
         # Learn the origin while it is safe to ask, which is either because the caller
         # said so or because the group holds no connector yet
@@ -197,6 +210,20 @@ class OrganizationChartTree(ABC):
                 self._child_names_by_rect_name.setdefault(start_name, []).append(
                     end_name
                 )
+
+    def _forget_geometry_of_departed_shapes(self):
+        """Drop the positions and sizes held against names the group no longer holds.
+
+        A name that has left comes back on the next shape the diagram makes, and that
+        shape sits somewhere else, so what was learned about the shape that is gone would
+        keep the new one from being placed.
+        """
+        for name in list(self._position_by_rect_name):
+            if name not in self._shape_by_name:
+                del self._position_by_rect_name[name]
+        for name in list(self._size_by_rect_name):
+            if name not in self._shape_by_name:
+                del self._size_by_rect_name[name]
 
     def _read_glue_points(self, connector):
         """Return the (start, end) glue point indexes a connector is attached at."""
@@ -464,7 +491,18 @@ class OrganizationChartTree(ABC):
     def set_lists(self, read_geometry=True):
         """Set up lists from existing shapes"""
         try:
+            # Emptying the tables loses where the shapes are, and a pass that may not
+            # measure cannot learn it again, so hand it to build_indexes to keep or drop
+            kept_positions = self._position_by_rect_name
+            kept_sizes = self._size_by_rect_name
+            kept_control_shape_pos = self._control_shape_pos
+
             self.clear_lists()
+
+            self._position_by_rect_name = kept_positions
+            self._size_by_rect_name = kept_sizes
+            self._control_shape_pos = kept_control_shape_pos
+
             curr_shape = None
             curr_shape_name = ""
 
