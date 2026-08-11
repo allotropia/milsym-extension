@@ -95,7 +95,13 @@ class OrgChartTree(OrganizationChartTree):
                 chosen_distance = distance
                 chosen_name = child_name
 
-        return self.get_shape_by_name(chosen_name) if chosen_name else None
+        if chosen_name is None:
+            # Nothing is known about where these children sit, which is the case for a
+            # diagram that has only just been drawn. They were added in order, so the
+            # order they appear in the group says which is first and which is last.
+            chosen_name = children[-1] if want_last else children[0]
+
+        return self.get_shape_by_name(chosen_name)
 
     def get_first_child_shape(self, x_dad_shape):
         """Get first child shape based on position"""
@@ -154,7 +160,12 @@ class OrgChartTree(OrganizationChartTree):
         base_name = self.name_of_shape(x_base_shape)
         base_position = self.get_rect_position(base_name)
         if base_position is None:
-            return None
+            # Fall back to the order the children were added in, as above
+            siblings = self.get_child_rect_names(dad.get_rectangle_name())
+            if base_name not in siblings:
+                return None
+            following = siblings[siblings.index(base_name) + 1 :]
+            return self.get_shape_by_name(following[0]) if following else None
 
         use_x = dad.get_level() + 1 <= OrgChartTree.LAST_HOR_LEVEL
         base_distance = base_position[0] if use_x else base_position[1]

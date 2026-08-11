@@ -47,6 +47,7 @@ class OrganizationChartTree(ABC):
             # rectangle and connector lists are shared, so both trees see one topology
             self._shape_by_name = diagram_tree._shape_by_name
             self._position_by_rect_name = diagram_tree._position_by_rect_name
+            self._size_by_rect_name = diagram_tree._size_by_rect_name
             self._start_name_by_connector_name = (
                 diagram_tree._start_name_by_connector_name
             )
@@ -73,8 +74,11 @@ class OrganizationChartTree(ABC):
         """Empty every lookup table and assume the shape names can key them again."""
         # Name of a rectangle or a connector, to the shape itself
         self._shape_by_name = {}
-        # Name of a rectangle, to its position on the page as an (x, y) pair
+        # Name of a rectangle, to its position on the page as an (x, y) pair, and to its
+        # size as a (width, height) pair. Both hold what was last read or written, and a
+        # name is missing until one of those has happened.
         self._position_by_rect_name = {}
+        self._size_by_rect_name = {}
         # Name of a connector, to the name of the rectangle each of its ends is glued to
         self._start_name_by_connector_name = {}
         self._end_name_by_connector_name = {}
@@ -100,14 +104,25 @@ class OrganizationChartTree(ABC):
             return ""
 
     @timed("build_indexes")
-    def build_indexes(self):
+    def build_indexes(self, read_geometry=True):
         """Fill the lookup tables from the rectangles and connectors found in the group.
 
         One pass over the rectangles and one over the connectors, so the work grows with
         the number of shapes rather than with their product.
+
+        Pass read_geometry as False when the diagram has just been drawn. Asking a shape
+        inside a group where it is makes the office work out the bounding box of the whole
+        group, which recomputes the route of every connector in it and announces the
+        change, and announcing a change needs the drawing lock. A menu command reaches
+        this code without that lock, because the office lets go of it before handing a
+        command to an extension. Right after drawing a diagram the routes are all out of
+        date, so that is exactly when the question is dangerous to ask. Where the geometry
+        is not read, the order shapes appear in the group stands in for their order on
+        the page, and the sizes and positions are learned as they are written.
         """
         self._shape_by_name = {}
         self._position_by_rect_name = {}
+        self._size_by_rect_name = {}
         self._start_name_by_connector_name = {}
         self._end_name_by_connector_name = {}
         self._glue_by_connector_name = {}
@@ -135,13 +150,16 @@ class OrganizationChartTree(ABC):
             )
             return
 
-        for shape in self._rectangle_list:
-            name = self.name_of_shape(shape)
-            try:
-                position = shape.getPosition()
+        if read_geometry:
+            for shape in self._rectangle_list:
+                name = self.name_of_shape(shape)
+                try:
+                    position = shape.getPosition()
+                    size = shape.getSize()
+                except Exception:
+                    continue
                 self._position_by_rect_name[name] = (position.X, position.Y)
-            except Exception:
-                self._position_by_rect_name[name] = (0, 0)
+                self._size_by_rect_name[name] = (size.Width, size.Height)
 
         for connector in self._connector_list:
             connector_name = self.name_of_shape(connector)
@@ -278,6 +296,15 @@ class OrganizationChartTree(ABC):
         if rect_name:
             self._position_by_rect_name[rect_name] = (x, y)
 
+    def note_rect_size(self, rect_name, width, height):
+        """Record how big a rectangle now is."""
+        if rect_name:
+            self._size_by_rect_name[rect_name] = (width, height)
+
+    def get_rect_size(self, rect_name):
+        """Return the last known size of the named rectangle as a (width, height) pair."""
+        return self._size_by_rect_name.get(rect_name)
+
     @abstractmethod
     def init_tree_items(self):
         """Initialize tree items - to be implemented by subclasses"""
@@ -334,11 +361,6 @@ class OrganizationChartTree(ABC):
             self._names_are_unique = False
             return
         self._shape_by_name[name] = shape
-        try:
-            position = shape.getPosition()
-            self._position_by_rect_name[name] = (position.X, position.Y)
-        except Exception:
-            self._position_by_rect_name[name] = (0, 0)
 
     def remove_from_rectangles(self, shape):
         """Remove shape from rectangles list"""
@@ -356,6 +378,7 @@ class OrganizationChartTree(ABC):
 
         self._shape_by_name.pop(name, None)
         self._position_by_rect_name.pop(name, None)
+        self._size_by_rect_name.pop(name, None)
         self._child_names_by_rect_name.pop(name, None)
         self._item_by_rect_name.pop(name, None)
 
@@ -410,7 +433,7 @@ class OrganizationChartTree(ABC):
         self._reset_indexes()
 
     @timed("set_lists")
-    def set_lists(self):
+    def set_lists(self, read_geometry=True):
         """Set up lists from existing shapes"""
         try:
             self.clear_lists()
@@ -429,7 +452,7 @@ class OrganizationChartTree(ABC):
                 if Diagram.CONNECTOR_SHAPE in curr_shape_name:
                     self.add_to_connectors(curr_shape)
 
-            self.build_indexes()
+            self.build_indexes(read_geometry)
 
         except Exception as ex:
             print(f"Error setting lists: {ex}")

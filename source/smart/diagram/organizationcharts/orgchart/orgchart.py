@@ -96,7 +96,9 @@ class OrgChart(OrganizationChart):
                 if x_start_shape is not None:
                     self.get_controller().set_selected_shape(x_start_shape)
 
-                self.init_diagram()
+                # The shapes are being drawn now, so their geometry must not be read
+                # back out of the office while this runs
+                self.init_diagram(read_geometry=False)
 
                 # Initialize diagram tree
                 if self._diagram_tree is None:
@@ -292,14 +294,14 @@ class OrgChart(OrganizationChart):
                 )
                 self.set_color_prop(self._ORG_CHART_COLORS[(shape_id - 1) % 8])
 
-    def init_diagram(self, diagram_id=None):
+    def init_diagram(self, diagram_id=None, read_geometry=True):
         """Initialize diagram"""
         super().init_diagram(diagram_id)
 
         if self._diagram_tree is None:
             self._diagram_tree = OrgChartTree(self)
 
-        self._diagram_tree.set_lists()
+        self._diagram_tree.set_lists(read_geometry)
         self._diagram_tree.set_tree()
 
     def paste_subtree(self, target_tree_item, clipboard_item, script=None):

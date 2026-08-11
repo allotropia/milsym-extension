@@ -304,9 +304,11 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                 else:
                     self.get_diagram().create_diagram()
 
-                # Initialize object tree in organigrams
+                # Initialize object tree in organigrams. The geometry of the shapes
+                # was just written, so it is already known and must not be read back
+                # from a menu command.
                 if self.get_group_type() == self.ORGANIGROUP:
-                    self.get_diagram().init_diagram()
+                    self.get_diagram().init_diagram(read_geometry=False)
 
         if self.get_diagram() is not None:
             # Showing the dialog is left outside the lock, because it takes the focus
