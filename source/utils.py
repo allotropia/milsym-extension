@@ -329,6 +329,36 @@ def insertGraphicAttributes(shape, params):
     shape.setPropertyValue("UserDefinedAttributes", attributeHash)
 
 
+# The attributes that decide what a symbol looks like. Two symbols that agree on all
+# of them, drawn at the same size, produce the same drawing.
+ICON_ATTRIBUTES = (
+    "MilSymCode",
+    "MilSymStack",
+    "MilSymReinforced",
+    "MilSymStaff",
+    "MilSymSpecialheadquarters",
+    "MilSymCountrycode",
+)
+
+# Drawings already made in this process, keyed by the attributes and size they were made
+# from. Each miss runs the whole milsymbol script, which is over a megabyte of
+# JavaScript that the office reads, compiles and evaluates from the beginning every
+# time, so a symbol that appears many times in one order of battle is worth keeping.
+#
+# A symbol whose attributes change gets a different key, so a drawing never goes stale
+# and nothing has to be told to drop it.
+_icon_svg_cache = {}
+
+# How many drawings to keep before starting again, so that a long editing session does
+# not hold on to every symbol that was ever shown.
+ICON_CACHE_LIMIT = 500
+
+
+def icon_cache_key(attributes, size):
+    """The attributes and size that together decide the drawing of a symbol."""
+    return (size,) + tuple(attributes.get(name) for name in ICON_ATTRIBUTES)
+
+
 def generate_icon_svg(script, attributes, size):
     """Generate SVG icon from symbol attributes
 
@@ -342,6 +372,11 @@ def generate_icon_svg(script, attributes, size):
         sidc_code = attributes.get("MilSymCode")
         if not sidc_code:
             return None
+
+        cache_key = icon_cache_key(attributes, size)
+        if cache_key in _icon_svg_cache:
+            count("javascript: milsymbol drawing reused")
+            return _icon_svg_cache[cache_key]
 
         args = [sidc_code, NamedValue("size", size)]
 
@@ -367,6 +402,9 @@ def generate_icon_svg(script, attributes, size):
         count("javascript: milsymbol invoke")
         result = script.invoke(args, (), ())
         svg_data = str(result[0])
+        if len(_icon_svg_cache) >= ICON_CACHE_LIMIT:
+            _icon_svg_cache.clear()
+        _icon_svg_cache[cache_key] = svg_data
         return svg_data
 
     except Exception as e:
