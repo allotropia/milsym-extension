@@ -434,6 +434,7 @@ class MainJob(unohelper.Base, XJobExecutor):
         if args == "symbolDialog":
             selected_shape = ListenerRegistry.instance().get_selected_shape()
             open_symbol_dialog(self.ctx, self.model, None, None, selected_shape, None)
+            self.forget_kept_state_of_shape(selected_shape)
         if self.orbat_enabled and args == "orgChart":
             self.onOrgChart()
         if self.orbat_enabled and args == "editOrbat":
@@ -454,6 +455,29 @@ class MainJob(unohelper.Base, XJobExecutor):
                     svg_args,
                     is_editing,
                 )
+
+    def forget_kept_state_of_shape(self, shape):
+        """Tell a diagram holding this shape that its picture and its size have changed.
+
+        The symbol dialog puts a new picture straight onto the shape and sizes it to suit,
+        without going through the diagram. A symbol inside a diagram can be edited that
+        way, and the diagram keeps the shape of the picture and the size it last wrote, so
+        both have to be dropped for the next layout to measure the shape again.
+        """
+        if shape is None:
+            return
+
+        try:
+            frame = self.desktop.getCurrentFrame()
+            controller = ControllerManager(self.ctx).get_controller_for_frame(frame)
+            diagram = controller.get_diagram() if controller is not None else None
+            if diagram is None:
+                return
+
+            diagram.forget_graphic_aspect_ratio_of(shape)
+            diagram.forget_kept_geometry_of(shape)
+        except Exception as e:
+            print(f"Error clearing what a diagram keeps about a shape: {e}")
 
     def onEditOrbat(self):
         """Open the ORBAT dialog for the currently selected ORBAT group"""
