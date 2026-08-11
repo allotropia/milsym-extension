@@ -15,6 +15,8 @@ Controller class for LibreOffice extension
 
 import unohelper
 
+from perf import timed
+
 from .gui import Gui
 
 from com.sun.star.view import XSelectionChangeListener
@@ -376,6 +378,7 @@ class Controller(unohelper.Base, XSelectionChangeListener):
         """Handle disposing event from XEventListener"""
         pass
 
+    @timed("selectionChanged")
     def selectionChanged(self, event):
         """Handle selection change events - XSelectionChangeListener implementation"""
         selected_shape = self.get_selected_shape()

@@ -41,6 +41,7 @@ from utils import (
 )
 from unohelper import systemPathToFileUrl
 from translator import translate
+from perf import SKIP_TREE_REBUILD, count, timed
 import tempfile
 
 
@@ -725,9 +726,12 @@ class ControlDlgHandler(
         except Exception as e:
             print(f"Error initializing tree control: {e}")
 
+    @timed("populate_tree")
     def populate_tree(self):
         """Populate tree with current diagram structure"""
         try:
+            if SKIP_TREE_REBUILD:
+                return
             if self.tree_control is None:
                 print("Tree control not available")
                 return
@@ -1273,6 +1277,7 @@ class ControlDlgHandler(
         except Exception as e:
             print(f"Error selecting tree node for shape: {e}")
 
+    @timed("sync_document_selection_to_tree")
     def sync_document_selection_to_tree(self, selection):
         """Sync document shape selection to tree view selection (supports multi-selection)
 
@@ -1293,6 +1298,7 @@ class ControlDlgHandler(
                     if shape:
                         # Find the tree node for this shape
                         for node_name, tree_item in self._node_to_tree_item_map.items():
+                            count("dialog: node map entry compared")
                             if tree_item.get_rectangle_shape() == shape:
                                 node = self._find_node_in_tree(node_name)
                                 if node:
