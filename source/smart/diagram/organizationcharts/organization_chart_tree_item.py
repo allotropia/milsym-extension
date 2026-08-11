@@ -97,7 +97,7 @@ class OrganizationChartTreeItem(ABC):
                     .TABLEHIERARCHYDIAGRAM
                 ):
                     for x_conn_shape in self.get_diagram_tree().get_child_connector_shapes(
-                        self.get_rectangle_name()
+                        self.get_rectangle_name(), self._x_rectangle_shape
                     ):
                         x_conn_shape.setPropertyValue("LineStyle", LINE_STYLE_NONE)
 
@@ -137,7 +137,7 @@ class OrganizationChartTreeItem(ABC):
                     .TABLEHIERARCHYDIAGRAM
                 ):
                     for x_conn_shape in self.get_diagram_tree().get_child_connector_shapes(
-                        self.get_rectangle_name()
+                        self.get_rectangle_name(), self._x_rectangle_shape
                     ):
                         x_conn_shape.setPropertyValue("LineStyle", LINE_STYLE_SOLID)
 

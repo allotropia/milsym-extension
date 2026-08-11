@@ -239,8 +239,14 @@ class OrganizationChartTree(ABC):
         """Return the names of the rectangles hanging below the named rectangle."""
         return self._child_names_by_rect_name.get(rect_name, [])
 
-    def get_child_connector_shapes(self, rect_name):
-        """Return the connectors that run from the named rectangle down to its children."""
+    def get_child_connector_shapes(self, rect_name, x_rect_shape):
+        """Return the connectors that run from a rectangle down to its children.
+
+        Both the name and the shape are needed. The name reaches the lookup tables where
+        the names can be trusted, and the shape is what the connectors are compared
+        against where they cannot, which is the case this is asked in for a rectangle whose
+        name another shape in the group also answers to.
+        """
         if self._names_are_unique:
             shapes = []
             for child_name in self.get_child_rect_names(rect_name):
@@ -250,12 +256,13 @@ class OrganizationChartTree(ABC):
                     shapes.append(connector)
             return shapes
 
-        rect_shape = self._shape_by_name.get(rect_name)
+        if x_rect_shape is None:
+            return []
+
         return [
             connector
             for connector in self._connector_list
-            if rect_shape is not None
-            and rect_shape == self.get_start_shape_of_connector(connector)
+            if x_rect_shape == self.get_start_shape_of_connector(connector)
         ]
 
     def get_rect_position(self, rect_name):
