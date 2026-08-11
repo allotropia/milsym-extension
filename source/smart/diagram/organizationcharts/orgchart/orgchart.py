@@ -175,6 +175,10 @@ class OrgChart(OrganizationChart):
 
                     last_tree_item = new_tree_item
 
+                    # The next turn of this loop reads the level of the item just added
+                    # to decide whether the one after it is a child or a sibling
+                    self._diagram_tree.recompute_levels_and_positions()
+
                 # Handle root visibility
                 if not is_root_item:
                     self.get_controller().set_selected_shape(
