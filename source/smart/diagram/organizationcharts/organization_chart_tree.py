@@ -281,6 +281,22 @@ class OrganizationChartTree(ABC):
         """Names of every rectangle and connector the group holds."""
         return list(self._shape_by_name.keys())
 
+    def knows_every_shape_in_the_group(self):
+        """Say whether the lists account for every shape the group holds.
+
+        The lists are built by walking the group, and the extension keeps them in step as
+        it adds shapes and takes them away. A shape that arrived any other way, which is
+        what an undo putting a deleted symbol back does, sits in the group and in neither
+        list, and then the lists describe less than the diagram holds.
+        """
+        try:
+            known = len(self._rectangle_list) + len(self._connector_list)
+            if self._x_control_shape is not None:
+                known += 1
+            return known == self._x_shapes.getCount()
+        except Exception:
+            return False
+
     def get_tree_item_by_name(self, rect_name):
         """Return the tree item carrying the named rectangle, without touching the office."""
         return self._item_by_rect_name.get(rect_name)
