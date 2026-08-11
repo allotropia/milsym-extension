@@ -259,6 +259,10 @@ class OrganizationChartTreeItem(ABC):
             self._x_rectangle_shape.setSize(size)
         except Exception as ex:
             print(f"Error setting size: {ex}")
+            return
+        self.get_diagram_tree().note_rect_size(
+            self.get_rectangle_name(), size.Width, size.Height
+        )
 
     def set_position_if_changed(self, point):
         """Move the rectangle to point, leaving it where it is when it is already there.
@@ -267,15 +271,18 @@ class OrganizationChartTreeItem(ABC):
         reroute every connector attached to it, recompute the bounding box of the group
         it sits in, and lay out the text the group is anchored in. Skipping a write that
         would not move the shape avoids all of that.
-        """
-        try:
-            current = self._x_rectangle_shape.getPosition()
-        except Exception:
-            current = None
 
-        if current is not None and _is_same_coordinate(
-            current.X, point.X
-        ) and _is_same_coordinate(current.Y, point.Y):
+        The comparison is against what the tree last read or wrote, not against what the
+        shape says now, because asking a shape inside a group where it is is unsafe from
+        a menu command. A shape the tree knows nothing about is written to.
+        """
+        current = self.get_diagram_tree().get_rect_position(self.get_rectangle_name())
+
+        if (
+            current is not None
+            and _is_same_coordinate(current[0], point.X)
+            and _is_same_coordinate(current[1], point.Y)
+        ):
             count("shape: setPosition skipped")
             return
 
@@ -283,14 +290,13 @@ class OrganizationChartTreeItem(ABC):
 
     def set_size_if_changed(self, size):
         """Resize the rectangle, leaving it alone when it already has that size."""
-        try:
-            current = self._x_rectangle_shape.getSize()
-        except Exception:
-            current = None
+        current = self.get_diagram_tree().get_rect_size(self.get_rectangle_name())
 
-        if current is not None and _is_same_coordinate(
-            current.Width, size.Width
-        ) and _is_same_coordinate(current.Height, size.Height):
+        if (
+            current is not None
+            and _is_same_coordinate(current[0], size.Width)
+            and _is_same_coordinate(current[1], size.Height)
+        ):
             count("shape: setSize skipped")
             return
 
