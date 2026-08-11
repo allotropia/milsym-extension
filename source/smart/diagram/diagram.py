@@ -16,7 +16,7 @@ Python port of Diagram.java
 
 import uno
 
-from ..utils import fit_size_to_aspect_ratio, parse_svg_dimensions
+from utils import fit_size_to_aspect_ratio, parse_svg_dimensions
 
 from abc import ABC, abstractmethod
 from com.sun.star.awt import Point, Size
