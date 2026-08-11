@@ -16,7 +16,7 @@ Python port of OrganizationChartTree.java
 
 from abc import ABC, abstractmethod
 
-from perf import count, timed
+from perf import SKIP_NAME_INDEX, count, timed
 
 from ..diagram import Diagram
 
@@ -88,7 +88,7 @@ class OrganizationChartTree(ABC):
         self._item_by_rect_name = {}
         # False once a shape is found with no name, or with a name another shape in the
         # same group already uses. The lookups then give way to searching the shapes.
-        self._names_are_unique = True
+        self._names_are_unique = not SKIP_NAME_INDEX
 
     def name_of_shape(self, shape):
         """Return the name of a shape, or an empty string when it cannot be read."""
@@ -114,7 +114,7 @@ class OrganizationChartTree(ABC):
         self._connector_name_by_child_name = {}
         self._child_names_by_rect_name = {}
         self._item_by_rect_name = {}
-        self._names_are_unique = True
+        self._names_are_unique = not SKIP_NAME_INDEX
 
         for shape in self._rectangle_list + self._connector_list:
             name = self.name_of_shape(shape)
