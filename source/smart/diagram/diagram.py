@@ -16,7 +16,7 @@ Python port of Diagram.java
 
 import uno
 
-from utils import fit_size_to_aspect_ratio, parse_svg_dimensions
+from utils import fit_size_to_aspect_ratio, locked_controllers, parse_svg_dimensions
 from perf import timed
 
 from abc import ABC, abstractmethod
@@ -411,7 +411,8 @@ class Diagram(ABC):
     @timed("refresh_diagram")
     def refresh_diagram(self):
         """Refresh the diagram display"""
-        self.get_diagram_tree().refresh()
+        with locked_controllers(self._x_model):
+            self.get_diagram_tree().refresh()
 
     def get_shape_name(self, shape):
         """Get the name of a shape"""

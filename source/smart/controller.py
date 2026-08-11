@@ -16,6 +16,7 @@ Controller class for LibreOffice extension
 import unohelper
 
 from perf import timed
+from utils import locked_controllers
 
 from .gui import Gui
 
@@ -295,16 +296,20 @@ class Controller(unohelper.Base, XSelectionChangeListener):
         self.remove_selection_listener()
         self.instantiate_diagram()
 
+        model = self._x_frame.getController().getModel()
+        with locked_controllers(model):
+            if self.get_diagram() is not None:
+                if data is not None:
+                    self.get_diagram().create_diagram(data)
+                else:
+                    self.get_diagram().create_diagram()
+
+                # Initialize object tree in organigrams
+                if self.get_group_type() == self.ORGANIGROUP:
+                    self.get_diagram().init_diagram()
+
         if self.get_diagram() is not None:
-            if data is not None:
-                self.get_diagram().create_diagram(data)
-            else:
-                self.get_diagram().create_diagram()
-
-            # Initialize object tree in organigrams
-            if self.get_group_type() == self.ORGANIGROUP:
-                self.get_diagram().init_diagram()
-
+            # Showing the dialog is left outside the lock, because it takes the focus
             self._gui.set_visible_control_dialog(True)
         self.add_selection_listener()
 

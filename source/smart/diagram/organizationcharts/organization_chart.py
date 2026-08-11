@@ -16,6 +16,8 @@ Python port of OrganizationChart.java
 
 from abc import abstractmethod
 
+from utils import locked_controllers
+
 # Import base classes
 from ..diagram import Diagram
 
@@ -730,10 +732,11 @@ class OrganizationChart(Diagram):
         """Update the tree layout after structure changes"""
         try:
             diagram_tree = self.get_diagram_tree()
-            # Refresh layout
-            diagram_tree.refresh()
-            # Refresh connectors
-            diagram_tree.refresh_connector_props()
+            with locked_controllers(self._x_model):
+                # Refresh layout
+                diagram_tree.refresh()
+                # Refresh connectors
+                diagram_tree.refresh_connector_props()
 
         except Exception as e:
             print(f"Error updating tree layout: {e}")
