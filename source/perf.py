@@ -36,6 +36,22 @@ SKIP_GEOMETRY_WRITES = os.environ.get("MILSYM_PERF_NO_WRITES") == "1"
 SKIP_TREE_REBUILD = os.environ.get("MILSYM_PERF_NO_TREE") == "1"
 SKIP_NAME_INDEX = os.environ.get("MILSYM_PERF_NO_NAME_INDEX") == "1"
 
+# The two switches that leave work out spoil every document edited while they are set, so
+# say so once, whether or not the timings were asked for. Anyone who reaches this without
+# meaning to has a diagram coming out wrong and nothing else to go on.
+if SKIP_GEOMETRY_WRITES:
+    print(
+        "[milsym-perf] MILSYM_PERF_NO_WRITES is set: no shape geometry is written, so "
+        "diagrams are laid out wrongly. For measurement runs only.",
+        file=sys.stderr,
+    )
+if SKIP_TREE_REBUILD:
+    print(
+        "[milsym-perf] MILSYM_PERF_NO_TREE is set: the control dialog tree stays empty. "
+        "For measurement runs only.",
+        file=sys.stderr,
+    )
+
 _counters = {}
 _depth = 0
 
