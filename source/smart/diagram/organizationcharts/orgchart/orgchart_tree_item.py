@@ -17,6 +17,7 @@ Python port of OrgChartTreeItem.java
 from typing import List
 
 from utils import get_default_symbol_height_cm
+from perf import count
 
 from ..organization_chart_tree_item import OrganizationChartTreeItem
 
@@ -38,6 +39,10 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
     _shape_height = 0
     _group_pos_x = 0
     _group_pos_y = 0
+
+    # Height of the symbol frame in 1/100 mm, as configured. None before the first
+    # layout pass has read it.
+    _configured_symbol_height = None
 
     def __init__(
         self, diagram_tree, dad_or_shape=None, item_or_dad=None, level=None, pos=None
@@ -61,6 +66,8 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
         else:
             # Copy constructor
             super().__init__(diagram_tree, dad_or_shape, item_or_dad)
+
+        diagram_tree.register_item(self)
 
     @staticmethod
     def init_static_members():
@@ -267,6 +274,7 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
         # Use fixed dimensions instead of scaling to fit available space
         org_chart = self.get_diagram_tree().get_org_chart()
         configured_height = get_default_symbol_height_cm(org_chart._x_context)
+        OrgChartTreeItem._configured_symbol_height = configured_height
 
         # Set fixed shape dimensions (convert to appropriate units)
         OrgChartTreeItem._shape_width = org_chart.get_shape_width() * 1000
@@ -333,44 +341,66 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
         calculated_width, calculated_height = self._calculate_size_for_aspect_ratio()
 
         if self._level > last_hor_level:
-            self.set_position(Point(X=int(x_coord + calculated_width * 0.1), Y=y_coord))
+            self.set_position_if_changed(
+                Point(X=int(x_coord + calculated_width * 0.1), Y=y_coord)
+            )
         else:
-            self.set_position(Point(X=x_coord, Y=y_coord))
+            self.set_position_if_changed(Point(X=x_coord, Y=y_coord))
 
-        self.set_size(Size(Width=int(calculated_width * 0.9), Height=calculated_height))
+        self.set_size_if_changed(
+            Size(Width=int(calculated_width * 0.9), Height=calculated_height)
+        )
+
+    def get_graphic_aspect_ratio(self):
+        """Width divided by height of the picture on this item, or None when it has none.
+
+        The ratio is read from the office once and kept, because reading it back asks the
+        office for the picture's pixel size, which for a drawing has to be worked out
+        rather than looked up.
+        """
+        if self._graphic_aspect_ratio is not None:
+            return self._graphic_aspect_ratio
+
+        count("shape: read graphic aspect ratio")
+        try:
+            graphic = self._x_rectangle_shape.Graphic
+            if graphic:
+                graphic_size = graphic.SizePixel
+                if graphic_size.Height > 0 and graphic_size.Width > 0:
+                    self._graphic_aspect_ratio = (
+                        graphic_size.Width / graphic_size.Height
+                    )
+        except Exception as ex:
+            print(f"Could not get graphic aspect ratio: {ex}")
+
+        return self._graphic_aspect_ratio
+
+    def forget_graphic_aspect_ratio(self):
+        """Drop the kept ratio, so that a replaced picture is measured again."""
+        self._graphic_aspect_ratio = None
 
     def _calculate_size_for_aspect_ratio(self):
         """Calculate size with fixed height and proportional width"""
         default_width = OrgChartTreeItem._shape_width
-        context = self.get_diagram_tree().get_org_chart()._x_context
-        fixed_height = get_default_symbol_height_cm(
-            context
-        )  # Fixed height for all shapes
+        fixed_height = OrgChartTreeItem._configured_symbol_height
+        if fixed_height is None:
+            context = self.get_diagram_tree().get_org_chart()._x_context
+            fixed_height = get_default_symbol_height_cm(context)
 
-        try:
-            if self._x_rectangle_shape.Graphic:
-                # Get the original graphic size
-                graphic_size = self._x_rectangle_shape.Graphic.SizePixel
-                if graphic_size.Height > 0 and graphic_size.Width > 0:
-                    # Calculate aspect ratio
-                    aspect_ratio = graphic_size.Width / graphic_size.Height
+        aspect_ratio = self.get_graphic_aspect_ratio()
+        if aspect_ratio is None:
+            # Without a picture to measure, the shape keeps the width every item gets
+            return default_width, fixed_height
 
-                # Calculate width based on fixed height and aspect ratio
-                calculated_width = int(fixed_height * aspect_ratio)
+        calculated_width = int(fixed_height * aspect_ratio)
 
-                # Check if width exceeds the maximum allowed width
-                if calculated_width > OrgChartTreeItem._shape_width:
-                    # Scale down proportionally to fit within width constraint
-                    scale_factor = OrgChartTreeItem._shape_width / calculated_width
-                    calculated_width = OrgChartTreeItem._shape_width
-                    calculated_height = int(fixed_height * scale_factor)
-                else:
-                    calculated_height = fixed_height
+        # Check if width exceeds the maximum allowed width
+        if calculated_width > OrgChartTreeItem._shape_width:
+            # Scale down proportionally to fit within width constraint
+            scale_factor = OrgChartTreeItem._shape_width / calculated_width
+            calculated_width = OrgChartTreeItem._shape_width
+            calculated_height = int(fixed_height * scale_factor)
+        else:
+            calculated_height = fixed_height
 
-                # Return calculated width and height
-                return calculated_width, calculated_height
-        except Exception as ex:
-            print(f"Could not get graphic aspect ratio: {ex}")
-
-        # Fallback to default width and fixed height
-        return default_width, fixed_height
+        return calculated_width, calculated_height

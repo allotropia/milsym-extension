@@ -15,8 +15,39 @@ from com.sun.star.awt import Point, Size
 from com.sun.star.beans import NamedValue, PropertyValue
 from com.sun.star.xml import AttributeData
 
+from perf import count
+
 # Conversion factor from pixels to 1/100mm, assuming 96 DPI (2540 / 96)
 PX_TO_MM100 = 26.46
+
+# The settings branch that holds the extension's own configuration
+SETTINGS_NODEPATH = "/com.collabora.milsymbol.Configuration/Settings"
+
+# The configuration provider of this process, kept because building one is far more
+# expensive than reading a value through it. It is None until the first read.
+_config_provider = None
+
+
+def get_settings_access(ctx):
+    """Open the extension's settings branch for reading.
+
+    The provider is built once per process and then reused. A fresh access to the branch
+    is opened on every call, so a value changed while the office is running is seen.
+    """
+    global _config_provider
+
+    if _config_provider is None:
+        _config_provider = ctx.ServiceManager.createInstanceWithContext(
+            "com.sun.star.configuration.ConfigurationProvider", ctx
+        )
+
+    prop = PropertyValue()
+    prop.Name = "nodepath"
+    prop.Value = SETTINGS_NODEPATH
+
+    return _config_provider.createInstanceWithArguments(
+        "com.sun.star.configuration.ConfigurationAccess", (prop,)
+    )
 
 
 def get_default_symbol_height_cm(ctx):
@@ -25,22 +56,10 @@ def get_default_symbol_height_cm(ctx):
     Returns height in 1/100mm units (1cm = 1000 units), hidden config item name is: DefaultSymbolHeightCm
     """
     default_height = 1000  # 1cm in 1/100mm units
+    count("config: read DefaultSymbolHeightCm")
 
     try:
-        # Create configuration provider
-        config_provider = ctx.ServiceManager.createInstanceWithContext(
-            "com.sun.star.configuration.ConfigurationProvider", ctx
-        )
-
-        # Create property for configuration access
-        prop = PropertyValue()
-        prop.Name = "nodepath"
-        prop.Value = "/com.collabora.milsymbol.Configuration/Settings"
-
-        # Create configuration access
-        config_access = config_provider.createInstanceWithArguments(
-            "com.sun.star.configuration.ConfigurationAccess", (prop,)
-        )
+        config_access = get_settings_access(ctx)
 
         # Get the DefaultSymbolHeightCm setting
         if config_access.hasByName("DefaultSymbolHeightCm"):
@@ -78,20 +97,7 @@ def is_orbat_feature_enabled(ctx):
     default_state = True
 
     try:
-        # Create configuration provider
-        config_provider = ctx.ServiceManager.createInstanceWithContext(
-            "com.sun.star.configuration.ConfigurationProvider", ctx
-        )
-
-        # Create property for configuration access
-        prop = PropertyValue()
-        prop.Name = "nodepath"
-        prop.Value = "/com.collabora.milsymbol.Configuration/Settings"
-
-        # Create configuration access
-        config_access = config_provider.createInstanceWithArguments(
-            "com.sun.star.configuration.ConfigurationAccess", (prop,)
-        )
+        config_access = get_settings_access(ctx)
 
         # Get the OrbatFeatureFlag setting
         if config_access.hasByName("OrbatFeatureFlag"):
@@ -191,6 +197,7 @@ def extractGraphicAttributes(shape):
     Returns:
         Dictionary of attribute name to value mappings
     """
+    count("shape: extractGraphicAttributes")
     attributeHash = shape.UserDefinedAttributes
 
     attributes = {}
@@ -337,6 +344,7 @@ def generate_icon_svg(script, attributes, size):
         if "MilSymCountrycode" in attributes:
             args.append(NamedValue("countrycode", attributes["MilSymCountrycode"]))
 
+        count("javascript: milsymbol invoke")
         result = script.invoke(args, (), ())
         svg_data = str(result[0])
         return svg_data
