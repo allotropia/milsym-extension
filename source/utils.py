@@ -8,6 +8,7 @@
 
 import os
 import xml.etree.ElementTree as ET
+from contextlib import contextmanager
 
 import uno
 
@@ -19,6 +20,25 @@ from perf import count
 
 # Conversion factor from pixels to 1/100mm, assuming 96 DPI (2540 / 96)
 PX_TO_MM100 = 26.46
+
+
+@contextmanager
+def locked_controllers(model):
+    """Hold the model's controller lock for the body, and release it however the body ends.
+
+    While the lock is held the views do not repaint, so a run of changes appears as one
+    step instead of letting the reader watch the diagram being rebuilt. The model counts
+    the locks it is given, so holding one inside another is safe.
+    """
+    if model is None:
+        yield
+        return
+
+    model.lockControllers()
+    try:
+        yield
+    finally:
+        model.unlockControllers()
 
 # The settings branch that holds the extension's own configuration
 SETTINGS_NODEPATH = "/com.collabora.milsymbol.Configuration/Settings"
