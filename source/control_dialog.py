@@ -60,11 +60,14 @@ class ControlDlgHandler(
         self._temp_dir: str | None = None
         self._clipboard = None
         self._node_to_tree_item_map = {}
-        # Display name of a tree node, to the node itself, and the name of the shape an
-        # item carries, to that display name. Filled while the tree is built.
+        # Display name of a tree node, to the node itself. Filled while the tree is built.
         self._node_by_node_name = {}
+        # Name of the shape an item carries, to the shape itself and the display name of
+        # its row. The shape is held beside the name because two shapes in one document
+        # can answer to the same name, and then the name alone points at either of them.
         self._node_name_by_shape_name = {}
-        # Symbol attributes read while building the current tree, by shape name
+        # Symbol attributes read while building the current tree, by shape name, each
+        # beside the shape they were read from
         self._attributes_by_shape_name = {}
         self._syncing_selection = False
         self._syncing_from_tree = False
@@ -861,14 +864,21 @@ class ControlDlgHandler(
     def _remember_node(self, display_name, tree_item, node):
         """Record a tree node so that it can be found from a shape without searching.
 
-        Three ways in: by display name to the item behind it, by the name of the shape
-        the item carries to that display name, and by display name to the node itself.
+        Three ways in: by display name to the item behind it, by display name to the node
+        itself, and by the name of the shape the item carries to that display name. The
+        shape goes in beside that last one, so that a name two shapes answer to can be
+        told apart from a name only one does.
         """
         self._node_to_tree_item_map[display_name] = tree_item
         self._node_by_node_name[display_name] = node
-        shape_name = tree_item.get_rectangle_name() if tree_item is not None else ""
+        if tree_item is None:
+            return
+        shape_name = tree_item.get_rectangle_name()
         if shape_name:
-            self._node_name_by_shape_name[shape_name] = display_name
+            self._node_name_by_shape_name[shape_name] = (
+                tree_item.get_rectangle_shape(),
+                display_name,
+            )
 
     def _populate_tree_node(self, data_model, parent_node, tree_item, display_name):
         """Recursively populate tree nodes from organization chart tree items"""
@@ -916,17 +926,26 @@ class ControlDlgHandler(
         Reading them costs a call across the bridge for the container and two more for
         every attribute in it, and each node is asked twice, once for its label and once
         for its picture.
+
+        What was read is held against the name of the shape it came from, together with
+        that shape. Two shapes in one document can answer to the same name, and one
+        symbol's code must not end up on another symbol's row, so the answer is given back
+        only for the shape it was read from.
         """
         try:
             name = shape.getName()
         except Exception:
             return extractGraphicAttributes(shape)
 
-        if name in self._attributes_by_shape_name:
-            return self._attributes_by_shape_name[name]
+        recorded = self._attributes_by_shape_name.get(name)
+        if recorded is not None:
+            recorded_shape, recorded_attributes = recorded
+            if recorded_shape == shape:
+                return recorded_attributes
+            return extractGraphicAttributes(shape)
 
         attributes = extractGraphicAttributes(shape)
-        self._attributes_by_shape_name[name] = attributes
+        self._attributes_by_shape_name[name] = (shape, attributes)
         return attributes
 
     def _clear_node_maps(self):
@@ -1297,7 +1316,7 @@ class ControlDlgHandler(
                 return
 
             # Find the tree item that matches this shape
-            matching_node_name = self._node_name_by_shape_name.get(shape.getName())
+            matching_node_name = self._display_name_for_shape(shape)
 
             if matching_node_name:
                 # Find and select the corresponding tree node
@@ -1347,20 +1366,51 @@ class ControlDlgHandler(
         finally:
             self._update_button_states()
 
+    def _display_name_for_shape(self, shape):
+        """Display name of the row that carries a shape, or None when no row carries it.
+
+        The name of the shape gives the answer straight away, and that answer is used
+        while the shape recorded under the name is the one being asked about. Where it is
+        another shape, or where the shape has no name, the rows are gone through and
+        compared against the shape instead.
+        """
+        if shape is None:
+            return None
+
+        try:
+            shape_name = shape.getName()
+        except Exception:
+            shape_name = ""
+
+        if shape_name:
+            recorded = self._node_name_by_shape_name.get(shape_name)
+            if recorded is not None:
+                recorded_shape, display_name = recorded
+                if recorded_shape == shape:
+                    return display_name
+
+        return self._search_display_name_for_shape(shape)
+
+    def _search_display_name_for_shape(self, shape):
+        """Display name of the row carrying a shape, found by comparing the shapes."""
+        for display_name, tree_item in self._node_to_tree_item_map.items():
+            if tree_item is None:
+                continue
+            try:
+                if tree_item.get_rectangle_shape() == shape:
+                    return display_name
+            except Exception:
+                continue
+        return None
+
     def _find_node_for_shape(self, shape):
         """Find the tree node standing for a shape, or None when the tree has no such node."""
-        try:
-            display_name = self._node_name_by_shape_name.get(shape.getName())
-        except Exception:
-            return None
+        display_name = self._display_name_for_shape(shape)
         return self._node_by_node_name.get(display_name) if display_name else None
 
     def _find_tree_item_for_shape(self, shape):
         """Find the tree item carrying a shape, or None when the tree has no such item."""
-        try:
-            display_name = self._node_name_by_shape_name.get(shape.getName())
-        except Exception:
-            return None
+        display_name = self._display_name_for_shape(shape)
         return self._node_to_tree_item_map.get(display_name) if display_name else None
 
     def _find_node_in_tree(self, node_name):
@@ -1551,9 +1601,8 @@ class ControlDlgHandler(
 
             if not parent_node_name:
                 # Try to find parent by shape
-                parent_shape = parent_tree_item.get_rectangle_shape()
-                parent_node_name = self._node_name_by_shape_name.get(
-                    parent_shape.getName()
+                parent_node_name = self._display_name_for_shape(
+                    parent_tree_item.get_rectangle_shape()
                 )
                 if parent_node_name:
                     parent_tree_item = self._node_to_tree_item_map[parent_node_name]
