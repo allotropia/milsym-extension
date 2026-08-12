@@ -377,8 +377,13 @@ class OrganizationChartTree(ABC):
         )
 
     def note_rect_position(self, rect_name, x, y):
-        """Record where a rectangle now sits, so that sibling order stays right."""
-        if rect_name:
+        """Record where a rectangle now sits, so that sibling order stays right.
+
+        Nothing is recorded while the names cannot be trusted. Two shapes answering to one
+        name share the entry, and the second of them would then be left where it is on the
+        strength of where the first was put.
+        """
+        if rect_name and self._names_are_unique:
             self._position_by_rect_name[rect_name] = (x, y)
 
     def forget_geometry(self):
@@ -405,8 +410,12 @@ class OrganizationChartTree(ABC):
         self._size_by_rect_name.pop(rect_name, None)
 
     def note_rect_size(self, rect_name, width, height):
-        """Record how big a rectangle now is."""
-        if rect_name:
+        """Record how big a rectangle now is.
+
+        Nothing is recorded while the names cannot be trusted, for the same reason the
+        positions are not.
+        """
+        if rect_name and self._names_are_unique:
             self._size_by_rect_name[rect_name] = (width, height)
 
     def get_rect_size(self, rect_name):
