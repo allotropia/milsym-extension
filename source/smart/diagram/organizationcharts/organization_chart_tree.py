@@ -92,6 +92,9 @@ class OrganizationChartTree(ABC):
         # Name of a connector, to the name of the rectangle each of its ends is glued to
         self._start_name_by_connector_name = {}
         self._end_name_by_connector_name = {}
+        # True while the document may join the connectors up differently from the two tables
+        # above, which is the case once an undo has put an earlier state of it back
+        self._connector_ends_may_have_changed = False
         # Name of a connector, to its (start, end) glue point indexes
         self._glue_by_connector_name = {}
         # Name of a rectangle, to the connector that ends on it
@@ -149,6 +152,8 @@ class OrganizationChartTree(ABC):
         self._child_names_by_rect_name = {}
         self._item_by_rect_name = {}
         self._names_are_unique = not SKIP_NAME_INDEX
+        # The ends are read from the office further down, so they describe the document
+        self._connector_ends_may_have_changed = False
 
         for shape in self._rectangle_list + self._connector_list:
             name = self.name_of_shape(shape)
@@ -345,6 +350,19 @@ class OrganizationChartTree(ABC):
             children = self._child_names_by_rect_name.setdefault(start_name, [])
             if end_name not in children:
                 children.append(end_name)
+
+    def forget_connector_ends(self):
+        """Say that the document may join the connectors up differently from the record.
+
+        The record itself is kept, because the tree is laid out from the shape each connector
+        joins to which one, and the pass that joins them up again asks the office instead of
+        trusting it until it has read every end once more.
+        """
+        self._connector_ends_may_have_changed = True
+
+    def connector_ends_may_have_changed(self):
+        """Say whether the recorded ends still have to be checked against the document."""
+        return self._connector_ends_may_have_changed
 
     def get_connector_ends(self, connector_name):
         """Return the (start name, end name, start glue, end glue) recorded for a connector."""
