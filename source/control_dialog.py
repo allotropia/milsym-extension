@@ -36,7 +36,7 @@ from com.sun.star.document import XUndoAction
 from utils import (
     extractGraphicAttributes,
     generate_icon_svg,
-    get_symbol_generation_size_px,
+    get_recorded_symbol_size_px,
     insertGraphicAttributes,
     createMilSymbolScriptInstance,
 )
@@ -1876,11 +1876,12 @@ class EditShapeUndoAction(unohelper.Base, XUndoAction):
             params = self._attributes_to_params(attributes)
             insertGraphicAttributes(self.shape, params)
 
-            # Regenerate SVG and update graphic
+            # Regenerate SVG and update graphic. The drawing is made at the frame size
+            # recorded in the restored attributes, so it agrees with what they say.
             svg_data = generate_icon_svg(
                 self.dialog_handler.script,
                 attributes,
-                get_symbol_generation_size_px(self.dialog_handler.x_context),
+                get_recorded_symbol_size_px(attributes, self.dialog_handler.x_context),
             )
             if svg_data:
                 diagram.set_new_shape_properties(

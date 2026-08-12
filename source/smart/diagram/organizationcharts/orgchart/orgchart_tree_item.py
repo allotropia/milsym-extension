@@ -370,8 +370,40 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
 
         return self._graphic_aspect_ratio
 
+    def get_graphic_frame_factor(self):
+        """Height of the whole picture divided by the height of its frame octagon, or
+        None when the shape does not carry a milsymbol drawing.
+
+        The milsymbol size argument recorded on the shape is the height of the frame
+        octagon in pixels, and the pixel height of the picture also counts decorations
+        such as echelon markers or text labels, so the quotient says how much taller the
+        decorations make the symbol. A bare symbol gives 1.0.
+
+        The factor is read from the office once and kept, like the aspect ratio.
+        """
+        if self._graphic_frame_factor is not None:
+            return self._graphic_frame_factor
+
+        count("shape: read graphic frame factor")
+        try:
+            attribute_hash = self._x_rectangle_shape.UserDefinedAttributes
+            if attribute_hash is None or not attribute_hash.hasByName("MilSymSize"):
+                return None
+            frame_height_px = float(attribute_hash.getByName("MilSymSize").Value)
+            if frame_height_px <= 0:
+                return None
+            graphic = self._x_rectangle_shape.Graphic
+            if graphic:
+                graphic_size = graphic.SizePixel
+                if graphic_size.Height > 0:
+                    self._graphic_frame_factor = graphic_size.Height / frame_height_px
+        except Exception as ex:
+            print(f"Could not get graphic frame factor: {ex}")
+
+        return self._graphic_frame_factor
+
     def _calculate_size_for_aspect_ratio(self):
-        """Calculate size with fixed height and proportional width"""
+        """Calculate size that puts the frame octagon at the configured height"""
         default_width = OrgChartTreeItem._shape_width
         fixed_height = OrgChartTreeItem._configured_symbol_height
         if fixed_height is None:
@@ -383,11 +415,18 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
             # Without a picture to measure, the shape keeps the width every item gets
             return default_width, fixed_height
 
-        calculated_width = int(fixed_height * aspect_ratio)
+        frame_factor = self.get_graphic_frame_factor()
+        if frame_factor is not None:
+            # The frame octagon keeps the configured height, and decorations such as
+            # echelon markers or text labels make the whole symbol larger than that.
+            calculated_height = int(fixed_height * frame_factor)
+            calculated_width = int(calculated_height * aspect_ratio)
+            return calculated_width, calculated_height
 
-        # Check if width exceeds the maximum allowed width
+        # Without a recorded frame size, the whole picture gets the configured height,
+        # and a wide picture shrinks to the width every item gets.
+        calculated_width = int(fixed_height * aspect_ratio)
         if calculated_width > OrgChartTreeItem._shape_width:
-            # Scale down proportionally to fit within width constraint
             scale_factor = OrgChartTreeItem._shape_width / calculated_width
             calculated_width = OrgChartTreeItem._shape_width
             calculated_height = int(fixed_height * scale_factor)

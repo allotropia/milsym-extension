@@ -16,7 +16,7 @@ Python port of Diagram.java
 
 import uno
 
-from utils import fit_size_to_aspect_ratio, locked_controllers, parse_svg_dimensions
+from utils import locked_controllers, parse_svg_dimensions
 from perf import timed
 
 from abc import ABC, abstractmethod
@@ -206,20 +206,11 @@ class Diagram(ABC):
                 media_properties = (PropertyValue("InputStream", 0, pipe, 0),)
                 graphic = graphic_provider.queryGraphic(media_properties)
 
-                # Preserve user's custom size; only use SVG dimensions for new (unsized) shapes
-                existing_size = shape.getSize()
                 shape.setPropertyValue("Graphic", graphic)
-                if existing_size.Width > 0 and existing_size.Height > 0:
-                    # Keep the user's size, adjusted to the aspect ratio of the new
-                    # graphic so the content is not distorted
-                    shape.setSize(
-                        fit_size_to_aspect_ratio(
-                            existing_size, parse_svg_dimensions(svg_data)
-                        )
-                    )
-                else:
-                    size = parse_svg_dimensions(svg_data)
-                    shape.setSize(size)
+                # The SVG is generated so that its intrinsic size gives the frame octagon
+                # the configured height. Decorations such as echelon markers or text
+                # labels enlarge the shape beyond that.
+                shape.setSize(parse_svg_dimensions(svg_data))
 
                 self.forget_graphic_aspect_ratio_of(shape)
                 self.forget_kept_geometry_of(shape)

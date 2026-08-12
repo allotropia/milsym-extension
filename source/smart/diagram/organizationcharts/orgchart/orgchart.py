@@ -14,7 +14,7 @@ OrgChart class - Main organization chart implementation
 Python port of OrgChart.java
 """
 
-from utils import generate_icon_svg
+from utils import generate_icon_svg, get_recorded_symbol_size_px
 from ...diagram import Diagram
 from ..organization_chart import OrganizationChart
 from .orgchart_tree import OrgChartTree
@@ -346,8 +346,12 @@ class OrgChart(OrganizationChart):
         self._diagram_tree.add_to_rectangles(x_new_shape)
 
         if self._paste_script and "MilSymCode" in clipboard_item.attributes:
+            # The drawing is made at the frame size recorded on the copied symbol, so it
+            # agrees with the size attribute that is copied onto the new shape below
             svg_data = generate_icon_svg(
-                self._paste_script, clipboard_item.attributes, 32.0
+                self._paste_script,
+                clipboard_item.attributes,
+                get_recorded_symbol_size_px(clipboard_item.attributes, self._x_context),
             )
             if svg_data:
                 self.set_new_shape_properties(

@@ -49,6 +49,7 @@ class OrganizationChartTreeItem(ABC):
         self._level = -1
         self._pos = -1.0
         self._graphic_aspect_ratio = None
+        self._graphic_frame_factor = None
 
         if item is not None:
             # Copy constructor
@@ -297,6 +298,7 @@ class OrganizationChartTreeItem(ABC):
     def forget_graphic_aspect_ratio(self):
         """Drop the kept proportions, so that a replaced picture is measured again."""
         self._graphic_aspect_ratio = None
+        self._graphic_frame_factor = None
 
     def get_diagram_tree(self):
         """Get diagram tree reference"""

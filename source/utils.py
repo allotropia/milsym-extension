@@ -109,6 +109,24 @@ def get_symbol_generation_size_px(ctx):
     return get_default_symbol_height_cm(ctx) / PX_TO_MM100
 
 
+def get_recorded_symbol_size_px(attributes, ctx):
+    """Get the milsymbol size argument that a symbol's drawing was generated with.
+
+    The size is kept on the shape as the MilSymSize attribute. A symbol that does not
+    carry one gets the size that makes the frame octagon come out at the configured
+    default height.
+
+    Args:
+        attributes: Dictionary of symbol attributes extracted from a shape
+
+    Returns the size in pixels as a float.
+    """
+    try:
+        return float(attributes["MilSymSize"])
+    except (KeyError, TypeError, ValueError):
+        return get_symbol_generation_size_px(ctx)
+
+
 def is_orbat_feature_enabled(ctx):
     """Check if hidden feature flag for Orbat handling is enabled.
 
