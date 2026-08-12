@@ -44,6 +44,10 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
     # layout pass has read it.
     _configured_symbol_height = None
 
+    # The gap between one column and the next, and the indent of the shapes stacked
+    # below a column head, are widened by this factor to give the columns more air.
+    HORIZONTAL_STEP_FACTOR = 1.5
+
     def __init__(
         self, diagram_tree, dad_or_shape=None, item_or_dad=None, level=None, pos=None
     ):
@@ -280,6 +284,7 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
         """Set position of rectangle"""
         x_coord = OrgChartTreeItem._group_pos_x + int(
             (OrgChartTreeItem._shape_width + OrgChartTreeItem._hor_space)
+            * OrgChartTreeItem.HORIZONTAL_STEP_FACTOR
             * self.get_pos()
         )
         last_hor_level = self._diagram_tree.LAST_HOR_LEVEL
