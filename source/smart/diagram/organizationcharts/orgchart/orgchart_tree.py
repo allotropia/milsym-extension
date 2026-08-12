@@ -254,6 +254,15 @@ class OrgChartTree(OrganizationChartTree):
     @timed("refresh_connector_props")
     def refresh_connector_props(self):
         """Refresh connector properties when tree structure has changed"""
+        # The record holds what the extension last wrote. It describes the document except
+        # where an undo has put an earlier state back, so the ends are read from the office
+        # on the first pass after that, and taken from the record on every other pass. On
+        # the 273 symbol document reading them costs 55 ms, which is ten times what the
+        # whole pass costs without.
+        ask_the_office = (
+            not self._names_are_unique or self.connector_ends_may_have_changed()
+        )
+
         for x_conn_shape in self._connector_list:
             connector_name = self.name_of_shape(x_conn_shape)
             if self._names_are_unique:
@@ -264,11 +273,14 @@ class OrgChartTree(OrganizationChartTree):
                 recorded_start = recorded_end = None
                 recorded_start_glue = recorded_end_glue = None
 
-            # The shape a connector ends on is asked of the office rather than taken from
-            # the record. The record holds what the extension last wrote, and the document
-            # can hold something else, for instance where an undo put an earlier state
-            # back, and then this is the pass that has to join the two ends up again.
-            current_end_shape = self.get_end_shape_of_connector(x_conn_shape)
+            if ask_the_office:
+                current_end_shape = self.get_end_shape_of_connector(x_conn_shape)
+            else:
+                current_end_shape = self.get_shape_by_name(recorded_end)
+                if current_end_shape is None:
+                    # The record says nothing about this connector, so the office is the
+                    # only place the shape it ends on can be found
+                    current_end_shape = self.get_end_shape_of_connector(x_conn_shape)
 
             if not current_end_shape:
                 continue
@@ -319,3 +331,8 @@ class OrgChartTree(OrganizationChartTree):
                 current_end_shape,
                 end_pos,
             )
+
+        if ask_the_office:
+            # Every end has been read, and any that had moved was written back, so the
+            # record describes the document again
+            self._connector_ends_may_have_changed = False

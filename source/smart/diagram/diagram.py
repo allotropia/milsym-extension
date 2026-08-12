@@ -274,6 +274,7 @@ class Diagram(ABC):
                 return
             diagram_tree.forget_geometry()
             diagram_tree.forget_graphic_aspect_ratios()
+            diagram_tree.forget_connector_ends()
         except Exception as ex:
             print(f"Error clearing what is kept about the shapes: {ex}")
 
