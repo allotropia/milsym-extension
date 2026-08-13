@@ -292,81 +292,66 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
         """The empty x distance between the edge of one column and the start of the next."""
         return OrgChartTreeItem._hor_space * OrgChartTreeItem.HORIZONTAL_STEP_FACTOR
 
-    def column_width(self):
-        """The width of the column this item heads, from the start of the column to the
-        right edge of its widest shape.
+    def measure_column(self):
+        """Measure the column this item heads. Returns the width the column needs and
+        the y offset of every shape stacked below the head.
 
-        The shapes stacked below the head sit further right the deeper they nest, so the
-        edge of each shape is its indent plus its own width, and the widest of them says
-        how much room the column needs.
+        The width reaches to the right edge of the widest shape, where the edge of each
+        shape is its indent plus its own width, since the shapes stacked below the head
+        sit further right the deeper they nest.
+
+        The y offsets are measured from the top of the head. The stacked shapes follow
+        each other down the column, each starting below the one before it, so a taller
+        symbol moves every shape below it further down.
         """
         unit = OrgChartTreeItem.horizontal_pos_unit()
+        quarter_space = OrgChartTreeItem._ver_space // 4
         base_pos = self.get_pos()
-        width = self._calculate_size_for_aspect_ratio()[0]
+        width, head_height = self._calculate_size_for_aspect_ratio()
 
+        stacked = []
         pending = [self._first_child]
         while pending:
             item = pending.pop()
             if item is None:
                 continue
-            indent = (item.get_pos() - base_pos) * unit
-            edge = indent + item._calculate_size_for_aspect_ratio()[0]
-            if edge > width:
-                width = edge
+            stacked.append(item)
             pending.append(item.get_first_child())
             pending.append(item.get_first_sibling())
 
-        return width
+        # The level of a stacked item counts the rows above it in its column, so sorting
+        # by level walks the column from top to bottom
+        stacked.sort(key=lambda item: item.get_level())
+
+        y_offset_by_item = {}
+        y_offset = head_height + quarter_space
+        for item in stacked:
+            item_width, item_height = item._calculate_size_for_aspect_ratio()
+            edge = (item.get_pos() - base_pos) * unit + item_width
+            if edge > width:
+                width = edge
+            y_offset_by_item[item] = y_offset
+            y_offset += item_height + quarter_space
+
+        return width, y_offset_by_item
 
     def set_pos_of_rect(self):
         """Set position of rectangle"""
+        last_hor_level = self._diagram_tree.LAST_HOR_LEVEL
         x_coord = OrgChartTreeItem._group_pos_x + int(
             self._diagram_tree.horizontal_offset_of(self)
         )
-        last_hor_level = self._diagram_tree.LAST_HOR_LEVEL
-
-        # Use smaller vertical spacing for levels beyond horizontal threshold (vertical stacking)
-        if self._level > last_hor_level:
-            # For vertically stacked levels, use much smaller vertical spacing
-            vertical_spacing = (
-                OrgChartTreeItem._ver_space // 4
-            )  # Reduce to 1/4 of normal spacing
-            # Calculate y position with reduced spacing for vertical levels
-            base_y = (
-                OrgChartTreeItem._group_pos_y
-                + (OrgChartTreeItem._shape_height + OrgChartTreeItem._ver_space)
-                * last_hor_level
-            )
-            vertical_offset = (OrgChartTreeItem._shape_height + vertical_spacing) * (
-                self.get_level() - last_hor_level
-            )
-            y_coord = base_y + vertical_offset
-        else:
-            # Normal horizontal level spacing
-            y_coord = (
-                OrgChartTreeItem._group_pos_y
-                + (OrgChartTreeItem._shape_height + OrgChartTreeItem._ver_space)
-                * self.get_level()
-            )
+        y_coord = OrgChartTreeItem._group_pos_y + int(
+            self._diagram_tree.vertical_offset_of(self)
+        )
 
         if self.get_diagram_tree().get_org_chart().is_hidden_root_element_prop():
             if self == self.get_diagram_tree().get_root_item():
                 y_coord = OrgChartTreeItem._group_pos_y - 10
             else:
-                if self.get_level() > last_hor_level:
-                    # Apply same reduced spacing logic for hidden root
-                    vertical_spacing = OrgChartTreeItem._ver_space // 4
-                    base_y = OrgChartTreeItem._group_pos_y + (
-                        OrgChartTreeItem._shape_height + OrgChartTreeItem._ver_space
-                    ) * (last_hor_level - 1)
-                    vertical_offset = (
-                        OrgChartTreeItem._shape_height + vertical_spacing
-                    ) * (self.get_level() - last_hor_level)
-                    y_coord = base_y + vertical_offset
-                else:
-                    y_coord = OrgChartTreeItem._group_pos_y + (
-                        OrgChartTreeItem._shape_height + OrgChartTreeItem._ver_space
-                    ) * (self.get_level() - 1)
+                # With the root hidden, the whole diagram moves up by the row the root
+                # would have taken
+                y_coord -= int(self._diagram_tree.hidden_root_row_shift())
 
         # Calculate size based on graphic aspect ratio while fitting within default bounds
         calculated_width, calculated_height = self._calculate_size_for_aspect_ratio()

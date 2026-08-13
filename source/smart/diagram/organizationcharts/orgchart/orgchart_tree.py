@@ -38,6 +38,11 @@ class OrgChartTree(OrganizationChartTree):
         self._column_starts = []
         self._column_x_by_head = {}
 
+        # Where each row of the side by side levels starts, one y offset per level, and
+        # the y offset of each stacked item measured from the top of its column head.
+        self._row_starts = []
+        self._stacked_y_by_item = {}
+
         if root_item_shape is not None:
             # Constructor with control and root shapes
             super().__init__(organigram)
@@ -249,17 +254,24 @@ class OrgChartTree(OrganizationChartTree):
         self._root_item.set_positions_of_items()
 
     def measure_columns(self):
-        """Work out where each column starts from the widths of the shapes it holds.
+        """Work out where each column and each shape in it sits, from the sizes of the
+        shapes the tree holds.
 
         A column is a shape on the last side by side level together with the shapes
-        stacked below it. The shapes differ in width, because decorations such as
-        echelon markers or text labels make a symbol wider, so each column is measured
-        as its widest shape and the next column starts after that width plus the gap.
+        stacked below it. The shapes differ in size, because decorations such as echelon
+        markers or text labels make a symbol larger. Each column is measured as its
+        widest shape and the next column starts after that width plus the gap. Down a
+        column each shape starts below the one before it, so a taller symbol moves the
+        shapes below it further down. The rows above the columns are each as tall as
+        their tallest shape.
         """
         self._column_starts = []
         self._column_x_by_head = {}
+        self._row_starts = []
+        self._stacked_y_by_item = {}
 
         heads = []
+        row_heights = [0] * OrgChartTree.LAST_HOR_LEVEL
         pending = [self._root_item]
         while pending:
             item = pending.pop()
@@ -268,8 +280,17 @@ class OrgChartTree(OrganizationChartTree):
             if item.get_level() == OrgChartTree.LAST_HOR_LEVEL:
                 heads.append(item)
             elif item.get_level() < OrgChartTree.LAST_HOR_LEVEL:
+                height = item._calculate_size_for_aspect_ratio()[1]
+                if height > row_heights[item.get_level()]:
+                    row_heights[item.get_level()] = height
                 pending.append(item.get_first_child())
             pending.append(item.get_first_sibling())
+
+        y_offset = 0
+        for height in row_heights:
+            self._row_starts.append(y_offset)
+            y_offset += height + OrgChartTreeItem._ver_space
+        self._row_starts.append(y_offset)
 
         heads.sort(key=lambda head: head.get_pos())
 
@@ -278,7 +299,9 @@ class OrgChartTree(OrganizationChartTree):
         for head in heads:
             self._column_starts.append((head.get_pos(), x_offset))
             self._column_x_by_head[head] = x_offset
-            x_offset += head.column_width() + gap
+            column_width, y_offset_by_item = head.measure_column()
+            self._stacked_y_by_item.update(y_offset_by_item)
+            x_offset += column_width + gap
 
     def horizontal_offset_of(self, item):
         """The x distance from the left edge of the diagram to the shape of this item.
@@ -320,6 +343,41 @@ class OrgChartTree(OrganizationChartTree):
                 return previous_x + fraction * (column_x - previous_x)
             previous_pos, previous_x = column_pos, column_x
         return previous_x
+
+    def vertical_offset_of(self, item):
+        """The y distance from the top of the diagram to the shape of this item.
+
+        The rows above and including the column heads start where measure_columns put
+        them. A stacked shape sits below the top of its column head by its measured
+        offset, so it clears every shape above it in the column whatever their heights.
+        """
+        level = item.get_level()
+        last_hor_level = OrgChartTree.LAST_HOR_LEVEL
+
+        if level <= last_hor_level and level < len(self._row_starts):
+            return self._row_starts[level]
+
+        if level > last_hor_level:
+            y_offset = self._stacked_y_by_item.get(item)
+            if y_offset is not None and len(self._row_starts) > last_hor_level:
+                return self._row_starts[last_hor_level] + y_offset
+
+        # Not measured: every shape gets the same room, one full row per side by side
+        # level and a quarter of the vertical space between stacked shapes
+        row_step = OrgChartTreeItem._shape_height + OrgChartTreeItem._ver_space
+        if level > last_hor_level:
+            stacked_step = (
+                OrgChartTreeItem._shape_height + OrgChartTreeItem._ver_space // 4
+            )
+            return row_step * last_hor_level + stacked_step * (level - last_hor_level)
+        return row_step * level
+
+    def hidden_root_row_shift(self):
+        """The y distance the diagram moves up by when the root element is hidden: the
+        height of the top row together with the space below it."""
+        if len(self._row_starts) > 1:
+            return self._row_starts[1]
+        return OrgChartTreeItem._shape_height + OrgChartTreeItem._ver_space
 
     @timed("tree refresh")
     def refresh(self):
