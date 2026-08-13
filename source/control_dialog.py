@@ -1291,6 +1291,9 @@ class ControlDlgHandler(
                 else:
                     self.tree_control.addSelection(node)
 
+            # Scroll the tree so the first of the selected rows can be seen
+            self.tree_control.makeNodeVisible(matching_nodes[0])
+
             # Also select corresponding shapes in document
             self._select_shapes_in_document(shapes)
 
@@ -1360,6 +1363,9 @@ class ControlDlgHandler(
                     self.tree_control.select(node)
                 else:
                     self.tree_control.addSelection(node)
+
+            # Scroll the tree so the row of the shape picked in the document can be seen
+            self.tree_control.makeNodeVisible(matching_nodes[0])
 
         except Exception as e:
             print(f"Error syncing document selection to tree: {e}")
@@ -1453,6 +1459,8 @@ class ControlDlgHandler(
                 if target_node:
                     # Select the node in the tree using the tree control directly
                     self.tree_control.select(target_node)
+                    # Scroll the tree so the selected row can be seen
+                    self.tree_control.makeNodeVisible(target_node)
 
         except Exception as e:
             print(f"Error selecting tree node by name: {e}")
