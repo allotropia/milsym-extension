@@ -32,6 +32,12 @@ class OrgChartTree(OrganizationChartTree):
         2. OrgChartTree(organigram, control_shape, root_item_shape) - with shapes
         3. OrgChartTree(organigram, diagram_tree) - copy from existing tree
         """
+        # Where each column starts, as measured by measure_columns. The list holds
+        # (layout position, x offset) pairs in left to right order, and the dictionary
+        # holds the x offset of each column head item.
+        self._column_starts = []
+        self._column_x_by_head = {}
+
         if root_item_shape is not None:
             # Constructor with control and root shapes
             super().__init__(organigram)
@@ -242,12 +248,87 @@ class OrgChartTree(OrganizationChartTree):
         self._root_item.set_pos(0.0)
         self._root_item.set_positions_of_items()
 
+    def measure_columns(self):
+        """Work out where each column starts from the widths of the shapes it holds.
+
+        A column is a shape on the last side by side level together with the shapes
+        stacked below it. The shapes differ in width, because decorations such as
+        echelon markers or text labels make a symbol wider, so each column is measured
+        as its widest shape and the next column starts after that width plus the gap.
+        """
+        self._column_starts = []
+        self._column_x_by_head = {}
+
+        heads = []
+        pending = [self._root_item]
+        while pending:
+            item = pending.pop()
+            if item is None:
+                continue
+            if item.get_level() == OrgChartTree.LAST_HOR_LEVEL:
+                heads.append(item)
+            elif item.get_level() < OrgChartTree.LAST_HOR_LEVEL:
+                pending.append(item.get_first_child())
+            pending.append(item.get_first_sibling())
+
+        heads.sort(key=lambda head: head.get_pos())
+
+        x_offset = 0.0
+        gap = OrgChartTreeItem.column_gap()
+        for head in heads:
+            self._column_starts.append((head.get_pos(), x_offset))
+            self._column_x_by_head[head] = x_offset
+            x_offset += head.column_width() + gap
+
+    def horizontal_offset_of(self, item):
+        """The x distance from the left edge of the diagram to the shape of this item.
+
+        Column heads sit where measure_columns placed their column. A stacked shape sits
+        at its column start plus its indent. A shape above the columns sits between the
+        columns around its layout position, in proportion to where that position falls
+        between theirs.
+        """
+        unit = OrgChartTreeItem.horizontal_pos_unit()
+
+        if not self._column_starts:
+            return item.get_pos() * unit
+
+        level = item.get_level()
+
+        if level > OrgChartTree.LAST_HOR_LEVEL:
+            head = item.get_dad()
+            while head is not None and head.get_level() > OrgChartTree.LAST_HOR_LEVEL:
+                head = head.get_dad()
+            head_x = self._column_x_by_head.get(head)
+            if head_x is not None:
+                return head_x + (item.get_pos() - head.get_pos()) * unit
+            return item.get_pos() * unit
+
+        if level == OrgChartTree.LAST_HOR_LEVEL:
+            head_x = self._column_x_by_head.get(item)
+            if head_x is not None:
+                return head_x
+            return item.get_pos() * unit
+
+        pos = item.get_pos()
+        previous_pos, previous_x = self._column_starts[0]
+        if pos <= previous_pos:
+            return previous_x
+        for column_pos, column_x in self._column_starts[1:]:
+            if pos <= column_pos:
+                fraction = (pos - previous_pos) / (column_pos - previous_pos)
+                return previous_x + fraction * (column_x - previous_x)
+            previous_pos, previous_x = column_pos, column_x
+        return previous_x
+
     @timed("tree refresh")
     def refresh(self):
         """Refresh the tree"""
         with timed("set_positions_of_items"):
             self.recompute_levels_and_positions()
         self._root_item.set_measure_props()
+        with timed("measure_columns"):
+            self.measure_columns()
         with timed("display"):
             self._root_item.display()
 

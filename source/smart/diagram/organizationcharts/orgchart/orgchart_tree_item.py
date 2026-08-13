@@ -280,12 +280,48 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
         OrgChartTreeItem._group_pos_x = control_shape_pos.X if control_shape_pos else 0
         OrgChartTreeItem._group_pos_y = control_shape_pos.Y if control_shape_pos else 0
 
+    @staticmethod
+    def horizontal_pos_unit():
+        """The x distance that one unit of layout position stands for."""
+        return (
+            OrgChartTreeItem._shape_width + OrgChartTreeItem._hor_space
+        ) * OrgChartTreeItem.HORIZONTAL_STEP_FACTOR
+
+    @staticmethod
+    def column_gap():
+        """The empty x distance between the edge of one column and the start of the next."""
+        return OrgChartTreeItem._hor_space * OrgChartTreeItem.HORIZONTAL_STEP_FACTOR
+
+    def column_width(self):
+        """The width of the column this item heads, from the start of the column to the
+        right edge of its widest shape.
+
+        The shapes stacked below the head sit further right the deeper they nest, so the
+        edge of each shape is its indent plus its own width, and the widest of them says
+        how much room the column needs.
+        """
+        unit = OrgChartTreeItem.horizontal_pos_unit()
+        base_pos = self.get_pos()
+        width = self._calculate_size_for_aspect_ratio()[0]
+
+        pending = [self._first_child]
+        while pending:
+            item = pending.pop()
+            if item is None:
+                continue
+            indent = (item.get_pos() - base_pos) * unit
+            edge = indent + item._calculate_size_for_aspect_ratio()[0]
+            if edge > width:
+                width = edge
+            pending.append(item.get_first_child())
+            pending.append(item.get_first_sibling())
+
+        return width
+
     def set_pos_of_rect(self):
         """Set position of rectangle"""
         x_coord = OrgChartTreeItem._group_pos_x + int(
-            (OrgChartTreeItem._shape_width + OrgChartTreeItem._hor_space)
-            * OrgChartTreeItem.HORIZONTAL_STEP_FACTOR
-            * self.get_pos()
+            self._diagram_tree.horizontal_offset_of(self)
         )
         last_hor_level = self._diagram_tree.LAST_HOR_LEVEL
 
