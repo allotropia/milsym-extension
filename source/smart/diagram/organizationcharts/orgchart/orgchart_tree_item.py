@@ -292,6 +292,15 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
         """The empty x distance between the edge of one column and the start of the next."""
         return OrgChartTreeItem._hor_space * OrgChartTreeItem.HORIZONTAL_STEP_FACTOR
 
+    @staticmethod
+    def stacked_indent():
+        """The extra x distance of the shapes stacked below a column head, leaving a
+        channel for the connector that runs down the column. A tenth of the configured
+        shape width, the same for every shape, so the stacked shapes line up on their
+        left edges whatever their own widths.
+        """
+        return OrgChartTreeItem._shape_width // 10
+
     def measure_column(self):
         """Measure the column this item heads. Returns the width the column needs and
         the y offset of every shape stacked below the head.
@@ -325,9 +334,10 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
 
         y_offset_by_item = {}
         y_offset = head_height + quarter_space
+        indent = OrgChartTreeItem.stacked_indent()
         for item in stacked:
             item_width, item_height = item._calculate_size_for_aspect_ratio()
-            edge = (item.get_pos() - base_pos) * unit + item_width
+            edge = (item.get_pos() - base_pos) * unit + indent + item_width
             if edge > width:
                 width = edge
             y_offset_by_item[item] = y_offset
@@ -358,14 +368,12 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
 
         if self._level > last_hor_level:
             self.set_position_if_changed(
-                Point(X=int(x_coord + calculated_width * 0.1), Y=y_coord)
+                Point(X=x_coord + OrgChartTreeItem.stacked_indent(), Y=y_coord)
             )
         else:
             self.set_position_if_changed(Point(X=x_coord, Y=y_coord))
 
-        self.set_size_if_changed(
-            Size(Width=int(calculated_width * 0.9), Height=calculated_height)
-        )
+        self.set_size_if_changed(Size(Width=calculated_width, Height=calculated_height))
 
     def get_graphic_aspect_ratio(self):
         """Width divided by height of the picture on this item, or None when it has none.
