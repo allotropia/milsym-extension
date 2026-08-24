@@ -347,16 +347,24 @@ def insertGraphicAttributes(shape, params):
     shape.setPropertyValue("UserDefinedAttributes", attributeHash)
 
 
-# The attributes that decide what a symbol looks like. Two symbols that agree on all
-# of them, drawn at the same size, produce the same drawing.
-ICON_ATTRIBUTES = (
-    "MilSymCode",
-    "MilSymStack",
-    "MilSymReinforced",
-    "MilSymStaff",
-    "MilSymSpecialheadquarters",
-    "MilSymCountrycode",
-)
+def symbol_script_args(attributes, size):
+    """Build the argument list a milsymbol script invocation takes, from the MilSym
+    attributes recorded on a shape.
+
+    The first argument is the SIDC code and the second is the drawing size. Every other
+    attribute whose name starts with MilSym becomes a named option: the prefix is
+    stripped and the first letter of the rest is lowered, so MilSymFillColor turns into
+    the option fillColor. The recorded MilSymSize is left out, because the size argument
+    already says how large the drawing is made.
+    """
+    args = [attributes.get("MilSymCode", ""), NamedValue("size", size)]
+    for name, value in attributes.items():
+        if name in ("MilSymCode", "MilSymSize") or not name.startswith("MilSym"):
+            continue
+        option = name[6:]
+        args.append(NamedValue(option[0].lower() + option[1:], value))
+    return args
+
 
 # Drawings already made in this process, keyed by the attributes and size they were made
 # from. Each miss runs the whole milsymbol script, which is over a megabyte of
@@ -373,8 +381,19 @@ ICON_CACHE_LIMIT = 500
 
 
 def icon_cache_key(attributes, size):
-    """The attributes and size that together decide the drawing of a symbol."""
-    return (size,) + tuple(attributes.get(name) for name in ICON_ATTRIBUTES)
+    """The attributes and size that together decide the drawing of a symbol.
+
+    Every MilSym attribute except the recorded MilSymSize takes part, since each one
+    can change the drawing. The pairs are sorted, so two shapes carrying the same
+    attributes in a different order share one key.
+    """
+    return (size,) + tuple(
+        sorted(
+            (name, value)
+            for name, value in attributes.items()
+            if name.startswith("MilSym") and name != "MilSymSize"
+        )
+    )
 
 
 def generate_icon_svg(script, attributes, size):
@@ -396,26 +415,7 @@ def generate_icon_svg(script, attributes, size):
             count("javascript: milsymbol drawing reused")
             return _icon_svg_cache[cache_key]
 
-        args = [sidc_code, NamedValue("size", size)]
-
-        if "MilSymStack" in attributes:
-            args.append(NamedValue("stack", attributes["MilSymStack"]))
-
-        if "MilSymReinforced" in attributes:
-            args.append(NamedValue("reinforced", attributes["MilSymReinforced"]))
-
-        if "MilSymStaff" in attributes:
-            args.append(NamedValue("staff", attributes["MilSymStaff"]))
-
-        if "MilSymSpecialheadquarters" in attributes:
-            args.append(
-                NamedValue(
-                    "specialheadquarters", attributes["MilSymSpecialheadquarters"]
-                )
-            )
-
-        if "MilSymCountrycode" in attributes:
-            args.append(NamedValue("countrycode", attributes["MilSymCountrycode"]))
+        args = symbol_script_args(attributes, size)
 
         count("javascript: milsymbol invoke")
         result = script.invoke(args, (), ())
@@ -486,31 +486,12 @@ def extract_symbol_params_from_shape(ctx, model, shape):
         
         # Get script instance
         script = createMilSymbolScriptInstance(ctx, model)
-        
-        # Build svg_args parameter list with ALL attributes
-        svg_args = []
-        
-        # First element: SIDC code
+
         sidc_code = attributes.get("MilSymCode", "")
-        svg_args.append(sidc_code)
-        
-        # Add size for sidebar preview
-        svg_args.append(NamedValue("size", 20.0))
-        
-        # Add all other MilSym* attributes as NamedValue objects
-        for key, value in attributes.items():
-            if key in ("MilSymCode", "MilSymSize"):
-                continue  # Already handled
-            if key.startswith("MilSym"):
-                # e.g. convert "MilSymStack" -> "stack"
-                attr_name = key[6:]  # Remove "MilSym" prefix
-                attr_name = attr_name[0].lower() + attr_name[1:]  # Lowercase first letter
-                
-                nv = NamedValue()
-                nv.Name = attr_name
-                nv.Value = value
-                svg_args.append(nv)
-        
+
+        # Build svg_args parameter list with all attributes, at the sidebar preview size
+        svg_args = symbol_script_args(attributes, 20.0)
+
         # Generate SVG with ALL parameters
         try:
             svg_data = str(script.invoke(svg_args, (), ())[0])
