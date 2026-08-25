@@ -25,6 +25,7 @@ from com.sun.star.awt import (
 from com.sun.star.awt import MouseButton
 from com.sun.star.view.SelectionType import (
     MULTI as SELECTION_TYPE_MULTI,
+    SINGLE as SELECTION_TYPE_SINGLE,
 )
 from com.sun.star.view import XSelectionChangeListener
 from com.sun.star.datatransfer.dnd import XDragGestureListener, XDropTargetListener
@@ -1481,8 +1482,20 @@ class ControlDlgHandler(
                 target_node = self._find_node_by_name(root_node, node_name)
 
                 if target_node:
-                    # Select the node in the tree using the tree control directly
-                    self.tree_control.select(target_node)
+                    # Hack: in single selection mode the tree moves
+                    # its focus rectangle along with the
+                    # selection. Use that one, to make sure we've both
+                    # on the same line. Then switch back to
+                    # multi-selection mode...
+                    tree_model.setPropertyValue(
+                        "SelectionType", SELECTION_TYPE_SINGLE
+                    )
+                    try:
+                        self.tree_control.select(target_node)
+                    finally:
+                        tree_model.setPropertyValue(
+                            "SelectionType", SELECTION_TYPE_MULTI
+                        )
                     # Scroll the tree so the selected row can be seen
                     self.tree_control.makeNodeVisible(target_node)
 
