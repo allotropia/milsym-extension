@@ -79,46 +79,7 @@ class ControlDlgHandler(
 
     def callHandlerMethod(self, dialog, eventObject, methodName):
         if methodName == "OnAdd":
-            if self.get_controller().get_diagram() is not None:
-                self.get_controller().remove_selection_listener()
-                # Store current selected shape before adding
-                self._store_selection_before_add()
-
-                # Get undo manager and create undo action
-                undo_manager = self._get_undo_manager()
-                parent_tree_item = self._parent_before_add
-                added_shape = None
-
-                # Lock undo manager to prevent Writer from creating internal undo records
-                if undo_manager:
-                    undo_manager.lock()
-                try:
-                    self.get_controller().get_diagram().add_shape()
-                    self.get_controller().get_diagram().refresh_diagram()
-
-                    added_shape = self._find_newly_added_shape(parent_tree_item)
-                finally:
-                    # Always unlock the undo manager
-                    if undo_manager:
-                        undo_manager.unlock()
-
-                # Create and register undo action if we have an undo manager
-                if undo_manager and added_shape and parent_tree_item:
-                    try:
-                        undo_action = AddShapeUndoAction(
-                            self, added_shape, parent_tree_item
-                        )
-                        undo_manager.addUndoAction(undo_action)
-                        self._undo_actions.append(undo_action)
-                    except Exception as e:
-                        print(f"Failed to register undo action: {e}")
-
-                # Refresh tree after adding shape
-                self.refresh_tree()
-                self._select_newly_added_child()
-                self.get_controller().add_selection_listener()
-                if self.tree_control is not None:
-                    self.tree_control.setFocus()
+            self.add_child_to_selected_item()
             return True
         elif methodName == "OnRemove":
             self.remove_selected_shape()
@@ -202,6 +163,60 @@ class ControlDlgHandler(
     def is_drag_orbat_enabled(self):
         """Check if the Drag Orbat checkbox is checked"""
         return self.get_drag_orbat_checkbox().getState() == 1
+
+    def add_child_to_selected_item(self, select_new_child=True):
+        """Add a new child symbol below the currently selected item.
+
+        The addition is recorded for undo. With select_new_child the selection moves to
+        the added child, so that further work continues there. Without it the selection
+        stays on the item the child was added under, so that adding again gives that
+        item another child rather than a grandchild.
+        """
+        if self.get_controller().get_diagram() is None:
+            return
+
+        self.get_controller().remove_selection_listener()
+        # Store current selected shape before adding
+        self._store_selection_before_add()
+
+        # Get undo manager and create undo action
+        undo_manager = self._get_undo_manager()
+        parent_tree_item = self._parent_before_add
+        added_shape = None
+
+        # Lock undo manager to prevent Writer from creating internal undo records
+        if undo_manager:
+            undo_manager.lock()
+        try:
+            self.get_controller().get_diagram().add_shape()
+            self.get_controller().get_diagram().refresh_diagram()
+
+            added_shape = self._find_newly_added_shape(parent_tree_item)
+        finally:
+            # Always unlock the undo manager
+            if undo_manager:
+                undo_manager.unlock()
+
+        # Create and register undo action if we have an undo manager
+        if undo_manager and added_shape and parent_tree_item:
+            try:
+                undo_action = AddShapeUndoAction(self, added_shape, parent_tree_item)
+                undo_manager.addUndoAction(undo_action)
+                self._undo_actions.append(undo_action)
+            except Exception as e:
+                print(f"Failed to register undo action: {e}")
+
+        # Refresh tree after adding shape
+        self.refresh_tree()
+        if select_new_child:
+            self._select_newly_added_child()
+        elif parent_tree_item is not None:
+            # The tree was rebuilt, so the line of the item the child went under is
+            # selected again
+            self.select_tree_node_for_shape(parent_tree_item.get_rectangle_shape())
+        self.get_controller().add_selection_listener()
+        if self.tree_control is not None:
+            self.tree_control.setFocus()
 
     def edit_selected_item(self):
         """Open the symbol properties dialog for the selected shape.
@@ -2498,6 +2513,11 @@ class TreeKeyHandler(unohelper.Base, XKeyListener):
                     # selected in the document first
                     self.dialog_handler.handle_tree_selection(selected_node)
                     self.dialog_handler.edit_selected_item()
+                return
+            elif event.KeyCode == Key.ADD or event.KeyChar == "+":
+                # The selection stays on the current line, so pressing the key again
+                # adds another child to the same item
+                self.dialog_handler.add_child_to_selected_item(select_new_child=False)
                 return
             elif event.KeyCode == Key.C and (event.Modifiers & KeyModifier.MOD1):
                 self.dialog_handler.copy_selected_item()
