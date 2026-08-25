@@ -124,30 +124,7 @@ class ControlDlgHandler(
             self.remove_selected_shape()
             return True
         elif methodName == "OnEdit":
-            selected_shape = self.get_controller().get_diagram().get_last_shape()
-            if selected_shape is None:
-                return True
-
-            original_attributes = extractGraphicAttributes(selected_shape)
-            self.dialog.execute_properties_dialog()
-            edited_attributes = extractGraphicAttributes(selected_shape)
-
-            if original_attributes != edited_attributes:
-                undo_manager = self._get_undo_manager()
-                if undo_manager:
-                    try:
-                        undo_action = EditShapeUndoAction(
-                            self, selected_shape, original_attributes, edited_attributes
-                        )
-                        undo_manager.addUndoAction(undo_action)
-                        self._undo_actions.append(undo_action)
-                    except Exception as e:
-                        print(f"Failed to register edit undo action: {e}")
-
-            self.get_controller().get_diagram().refresh_diagram()
-            self.refresh_tree()
-            if self.tree_control is not None:
-                self.tree_control.setFocus()
+            self.edit_selected_item()
             return True
         elif methodName == "OnDragOrbatChange":
             if self.is_drag_orbat_enabled():
@@ -225,6 +202,38 @@ class ControlDlgHandler(
     def is_drag_orbat_enabled(self):
         """Check if the Drag Orbat checkbox is checked"""
         return self.get_drag_orbat_checkbox().getState() == 1
+
+    def edit_selected_item(self):
+        """Open the symbol properties dialog for the selected shape.
+
+        A change made in the dialog lands on the shape's attributes, so the edit is
+        recorded for undo by comparing the attributes before and after. The diagram and
+        the tree are refreshed to show the edited symbol.
+        """
+        selected_shape = self.get_controller().get_diagram().get_last_shape()
+        if selected_shape is None:
+            return
+
+        original_attributes = extractGraphicAttributes(selected_shape)
+        self.dialog.execute_properties_dialog()
+        edited_attributes = extractGraphicAttributes(selected_shape)
+
+        if original_attributes != edited_attributes:
+            undo_manager = self._get_undo_manager()
+            if undo_manager:
+                try:
+                    undo_action = EditShapeUndoAction(
+                        self, selected_shape, original_attributes, edited_attributes
+                    )
+                    undo_manager.addUndoAction(undo_action)
+                    self._undo_actions.append(undo_action)
+                except Exception as e:
+                    print(f"Failed to register edit undo action: {e}")
+
+        self.get_controller().get_diagram().refresh_diagram()
+        self.refresh_tree()
+        if self.tree_control is not None:
+            self.tree_control.setFocus()
 
     def paste_to_selected_item(self):
         """Paste clipboard contents to currently selected item.
@@ -2554,9 +2563,23 @@ class TreeMouseHandler(unohelper.Base, XMouseListener):
         - Normal click: Select single item (replaces selection)
         - Shift+click: Range selection
         - Ctrl+click: Toggle item selection
+        - Double click: Open the symbol properties dialog for the item
         """
         try:
             if getattr(self.dialog_handler, "_is_dragging", False):
+                return
+
+            if event.Buttons == MouseButton.LEFT and event.ClickCount == 2:
+                tree_control = self.dialog_handler.tree_control
+                if not tree_control:
+                    return
+
+                clicked_node = tree_control.getNodeForLocation(event.X, event.Y)
+                if clicked_node:
+                    # The dialog acts on the selected shape, so the clicked item is
+                    # selected first
+                    self.dialog_handler.handle_tree_selection(clicked_node)
+                    self.dialog_handler.edit_selected_item()
                 return
 
             if event.Buttons == MouseButton.LEFT and event.ClickCount == 1:
