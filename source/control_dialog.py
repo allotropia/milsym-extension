@@ -2485,6 +2485,20 @@ class TreeKeyHandler(unohelper.Base, XKeyListener):
             if event.KeyCode == Key.DELETE:
                 self.dialog_handler.remove_selected_shape()
                 return
+            elif event.KeyCode == Key.RETURN:
+                selection = event.Source.getSelection()
+                selected_node = None
+                if hasattr(selection, "getDisplayValue"):
+                    selected_node = selection
+                elif hasattr(selection, "__len__") and len(selection) > 0:
+                    selected_node = selection[0]
+
+                if selected_node is not None:
+                    # The dialog acts on the selected shape, so the tree item is
+                    # selected in the document first
+                    self.dialog_handler.handle_tree_selection(selected_node)
+                    self.dialog_handler.edit_selected_item()
+                return
             elif event.KeyCode == Key.C and (event.Modifiers & KeyModifier.MOD1):
                 self.dialog_handler.copy_selected_item()
                 return
