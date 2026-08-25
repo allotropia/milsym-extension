@@ -444,13 +444,9 @@ class OrgChartTree(OrganizationChartTree):
                 else None
             )
 
-            level = child_tree_item.get_level()
-            start_pos = 2  # Bottom connection point
-
-            if level <= OrgChartTree.LAST_HOR_LEVEL:
-                end_pos = 0  # Top connection point
-            else:
-                end_pos = 3  # Left connection point
+            start_pos, end_pos = self.get_org_chart().connector_glue_positions(
+                expected_start_shape, child_tree_item.get_level()
+            )
 
             # Writing the ends of a connector makes the office reroute it, so leave alone
             # the connectors that already join the shapes they should at the right points

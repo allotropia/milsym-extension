@@ -15,10 +15,21 @@ Python port of OrgChart.java
 """
 
 from utils import generate_icon_svg, get_recorded_symbol_size_px
+from perf import count
 from ...diagram import Diagram
 from ..organization_chart import OrganizationChart
 from .orgchart_tree import OrgChartTree
 from .orgchart_tree_item import OrgChartTreeItem
+
+from com.sun.star.awt import Point
+from com.sun.star.drawing import GluePoint2
+from com.sun.star.drawing.EscapeDirection import DOWN as ESCAPE_DOWN
+
+# Where on the bottom edge of a shape the connectors to its stacked children leave, as a
+# fraction of the shape's width on the relative glue point scale of 0 to 10000. On very
+# wide shapes the point moves further left than this, so that it stays left of the
+# children.
+STACKED_GLUE_FRACTION = 2500
 
 
 class OrgChart(OrganizationChart):
@@ -57,8 +68,6 @@ class OrgChart(OrganizationChart):
             return
 
         # Create diagram from DataOfDiagram
-        last_hor_level = OrgChartTree.LAST_HOR_LEVEL
-
         if not datas.is_empty():
             super().create_diagram(datas)
             is_root_item = datas.is_one_first_level_data()
@@ -149,14 +158,14 @@ class OrgChart(OrganizationChart):
                     self._x_shapes.add(x_connector_shape)
                     self.set_move_protect_of_shape(x_connector_shape)
 
-                    end_shape_conn_pos = 0
-                    if dad_item.get_level() + 1 > last_hor_level:
-                        end_shape_conn_pos = 3
+                    start_conn_pos, end_shape_conn_pos = self.connector_glue_positions(
+                        dad_item.get_rectangle_shape(), dad_item.get_level() + 1
+                    )
 
                     self.set_connector_shape_props(
                         x_connector_shape,
                         dad_item.get_rectangle_shape(),
-                        2,
+                        start_conn_pos,
                         x_shape,
                         end_shape_conn_pos,
                     )
@@ -312,6 +321,81 @@ class OrgChart(OrganizationChart):
         self._diagram_tree.set_lists(read_geometry)
         self._diagram_tree.set_tree()
 
+    def _stacked_glue_fraction(self, shape):
+        """Where on the bottom edge of this shape the connectors to its stacked children
+        leave, as a fraction of the shape's width on the relative glue point scale of 0
+        to 10000.
+
+        A quarter of the width looks right on a shape of ordinary width. The stacked
+        children sit at least half a horizontal layout unit right of the shape's left
+        edge, and on a very wide shape a quarter of the width would reach past them, so
+        the offset is capped at half of that distance. The downward line then stays left
+        of the children, with room to turn, however wide the shape's picture is.
+        """
+        fraction = STACKED_GLUE_FRACTION
+        cap = OrgChartTreeItem.horizontal_pos_unit() // 4
+        item = (
+            self._diagram_tree.get_tree_item(shape) if self._diagram_tree else None
+        )
+        if item is not None and cap > 0:
+            width = item._calculate_size_for_aspect_ratio()[0]
+            if width > 0:
+                fraction = min(fraction, cap * 10000 // width)
+        return fraction
+
+    def update_stacked_glue_point(self, shape, add_if_missing=False):
+        """Keep the glue point the connectors to stacked children start on at its place
+        on the bottom edge of the shape, where its place follows from the shape's width.
+
+        A shape starts with the four builtin glue points, indices 0 to 3, one on the
+        middle of each edge, so the first user defined point gets index 4. Returns that
+        index. A shape that carries no such point yet is given one when add_if_missing
+        says so; otherwise, and when the point cannot be added, the index of the builtin
+        bottom center point is returned instead.
+        """
+        try:
+            fraction = self._stacked_glue_fraction(shape)
+            glue_points = shape.getGluePoints()
+
+            if glue_points.getCount() > 4:
+                glue = glue_points.getByIndex(4)
+                if glue.Position.X != fraction:
+                    count("shape: glue point moved")
+                    glue.Position = Point(X=fraction, Y=10000)
+                    glue_points.replaceByIndex(4, glue)
+                return 4
+
+            if not add_if_missing:
+                return 2
+
+            count("shape: glue point added")
+            glue = GluePoint2()
+            glue.IsRelative = True
+            glue.Position = Point(X=fraction, Y=10000)
+            glue.Escape = ESCAPE_DOWN
+            glue.IsUserDefined = True
+            glue_points.insertByIndex(glue_points.getCount(), glue)
+            return 4
+        except Exception as ex:
+            print(f"Error setting the stacked connector glue point: {ex}")
+            return 2
+
+    def connector_glue_positions(self, parent_shape, child_level):
+        """The glue points the connector to a child at this level runs between.
+
+        Returns the pair of start and end glue point indices. A child on the side by
+        side levels hangs below its parent, so the connector runs from the parent's
+        bottom center to the child's top center. A stacked child is entered on its left
+        edge, and the connector starts on a point on the parent's bottom edge that lies
+        left of every stacked child whatever the width of the parent's picture, so the
+        connector routes downward and then right without doubling back.
+        """
+        if child_level > OrgChartTree.LAST_HOR_LEVEL:
+            if parent_shape is not None:
+                return self.update_stacked_glue_point(parent_shape, True), 3
+            return 2, 3
+        return 2, 0
+
     def paste_subtree(self, target_tree_item, clipboard_item, script=None):
         """Paste copied subtree as children of target item"""
         if self._diagram_tree is None:
@@ -381,18 +465,16 @@ class OrgChart(OrganizationChart):
         self.set_move_protect_of_shape(x_connector_shape)
         self._diagram_tree.add_to_connectors(x_connector_shape)
 
-        end_shape_conn_pos = 0
-
         # Calculate actual level by traversing up the tree (parent's level + 1)
-        parent_actual_level = self._calculate_actual_level(parent_tree_item)
-        new_item_level = parent_actual_level + 1
-        if new_item_level > OrgChartTree.LAST_HOR_LEVEL:
-            end_shape_conn_pos = 3
+        new_item_level = self._calculate_actual_level(parent_tree_item) + 1
+        start_conn_pos, end_shape_conn_pos = self.connector_glue_positions(
+            parent_tree_item.get_rectangle_shape(), new_item_level
+        )
 
         self.set_connector_shape_props(
             x_connector_shape,
             parent_tree_item.get_rectangle_shape(),
-            2,
+            start_conn_pos,
             x_new_shape,
             end_shape_conn_pos,
         )
@@ -525,29 +607,27 @@ class OrgChart(OrganizationChart):
                                 self._diagram_tree.add_to_connectors(x_connector_shape)
 
                                 x_start_shape = None
-                                end_shape_conn_pos = 0
+                                new_item_level = 0
 
                                 if self._new_item_h_type == self.UNDERLING:
                                     x_start_shape = selected_item.get_rectangle_shape()
-                                    if (
-                                        selected_item.get_level() + 1
-                                        > OrgChartTree.LAST_HOR_LEVEL
-                                    ):
-                                        end_shape_conn_pos = 3
+                                    new_item_level = selected_item.get_level() + 1
                                 elif self._new_item_h_type == self.ASSOCIATE:
                                     x_start_shape = (
                                         selected_item.get_dad().get_rectangle_shape()
                                     )
-                                    if (
-                                        selected_item.get_level()
-                                        > OrgChartTree.LAST_HOR_LEVEL
-                                    ):
-                                        end_shape_conn_pos = 3
+                                    new_item_level = selected_item.get_level()
+
+                                start_conn_pos, end_shape_conn_pos = (
+                                    self.connector_glue_positions(
+                                        x_start_shape, new_item_level
+                                    )
+                                )
 
                                 self.set_connector_shape_props(
                                     x_connector_shape,
                                     x_start_shape,
-                                    2,
+                                    start_conn_pos,
                                     x_rectangle_shape,
                                     end_shape_conn_pos,
                                 )

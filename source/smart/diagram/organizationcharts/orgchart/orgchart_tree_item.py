@@ -375,6 +375,14 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
 
         self.set_size_if_changed(Size(Width=calculated_width, Height=calculated_height))
 
+        if self._level >= last_hor_level and self.is_first_child():
+            # The children of this item are stacked, and the glue point their connectors
+            # start on sits at a place on the bottom edge that follows from the width
+            # just set
+            self.get_diagram_tree().get_org_chart().update_stacked_glue_point(
+                self._x_rectangle_shape
+            )
+
     def get_graphic_aspect_ratio(self):
         """Width divided by height of the picture on this item, or None when it has none.
 
