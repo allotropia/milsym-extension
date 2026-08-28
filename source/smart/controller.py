@@ -163,6 +163,32 @@ class Controller(unohelper.Base, XSelectionChangeListener):
         """Check if shape is a smart diagram shape"""
         return shape_name.startswith("OrbatDiagram")
 
+    def get_containing_diagram_group(self, shape):
+        """The diagram group shape a shape belongs to, or None when it belongs to none.
+
+        A diagram group shape answers for itself. A shape inside a diagram group answers
+        with that group.
+        """
+        current = shape
+        while current is not None:
+            try:
+                if current.supportsService(
+                    "com.sun.star.drawing.GroupShape"
+                ) and self.is_smart_diagram_shape(current.getName()):
+                    return current
+                parent = current.getParent()
+            except Exception:
+                return None
+            if parent is None or not hasattr(parent, "supportsService"):
+                return None
+            try:
+                if not parent.supportsService("com.sun.star.drawing.Shape"):
+                    return None
+            except Exception:
+                return None
+            current = parent
+        return None
+
     def set_new_size(self):
         """Set new diagram size"""
         self.get_diagram().increase_size_prop()
@@ -527,7 +553,14 @@ class Controller(unohelper.Base, XSelectionChangeListener):
 
             # Listen for clicks on diagrams
             if self.is_smart_diagram_shape(selected_shape_name):
-                new_diagram_name = selected_shape_name.split("-", 1)[0]
+                x_group_shape = self.get_containing_diagram_group(selected_shape)
+                group_name = selected_shape_name
+                if x_group_shape is not None:
+                    try:
+                        group_name = x_group_shape.getName()
+                    except Exception:
+                        pass
+                new_diagram_name = group_name.split("-", 1)[0]
 
                 if Gui._global_control_dlg_listener is not None:
                     try:
@@ -557,7 +590,9 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                     self.instantiate_diagram()
                     self._last_diagram_name = new_diagram_name
 
-                    self.get_diagram().init_diagram(diagram_id)
+                    self.get_diagram().init_diagram(
+                        diagram_id, group_shape=x_group_shape
+                    )
                     self.get_diagram().init_properties()
 
                     # Auto-open dialog if user hasn't explicitly closed it this session

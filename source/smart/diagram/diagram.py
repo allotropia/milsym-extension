@@ -14,6 +14,8 @@ Base Diagram class - stub implementation
 Python port of Diagram.java
 """
 
+import re
+
 import uno
 
 from utils import locked_controllers, parse_svg_dimensions
@@ -455,12 +457,27 @@ class Diagram(ABC):
         return self._diagram_id
 
     @timed("init_diagram: find group shape")
-    def init_diagram(self, diagram_id=None):
+    def init_diagram(self, diagram_id=None, group_shape=None):
         """Initialize diagram"""
         try:
             x_curr_shape = None
             curr_shape_name = ""
             self._x_draw_page = self.get_controller().get_current_page()
+
+            if group_shape is not None:
+                # The caller names the group itself. Two groups in one document can
+                # carry the same name, so the diagram binds to exactly this shape and
+                # reads its id off the group's name.
+                self._x_shapes = group_shape
+                self._x_group_shape = group_shape
+                name_match = re.match(
+                    r"[A-Za-z]+(\d+)-", self.get_shape_name(group_shape)
+                )
+                if name_match is not None:
+                    self._diagram_id = int(name_match.group(1))
+                elif diagram_id is not None and diagram_id != 0:
+                    self._diagram_id = diagram_id
+                return
 
             if diagram_id is not None and diagram_id != 0:
                 self._diagram_id = diagram_id
