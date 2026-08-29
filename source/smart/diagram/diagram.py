@@ -18,7 +18,7 @@ import re
 
 import uno
 
-from utils import locked_controllers, parse_svg_dimensions
+from utils import locked_controllers, mark_document_modified, parse_svg_dimensions
 from perf import timed
 
 from abc import ABC, abstractmethod
@@ -217,6 +217,7 @@ class Diagram(ABC):
 
                 self.forget_graphic_aspect_ratio_of(shape)
                 self.forget_kept_geometry_of(shape)
+                mark_document_modified(self._x_model)
 
         except Exception as ex:
             print(f"Error setting shape properties: {ex}")
@@ -290,6 +291,7 @@ class Diagram(ABC):
                 self.forget_graphic_aspect_ratio_of(shape)
 
                 self.set_font_properties_of_shape(shape)
+                mark_document_modified(self._x_model)
 
             elif shape_type == self.CONNECTOR_SHAPE:
                 if self.is_text_fit_prop():

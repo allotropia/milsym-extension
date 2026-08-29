@@ -322,8 +322,24 @@ def insertSvgGraphic(
             shape.setPosition(pos)
         else:
             print("Unsupported document type for graphic insertion")
+
+        mark_document_modified(model)
     except Exception as e:
         print(f"Error inserting SVG graphic: {e}")
+
+
+def mark_document_modified(model):
+    """Record on the document that it has unsaved changes.
+
+    Replacing the picture of a drawing shape, or changing its user defined attributes,
+    changes only the drawing layer. In Writer and Calc the drawing layer keeps its own
+    changed flag and does not pass it on to the document, so the save prompt on close
+    and the modified indicator stay silent unless the document is told explicitly.
+    """
+    try:
+        model.setModified(True)
+    except Exception as e:
+        print(f"Error marking the document as modified: {e}")
 
 
 def insertGraphicAttributes(shape, params):
