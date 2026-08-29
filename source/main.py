@@ -516,15 +516,10 @@ class MainJob(unohelper.Base, XJobExecutor):
         if group_shape is None:
             return
 
-        group_name = group_shape.getName()
-        diagram_name = group_name.split("-", 1)[0]
-        diagram_id = int("".join(c for c in diagram_name if c.isdigit()) or "0")
-
         controller.set_group_type(controller.ORGANIGROUP)
         controller.set_diagram_type(controller.ORGANIGRAM)
         controller.instantiate_diagram()
-        controller._last_diagram_name = diagram_name
-        controller.get_diagram().init_diagram(diagram_id, group_shape=group_shape)
+        controller.get_diagram().init_diagram(group_shape=group_shape)
         controller.get_diagram().init_properties()
 
         controller._gui.set_visible_control_dialog(True)

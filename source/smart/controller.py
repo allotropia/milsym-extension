@@ -127,12 +127,15 @@ class Controller(unohelper.Base, XSelectionChangeListener):
         self._gui = None
         self._x_selection_supplier = None
 
-        self._last_diagram_name = ""
         self._diagram = None
         self._diagram_type = None
         self._group_type = None
         self._last_diagram_type = -1
-        self._last_diagram_id = -1
+        # The group shape of the diagram the control dialog was last built for. The
+        # group shape is what stands for a diagram: two diagrams in one document can
+        # carry the same names, for example after copying one, so a name or an id
+        # parsed from a name cannot tell them apart.
+        self._last_diagram_group_shape = None
 
         self._undo_watch = None
 
@@ -151,6 +154,7 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                 self._gui = None
 
             self._diagram = None
+            self._last_diagram_group_shape = None
 
             self._x_controller = None
             self._x_frame = None
@@ -262,12 +266,9 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                         dialog_handler.clear_all_undo_action_references()
 
             self._diagram = None
+            self._last_diagram_group_shape = None
         except Exception as e:
             print(f"Error in dispose_diagram: {e}")
-
-    def set_last_diagram_name(self, name):
-        """Set last diagram name"""
-        self._last_diagram_name = name
 
     def set_group_type(self, d_type):
         """Set group type"""
@@ -293,13 +294,13 @@ class Controller(unohelper.Base, XSelectionChangeListener):
         """Get last diagram type"""
         return self._last_diagram_type
 
-    def set_last_diagram_id(self, id_val):
-        """Set last diagram ID"""
-        self._last_diagram_id = id_val
+    def set_last_diagram_group_shape(self, group_shape):
+        """Set the group shape of the diagram the control dialog was last built for"""
+        self._last_diagram_group_shape = group_shape
 
-    def get_last_diagram_id(self):
-        """Get last diagram ID"""
-        return self._last_diagram_id
+    def get_last_diagram_group_shape(self):
+        """Get the group shape of the diagram the control dialog was last built for"""
+        return self._last_diagram_group_shape
 
     def add_selection_listener(self):
         """Add selection change listener"""
@@ -554,32 +555,51 @@ class Controller(unohelper.Base, XSelectionChangeListener):
             # Listen for clicks on diagrams
             if self.is_smart_diagram_shape(selected_shape_name):
                 x_group_shape = self.get_containing_diagram_group(selected_shape)
-                group_name = selected_shape_name
-                if x_group_shape is not None:
-                    try:
-                        group_name = x_group_shape.getName()
-                    except Exception:
-                        pass
-                new_diagram_name = group_name.split("-", 1)[0]
 
+                current_group_shape = None
+                if self._diagram is not None:
+                    try:
+                        current_group_shape = self._diagram.get_group_shape()
+                    except Exception:
+                        current_group_shape = None
+
+                # The control dialog can be showing a diagram of another document's
+                # controller, and then this document's diagram is set up afresh even
+                # when the click stayed in the same group.
+                dialog_belongs_elsewhere = False
                 if Gui._global_control_dlg_listener is not None:
                     try:
-                        global_controller = (
-                            Gui._global_control_dlg_listener.get_controller()
+                        dialog_belongs_elsewhere = (
+                            Gui._global_control_dlg_listener.get_controller() != self
                         )
-                        if global_controller != self:
-                            self._last_diagram_name = ""
                     except Exception:
-                        self._last_diagram_name = ""
+                        dialog_belongs_elsewhere = True
 
-                # If the previous selected item is not in the same diagram,
-                # need to instantiate the new diagram
-                if (
-                    self._last_diagram_name == ""
-                    or self._last_diagram_name != new_diagram_name
-                ):
+                # The group shapes stand for the diagrams. Two diagrams in one
+                # document can carry the same names, for example after copying one, so
+                # comparing the shapes themselves is what tells whether the click
+                # landed in another diagram.
+                needs_new_diagram = (
+                    dialog_belongs_elsewhere
+                    or current_group_shape is None
+                    or (
+                        x_group_shape is not None
+                        and x_group_shape != current_group_shape
+                    )
+                )
+
+                if needs_new_diagram:
+                    # The id parsed from the name only matters when no group shape was
+                    # found and init_diagram falls back to searching the page by name.
+                    group_name = selected_shape_name
+                    if x_group_shape is not None:
+                        try:
+                            group_name = x_group_shape.getName()
+                        except Exception:
+                            pass
                     diagram_id = int(
-                        "".join(c for c in new_diagram_name if c.isdigit()) or "0"
+                        "".join(c for c in group_name.split("-", 1)[0] if c.isdigit())
+                        or "0"
                     )
 
                     # Set diagram types based on shape name
@@ -588,7 +608,6 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                         self.set_diagram_type(self.ORGANIGRAM)
 
                     self.instantiate_diagram()
-                    self._last_diagram_name = new_diagram_name
 
                     self.get_diagram().init_diagram(
                         diagram_id, group_shape=x_group_shape

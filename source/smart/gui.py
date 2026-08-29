@@ -45,7 +45,11 @@ class Gui:
 
     def set_visible_control_dialog(self, visible: bool):
         """Set visibility of control dialog"""
-        new_diagram_id = self.get_controller().get_diagram().get_diagram_id()
+        # The group shape stands for the diagram the dialog is built for. Two diagrams
+        # in one document can carry the same names, so an id parsed from a name cannot
+        # tell them apart.
+        diagram = self.get_controller().get_diagram()
+        new_diagram_group = diagram.get_group_shape() if diagram is not None else None
 
         # Check if we need to recreate dialog for a different diagram
         need_new_dialog = False
@@ -60,11 +64,12 @@ class Gui:
         if not need_new_dialog:
             if (
                 self.get_controller().get_last_diagram_type() != -1
-                or self.get_controller().get_last_diagram_id() != -1
+                or self.get_controller().get_last_diagram_group_shape() is not None
             ) and (
                 self.get_controller().get_last_diagram_type()
                 != self.get_controller().get_diagram_type()
-                or self.get_controller().get_last_diagram_id() != new_diagram_id
+                or self.get_controller().get_last_diagram_group_shape()
+                != new_diagram_group
             ):
                 need_new_dialog = True
 
@@ -92,7 +97,7 @@ class Gui:
         self.get_controller().set_last_diagram_type(
             self.get_controller().get_diagram_type()
         )
-        self.get_controller().set_last_diagram_id(new_diagram_id)
+        self.get_controller().set_last_diagram_group_shape(new_diagram_group)
 
     def create_control_dialog(self):
         """Create control dialog - ensures only one instance is created globally"""

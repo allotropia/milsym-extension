@@ -63,6 +63,7 @@ class Diagram(ABC):
         self._x_controller = x_frame.getController()
         self._x_draw_page = None
         self._x_shapes = None
+        self._x_group_shape = None
         self._diagram_id = -1
         self._color_mode_prop = self.BASE_COLORS_MODE
         self._style_prop = 0
@@ -452,10 +453,6 @@ class Diagram(ABC):
         except Exception:
             return ""
 
-    def get_diagram_id(self) -> int:
-        """Get diagram ID"""
-        return self._diagram_id
-
     @timed("init_diagram: find group shape")
     def init_diagram(self, diagram_id=None, group_shape=None):
         """Initialize diagram"""
@@ -477,6 +474,12 @@ class Diagram(ABC):
                     self._diagram_id = int(name_match.group(1))
                 elif diagram_id is not None and diagram_id != 0:
                     self._diagram_id = diagram_id
+                return
+
+            if self._x_group_shape is not None:
+                # The diagram already holds its group shape, and that binding stays.
+                # The name search below takes the first shape with a matching name,
+                # which can be another diagram carrying the same names.
                 return
 
             if diagram_id is not None and diagram_id != 0:
@@ -529,10 +532,6 @@ class Diagram(ABC):
         try:
             self._x_draw_page = self.get_controller().get_current_page()
             self._diagram_id = int(random.random() * 10000)
-
-            # set diagramName in the Controller object
-            diagram_name = self.get_diagram_type_name() + str(self._diagram_id)
-            self.get_controller().set_last_diagram_name(diagram_name)
 
             # set new PageProps object with data of page
             # width, height, borderLeft, borderRight, borderTop, borderBottom
