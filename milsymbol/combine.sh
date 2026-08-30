@@ -56,7 +56,15 @@ for (var i = 1; i < ARGUMENTS.length; ++i) {
 
     options[name] = value;
 }
-new ms.Symbol(String(ARGUMENTS[0]), options).asSVG();
+var symbol = new ms.Symbol(String(ARGUMENTS[0]), options);
+var svg = symbol.asSVG();
+var octagonSize = Number(symbol.getStyle().size);
+var octagon = symbol.getOctagonAnchor();
+var anchor = symbol.getAnchor();
+svg.replace("<svg ", '<svg xmlns:milsym="urn:collabora:milsym"'
+    + ' milsym:octagon="' + (octagon.x - octagonSize / 2) + " " + (octagon.y - octagonSize / 2)
+    + " " + octagonSize + " " + octagonSize + '"'
+    + ' milsym:anchor="' + anchor.x + " " + anchor.y + '" ');
 EOF
 
 echo "Successfully created $OUTPUT_FILE"

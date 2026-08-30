@@ -12,7 +12,7 @@ from contextlib import contextmanager
 
 import uno
 
-from com.sun.star.awt import Point, Size
+from com.sun.star.awt import Point, Rectangle, Size
 from com.sun.star.beans import NamedValue, PropertyValue
 from com.sun.star.xml import AttributeData
 
@@ -20,6 +20,16 @@ from perf import count
 
 # Conversion factor from pixels to 1/100mm, assuming 96 DPI (2540 / 96)
 PX_TO_MM100 = 26.46
+
+# geometry attributes namespace, we've hacked into combine.sh.
+#
+# values are in pixel units of the width and height attributes, measured
+# from the top left corner of the drawing:
+#
+#   octagon = "x y width height" of the frame octagon
+#   anchor  = "x y" of the symbol anchor, the end of the staff for
+#             a headquarters and the octagon centre for every other symbol
+MILSYM_SVG_NAMESPACE = "urn:collabora:milsym"
 
 
 @contextmanager
@@ -161,27 +171,13 @@ def parse_svg_dimensions(svg_data):
     """
     width = 4000  # Default width
     height = 930  # Default height
-    factor = PX_TO_MM100
 
     try:
-        # Parse SVG using ElementTree
-        root = ET.fromstring(svg_data)
-
-        # Extract width and height attributes
-        width_str = root.get("width")
-        height_str = root.get("height")
-
-        if width_str:
-            # Remove units like 'px', 'pt', etc. and extract numeric value
-            width_num = "".join(c for c in width_str if c.isdigit() or c == ".")
-            if width_num:
-                width = float(width_num) * factor
-
-        if height_str:
-            # Remove units like 'px', 'pt', etc. and extract numeric value
-            height_num = "".join(c for c in height_str if c.isdigit() or c == ".")
-            if height_num:
-                height = float(height_num) * factor
+        width_px, height_px = svg_size_px(ET.fromstring(svg_data))
+        if width_px:
+            width = width_px * PX_TO_MM100
+        if height_px:
+            height = height_px * PX_TO_MM100
     except Exception as e:
         print(f"Warning: Could not parse SVG dimensions, using defaults: {e}")
 
@@ -189,6 +185,108 @@ def parse_svg_dimensions(svg_data):
     shape_size.Height = height
     shape_size.Width = width
     return shape_size
+
+
+def svg_length_px(text):
+    """The number in an SVG length such as "158" or "158px", or None when there is none."""
+    if not text:
+        return None
+    number = "".join(c for c in text if c.isdigit() or c == ".")
+    return float(number) if number else None
+
+
+def svg_size_px(root):
+    """The width and height attributes of an SVG root element as a pair of pixel numbers.
+
+    Either value is None when the attribute is missing or carries no number.
+    """
+    return svg_length_px(root.get("width")), svg_length_px(root.get("height"))
+
+
+def parse_svg_geometry(svg_data, name, count):
+    """Read one milsym geometry attribute off the root element of a generated symbol SVG.
+
+    The attribute holds count numbers in pixels. They come back as fractions of the
+    drawing's width (even positions) and height (odd positions), so the result stays
+    right at whatever size the drawing is shown at later.
+
+    Returns a tuple of count floats, or None when the SVG carries no such attribute or
+    its size is unknown.
+    """
+    try:
+        root = ET.fromstring(svg_data)
+        value = root.get("{%s}%s" % (MILSYM_SVG_NAMESPACE, name))
+        if value is None:
+            return None
+        numbers = [float(part) for part in value.split()]
+        if len(numbers) != count:
+            return None
+        width_px, height_px = svg_size_px(root)
+        if not width_px or not height_px:
+            return None
+        return tuple(
+            number / (width_px if index % 2 == 0 else height_px)
+            for index, number in enumerate(numbers)
+        )
+    except Exception as e:
+        print(f"Warning: Could not parse SVG {name} geometry: {e}")
+        return None
+
+
+def parse_svg_octagon(svg_data):
+    """The frame octagon of a generated symbol SVG, as fractions of the drawing size.
+
+    Returns (x, y, width, height), each a fraction of the drawing's width or height with
+    the top left corner of the drawing at (0, 0). Returns None for an SVG without octagon
+    information, such as one generated before the attribute was added.
+    """
+    return parse_svg_geometry(svg_data, "octagon", 4)
+
+
+def parse_svg_anchor(svg_data):
+    """The anchor point of a generated symbol SVG, as fractions of the drawing size.
+
+    Returns (x, y), each a fraction of the drawing's width or height with the top left
+    corner of the drawing at (0, 0). Returns None for an SVG without anchor information.
+    """
+    return parse_svg_geometry(svg_data, "anchor", 2)
+
+
+def octagon_rect_in_shape(shape, svg_data):
+    """The frame octagon of a symbol shape, in the shape's coordinate system.
+
+    The shape shows svg_data at some size that keeps the drawing's aspect ratio, so the
+    octagon fractions of the drawing map straight onto the shape's position and size.
+
+    Returns a Rectangle in 1/100 mm, or None when the SVG carries no octagon information.
+    """
+    octagon = parse_svg_octagon(svg_data)
+    if octagon is None:
+        return None
+    position = shape.getPosition()
+    size = shape.getSize()
+    rect = Rectangle()
+    rect.X = int(round(position.X + octagon[0] * size.Width))
+    rect.Y = int(round(position.Y + octagon[1] * size.Height))
+    rect.Width = int(round(octagon[2] * size.Width))
+    rect.Height = int(round(octagon[3] * size.Height))
+    return rect
+
+
+def anchor_point_in_shape(shape, svg_data):
+    """The anchor point of a symbol shape, in the shape's coordinate system.
+
+    Returns a Point in 1/100 mm, or None when the SVG carries no anchor information.
+    """
+    anchor = parse_svg_anchor(svg_data)
+    if anchor is None:
+        return None
+    position = shape.getPosition()
+    size = shape.getSize()
+    point = Point()
+    point.X = int(round(position.X + anchor[0] * size.Width))
+    point.Y = int(round(position.Y + anchor[1] * size.Height))
+    return point
 
 
 def fit_size_to_aspect_ratio(bounding_size, intrinsic_size):
