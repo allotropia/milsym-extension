@@ -325,7 +325,7 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
     @staticmethod
     def column_gap():
         """The empty x distance between the edge of one column and the start of the next."""
-        return OrgChartTreeItem._hor_space * OrgChartTreeItem.HORIZONTAL_STEP_FACTOR
+        return OrgChartTreeItem._hor_space
 
     @staticmethod
     def channel_gap():
