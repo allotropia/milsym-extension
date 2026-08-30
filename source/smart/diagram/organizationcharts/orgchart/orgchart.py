@@ -23,7 +23,8 @@ from .orgchart_tree_item import OrgChartTreeItem
 
 from com.sun.star.awt import Point
 from com.sun.star.drawing import GluePoint2
-from com.sun.star.drawing.EscapeDirection import DOWN as ESCAPE_DOWN
+from com.sun.star.drawing.EscapeDirection import VERTICAL as ESCAPE_VERTICAL
+from com.sun.star.drawing.Alignment import CENTER as ALIGNMENT_CENTER
 
 # Where on the bottom edge of a shape the connectors to its stacked children leave, as a
 # fraction of the shape's width on the relative glue point scale of 0 to 10000. On very
@@ -321,61 +322,48 @@ class OrgChart(OrganizationChart):
         self._diagram_tree.set_lists(read_geometry)
         self._diagram_tree.set_tree()
 
-    def _stacked_glue_fraction(self, shape):
-        """Where on the bottom edge of this shape the connectors to its stacked children
-        leave, as a fraction of the shape's width on the relative glue point scale of 0
-        to 10000.
-
-        A quarter of the width looks right on a shape of ordinary width. The stacked
-        children sit at least half a horizontal layout unit right of the shape's left
-        edge, and on a very wide shape a quarter of the width would reach past them, so
-        the offset is capped at half of that distance. The downward line then stays left
-        of the children, with room to turn, however wide the shape's picture is.
-        """
-        fraction = STACKED_GLUE_FRACTION
-        cap = OrgChartTreeItem.horizontal_pos_unit() // 4
-        item = (
-            self._diagram_tree.get_tree_item(shape) if self._diagram_tree else None
-        )
-        if item is not None and cap > 0:
-            width = item._calculate_size_for_aspect_ratio()[0]
-            if width > 0:
-                fraction = min(fraction, cap * 10000 // width)
-        return fraction
-
     def update_stacked_glue_point(self, shape, add_if_missing=False):
-        """Keep the glue point the connectors to stacked children start on at its place
-        on the bottom edge of the shape, where its place follows from the shape's width.
+        """Keep the glue point the connectors to stacked children
+        start on at its place on the bottom edge of the shape, where
+        its place follows from the shape's width.
 
-        A shape starts with the four builtin glue points, indices 0 to 3, one on the
-        middle of each edge, so the first user defined point gets index 4. Returns that
-        index. A shape that carries no such point yet is given one when add_if_missing
-        says so; otherwise, and when the point cannot be added, the index of the builtin
-        bottom center point is returned instead.
+        A shape starts with the four builtin glue points, indices 0 to
+        3, one on the middle of each edge, so the first user defined
+        point gets index 4. A shape that carries no such point yet is
+        given one when add_if_missing says so; otherwise, and when the
+        point cannot be added, the index of the builtin bottom center
+        point is returned instead.
+
         """
         try:
-            fraction = self._stacked_glue_fraction(shape)
+            # put glue point bottom-left corner
+            rel_pos_x = -4600
+            rel_pos_y = 5000
             glue_points = shape.getGluePoints()
+            curr_count = glue_points.getCount()
 
-            if glue_points.getCount() > 4:
+            if curr_count > 4:
+                # check existing first user-defined
                 glue = glue_points.getByIndex(4)
-                if glue.Position.X != fraction:
+                if glue.Position.X != rel_pos_x:
                     count("shape: glue point moved")
-                    glue.Position = Point(X=fraction, Y=10000)
+                    glue.IsRelative = True
+                    glue.Position = Point(X=rel_pos_x, Y=rel_pos_y)
                     glue_points.replaceByIndex(4, glue)
                 return 4
 
             if not add_if_missing:
-                return 2
+                return 2 # fallback bottom-most
 
             count("shape: glue point added")
             glue = GluePoint2()
             glue.IsRelative = True
-            glue.Position = Point(X=fraction, Y=10000)
-            glue.Escape = ESCAPE_DOWN
+            glue.Position = Point(X=rel_pos_x, Y=rel_pos_y)
+            glue.Escape = ESCAPE_VERTICAL
+            glue.PositionAlignment = ALIGNMENT_CENTER
             glue.IsUserDefined = True
-            glue_points.insertByIndex(glue_points.getCount(), glue)
-            return 4
+            glue_points.insertByIndex(curr_count, glue)
+            return curr_count
         except Exception as ex:
             print(f"Error setting the stacked connector glue point: {ex}")
             return 2
