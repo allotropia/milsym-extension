@@ -211,6 +211,7 @@ class ContextMenuInterceptor(unohelper.Base, XContextMenuInterceptor):
                 if not self.orbat_enabled:
                     return IGNORED
                 menu_container = event.ActionTriggerContainer
+                self._insert_refresh_orbat_menu_item(menu_container)
                 self._insert_edit_orbat_menu_item(menu_container)
                 return EXECUTE_MODIFIED
 
@@ -282,6 +283,25 @@ class ContextMenuInterceptor(unohelper.Base, XContextMenuInterceptor):
             menu_item.setPropertyValue("Text", menu_text)
             menu_item.setPropertyValue(
                 "CommandURL", "service:com.collabora.milsymbol.do?editOrbat"
+            )
+
+            separator = menu_container.createInstance(
+                "com.sun.star.ui.ActionTriggerSeparator"
+            )
+
+            menu_container.insertByIndex(0, menu_item)
+        except Exception as e:
+            print(f"_insert_edit_orbat_menu_item error: {e}")
+
+    def _insert_refresh_orbat_menu_item(self, menu_container):
+        """Insert 'Refresh Orbat' menu item"""
+        try:
+            menu_item = menu_container.createInstance("com.sun.star.ui.ActionTrigger")
+
+            menu_text = translate(self.ctx, "ContextMenu.RefreshOrbat")
+            menu_item.setPropertyValue("Text", menu_text)
+            menu_item.setPropertyValue(
+                "CommandURL", "service:com.collabora.milsymbol.do?refreshOrbat"
             )
 
             separator = menu_container.createInstance(
@@ -439,6 +459,8 @@ class MainJob(unohelper.Base, XJobExecutor):
             self.onOrgChart()
         if self.orbat_enabled and args == "editOrbat":
             self.onEditOrbat()
+        if self.orbat_enabled and args == "refreshOrbat":
+            self.onRefreshOrbat()
         if self.orbat_enabled and args == "addToFavorites":
             selected_shape = ListenerRegistry.instance().get_selected_shape()
             sidebar_panel = SidebarFactory.get_sidebar_panel()
@@ -523,6 +545,50 @@ class MainJob(unohelper.Base, XJobExecutor):
         controller.get_diagram().init_properties()
 
         controller._gui.set_visible_control_dialog(True)
+
+    def onRefreshOrbat(self):
+        """Refresh layout for the currently selected ORBAT group"""
+        frame = self.desktop.getCurrentFrame()
+        controller_manager = ControllerManager(self.ctx)
+
+        if frame in controller_manager._controllers:
+            controller = controller_manager._controllers[frame]
+        else:
+            controller = controller_manager.get_or_create_controller(self.ctx, frame)
+            if controller is None:
+                return
+
+        xcontroller = frame.getController()
+        selection = xcontroller.getSelection()
+        if selection is None:
+            return
+
+        shape = None
+        if selection.supportsService("com.sun.star.drawing.GroupShape"):
+            shape = selection
+        elif selection.supportsService("com.sun.star.drawing.Shapes"):
+            if selection.getCount() == 1:
+                shape = selection.getByIndex(0)
+
+        if shape is None:
+            return
+
+        shape_name = shape.getName() if hasattr(shape, "getName") else ""
+        if not shape_name.startswith("OrbatDiagram"):
+            return
+
+        # The selection can be the group itself or a shape inside it. The group shape
+        # is what names the diagram, and the diagram binds to that exact group.
+        group_shape = controller.get_containing_diagram_group(shape)
+        if group_shape is None:
+            return
+
+        controller.set_group_type(controller.ORGANIGROUP)
+        controller.set_diagram_type(controller.ORGANIGRAM)
+        controller.instantiate_diagram()
+        controller.get_diagram().init_diagram(group_shape=group_shape)
+        controller.get_diagram().init_properties()
+        controller.get_diagram().refresh_diagram()
 
     def onOrgChart(self):
         """Create a simple organization chart"""
