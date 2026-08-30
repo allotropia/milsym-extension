@@ -458,21 +458,16 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
             # just set
             org_chart.update_stacked_glue_point(self._x_rectangle_shape)
 
-    def get_symbol_geometry(self):
-        """Where the frame octagon and the anchor sit on the picture of this item, as a
-        SymbolGeometry of fractions of the picture, or None when the picture carries no
-        such information (a drawing made before it was recorded, or a plain picture).
+    def note_symbol_svg(self, svg_data):
+        """Keep what the layout needs to know about the SVG this item's shape shows.
 
-        The SVG of the picture is read from the office once and kept. The same read also
-        supplies the proportions of the picture and the height of the frame within it, so
-        a picture that carries the geometry is never asked for its pixel size.
+        The string carries the symbol geometry, the proportions of the picture and the
+        height of the frame within it, so an item told about its SVG here is never asked
+        to read the picture back from the office. Called with the drawing the shape was
+        just given, or with the drawing read back from the office; either way the string
+        is the one the picture was made from.
         """
-        if self._symbol_geometry_known:
-            return self._symbol_geometry
         self._symbol_geometry_known = True
-
-        context = self.get_diagram_tree().get_org_chart()._x_context
-        svg_data = read_shape_svg(context, self._x_rectangle_shape)
         geometry = parse_svg_symbol_geometry(svg_data)
         self._symbol_geometry = geometry
         if geometry is not None:
@@ -482,6 +477,21 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
             octagon_height = geometry.octagon[3]
             if octagon_height > 0:
                 self._graphic_frame_factor = 1.0 / octagon_height
+
+    def get_symbol_geometry(self):
+        """Where the frame octagon and the anchor sit on the picture of this item, as a
+        SymbolGeometry of fractions of the picture, or None when the picture carries no
+        such information (a drawing made before it was recorded, or a plain picture).
+
+        An item whose drawing was set through the extension in this session already knows
+        its geometry. Only a picture the extension has not seen as a string yet, such as
+        one from a loaded document, is read back from the office, once, and kept.
+        """
+        if self._symbol_geometry_known:
+            return self._symbol_geometry
+
+        context = self.get_diagram_tree().get_org_chart()._x_context
+        self.note_symbol_svg(read_shape_svg(context, self._x_rectangle_shape))
         return self._symbol_geometry
 
     def get_graphic_aspect_ratio(self):

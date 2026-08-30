@@ -600,11 +600,16 @@ class OrgChart(OrganizationChart):
             else:
                 self.set_shape_properties(x_new_shape, Diagram.DIAGRAM_SHAPE_TYPE)
         else:
+            svg_data = None
             self.set_shape_properties(x_new_shape, Diagram.DIAGRAM_SHAPE_TYPE)
 
         new_tree_item = OrgChartTreeItem(
             self._diagram_tree, x_new_shape, parent_tree_item, 0, 0.0
         )
+        if svg_data:
+            # The picture was set before this item existed, so the item is told about it
+            # here and never reads it back from the office
+            new_tree_item.note_symbol_svg(svg_data)
 
         if not parent_tree_item.is_first_child():
             parent_tree_item.set_first_child(new_tree_item)

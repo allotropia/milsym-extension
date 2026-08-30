@@ -215,12 +215,32 @@ class Diagram(ABC):
                 # labels enlarge the shape beyond that.
                 shape.setSize(parse_svg_dimensions(svg_data))
 
-                self.forget_graphic_aspect_ratio_of(shape)
+                self.note_symbol_svg_of(shape, svg_data)
                 self.forget_kept_geometry_of(shape)
                 mark_document_modified(self._x_model)
 
         except Exception as ex:
             print(f"Error setting shape properties: {ex}")
+
+    def note_symbol_svg_of(self, shape, svg_data):
+        """Tell the tree what SVG this shape shows now.
+
+        The item of the shape takes its symbol geometry and proportions straight from the
+        string, so the layout never reads the picture back from the office. A shape the
+        tree does not know yet only has what it kept about the old picture dropped; its
+        item learns the geometry from the office once it exists and asks.
+        """
+        try:
+            diagram_tree = (
+                self.get_diagram_tree() if hasattr(self, "get_diagram_tree") else None
+            )
+            item = diagram_tree.get_tree_item(shape) if diagram_tree else None
+            if item is not None:
+                item.note_symbol_svg(svg_data)
+            else:
+                self.forget_graphic_aspect_ratio_of(shape)
+        except Exception as ex:
+            print(f"Error noting the SVG of a shape: {ex}")
 
     def forget_graphic_aspect_ratio_of(self, shape):
         """Tell the tree that this shape carries a different picture now."""
