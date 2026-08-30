@@ -50,6 +50,8 @@ class OrganizationChartTreeItem(ABC):
         self._pos = -1.0
         self._graphic_aspect_ratio = None
         self._graphic_frame_factor = None
+        self._symbol_geometry = None
+        self._symbol_geometry_known = False
 
         if item is not None:
             # Copy constructor
@@ -296,9 +298,12 @@ class OrganizationChartTreeItem(ABC):
         self.set_size(size)
 
     def forget_graphic_aspect_ratio(self):
-        """Drop the kept proportions, so that a replaced picture is measured again."""
+        """Drop the kept proportions and symbol geometry, so that a replaced picture is
+        measured again."""
         self._graphic_aspect_ratio = None
         self._graphic_frame_factor = None
+        self._symbol_geometry = None
+        self._symbol_geometry_known = False
 
     def get_diagram_tree(self):
         """Get diagram tree reference"""

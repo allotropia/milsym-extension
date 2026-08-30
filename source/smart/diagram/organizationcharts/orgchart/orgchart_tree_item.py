@@ -16,12 +16,47 @@ Python port of OrgChartTreeItem.java
 
 from typing import List
 
-from utils import get_default_symbol_height_cm
+from utils import (
+    get_default_symbol_height_cm,
+    parse_svg_dimensions,
+    parse_svg_symbol_geometry,
+    read_shape_svg,
+)
 from perf import count
 
 from ..organization_chart_tree_item import OrganizationChartTreeItem
 
 from com.sun.star.awt import Point, Size
+
+
+def stacked_column_offsets(channel_x, gap, unit, stacked):
+    """Work out where the shapes stacked below a column head sit horizontally.
+
+    channel_x is the x distance from the column start to the connector channel that runs
+    down from the head's anchor. gap is the empty x distance kept between the channel and
+    the nearest left edge of a stacked shape. unit is the x distance one layout position
+    stands for. stacked is a list of (pos_delta, width, overhang) tuples, one per stacked
+    shape: its layout position relative to the head, its width, and the distance from its
+    left edge to the left edge of its octagon.
+
+    The octagons of the column line up: every shape is placed so that its octagon's left
+    edge sits on one line, shifted right by its own pos_delta for nesting. That line is
+    far enough from the channel for the widest overhang in the column, so the left labels
+    of every symbol stay clear of the channel.
+
+    Returns the list of x offsets from the column start, in the order of stacked, and the
+    right edge of the widest shape among them (0 when stacked is empty).
+    """
+    widest_overhang = max((overhang for _, _, overhang in stacked), default=0)
+    octagon_left = channel_x + gap + widest_overhang
+    x_offsets = []
+    right_edge = 0
+    for pos_delta, width, overhang in stacked:
+        x_offset = octagon_left + pos_delta * unit - overhang
+        x_offsets.append(x_offset)
+        if x_offset + width > right_edge:
+            right_edge = x_offset + width
+    return x_offsets, right_edge
 
 
 class OrgChartTreeItem(OrganizationChartTreeItem):
@@ -293,21 +328,48 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
         return OrgChartTreeItem._hor_space * OrgChartTreeItem.HORIZONTAL_STEP_FACTOR
 
     @staticmethod
-    def stacked_indent():
-        """The extra x distance of the shapes stacked below a column head, leaving a
-        channel for the connector that runs down the column. A tenth of the configured
-        shape width, the same for every shape, so the stacked shapes line up on their
-        left edges whatever their own widths.
+    def channel_gap():
+        """The empty x distance between the connector channel that runs down from a
+        column head's anchor and the nearest left edge of a shape stacked below it. A
+        quarter of the configured symbol height, the same for every column.
         """
-        return OrgChartTreeItem._shape_width // 10
+        if OrgChartTreeItem._configured_symbol_height is not None:
+            return OrgChartTreeItem._configured_symbol_height // 4
+        return OrgChartTreeItem._shape_height // 10
+
+    def left_overhang(self):
+        """The x distance from the left edge of this item's shape to the left edge of its
+        frame octagon, in 1/100 mm. Zero for a picture without symbol geometry, whose
+        whole extent then counts as the octagon.
+        """
+        geometry = self.get_symbol_geometry()
+        if geometry is None:
+            return 0
+        width = self._calculate_size_for_aspect_ratio()[0]
+        return int(geometry.octagon_left() * width)
+
+    def anchor_x_offset(self):
+        """The x distance from the left edge of this item's shape to its symbol anchor, in
+        1/100 mm. The middle of the shape for a picture without symbol geometry.
+        """
+        geometry = self.get_symbol_geometry()
+        width = self._calculate_size_for_aspect_ratio()[0]
+        if geometry is None:
+            return width // 2
+        return int(geometry.anchor_x() * width)
 
     def measure_column(self):
-        """Measure the column this item heads. Returns the width the column needs and
-        the y offset of every shape stacked below the head.
+        """Measure the column this item heads. Returns the width the column needs, the x
+        offset of every shape stacked below the head and the y offset of each of them.
 
-        The width reaches to the right edge of the widest shape, where the edge of each
-        shape is its indent plus its own width, since the shapes stacked below the head
-        sit further right the deeper they nest.
+        The x offsets are measured from the column start. The connector channel runs down
+        from the head's anchor, and the stacked shapes sit to the right of it with their
+        frame octagons on one line, a shape further right the deeper it nests. The line
+        keeps the widest left overhang in the column clear of the channel, so the labels
+        left of a symbol never cross the connectors. A head without symbol geometry has
+        its channel on its left edge, so that a column of pictures without geometry keeps
+        the width it had when the shapes lined up on their left edges. The width reaches
+        to the right edge of the widest shape, head or stacked.
 
         The y offsets are measured from the top of the head. The stacked shapes follow
         each other down the column, each starting below the one before it, so a taller
@@ -317,6 +379,10 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
         quarter_space = OrgChartTreeItem._ver_space // 4
         base_pos = self.get_pos()
         width, head_height = self._calculate_size_for_aspect_ratio()
+        if self.get_symbol_geometry() is not None:
+            channel_x = self.anchor_x_offset()
+        else:
+            channel_x = 0
 
         stacked = []
         pending = [self._first_child]
@@ -332,18 +398,26 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
         # by level walks the column from top to bottom
         stacked.sort(key=lambda item: item.get_level())
 
+        measures = [
+            (item.get_pos() - base_pos, item._calculate_size_for_aspect_ratio()[0],
+             item.left_overhang())
+            for item in stacked
+        ]
+        x_offsets, right_edge = stacked_column_offsets(
+            channel_x, OrgChartTreeItem.channel_gap(), unit, measures
+        )
+        if right_edge > width:
+            width = right_edge
+
+        x_offset_by_item = {}
         y_offset_by_item = {}
         y_offset = head_height + quarter_space
-        indent = OrgChartTreeItem.stacked_indent()
-        for item in stacked:
-            item_width, item_height = item._calculate_size_for_aspect_ratio()
-            edge = (item.get_pos() - base_pos) * unit + indent + item_width
-            if edge > width:
-                width = edge
+        for item, x_offset in zip(stacked, x_offsets):
+            x_offset_by_item[item] = int(x_offset)
             y_offset_by_item[item] = y_offset
-            y_offset += item_height + quarter_space
+            y_offset += item._calculate_size_for_aspect_ratio()[1] + quarter_space
 
-        return width, y_offset_by_item
+        return width, x_offset_by_item, y_offset_by_item
 
     def set_pos_of_rect(self):
         """Set position of rectangle"""
@@ -366,31 +440,61 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
         # Calculate size based on graphic aspect ratio while fitting within default bounds
         calculated_width, calculated_height = self._calculate_size_for_aspect_ratio()
 
-        if self._level > last_hor_level:
-            self.set_position_if_changed(
-                Point(X=x_coord + OrgChartTreeItem.stacked_indent(), Y=y_coord)
-            )
-        else:
-            self.set_position_if_changed(Point(X=x_coord, Y=y_coord))
+        # A stacked shape's place to the right of the connector channel is part of the
+        # horizontal offset already, so every shape is put where the offsets say
+        self.set_position_if_changed(Point(X=x_coord, Y=y_coord))
 
         self.set_size_if_changed(Size(Width=calculated_width, Height=calculated_height))
 
-        if self._level >= last_hor_level and self.is_first_child():
+        org_chart = self.get_diagram_tree().get_org_chart()
+        geometry = self.get_symbol_geometry()
+        if geometry is not None:
+            # The connectors of this item leave from and arrive at points that follow from
+            # where the frame octagon and the anchor sit on its picture
+            org_chart.update_anchor_glue_points(self._x_rectangle_shape, geometry)
+        elif self._level >= last_hor_level and self.is_first_child():
             # The children of this item are stacked, and the glue point their connectors
             # start on sits at a place on the bottom edge that follows from the width
             # just set
-            self.get_diagram_tree().get_org_chart().update_stacked_glue_point(
-                self._x_rectangle_shape
-            )
+            org_chart.update_stacked_glue_point(self._x_rectangle_shape)
+
+    def get_symbol_geometry(self):
+        """Where the frame octagon and the anchor sit on the picture of this item, as a
+        SymbolGeometry of fractions of the picture, or None when the picture carries no
+        such information (a drawing made before it was recorded, or a plain picture).
+
+        The SVG of the picture is read from the office once and kept. The same read also
+        supplies the proportions of the picture and the height of the frame within it, so
+        a picture that carries the geometry is never asked for its pixel size.
+        """
+        if self._symbol_geometry_known:
+            return self._symbol_geometry
+        self._symbol_geometry_known = True
+
+        context = self.get_diagram_tree().get_org_chart()._x_context
+        svg_data = read_shape_svg(context, self._x_rectangle_shape)
+        geometry = parse_svg_symbol_geometry(svg_data)
+        self._symbol_geometry = geometry
+        if geometry is not None:
+            size = parse_svg_dimensions(svg_data)
+            if size.Width > 0 and size.Height > 0:
+                self._graphic_aspect_ratio = size.Width / size.Height
+            octagon_height = geometry.octagon[3]
+            if octagon_height > 0:
+                self._graphic_frame_factor = 1.0 / octagon_height
+        return self._symbol_geometry
 
     def get_graphic_aspect_ratio(self):
         """Width divided by height of the picture on this item, or None when it has none.
 
         The ratio is read from the office once and kept, because reading it back asks the
         office for the picture's pixel size, which for a drawing has to be worked out
-        rather than looked up.
+        rather than looked up. A picture that carries the symbol geometry gives its
+        proportions together with that geometry.
         """
         if self._graphic_aspect_ratio is not None:
+            return self._graphic_aspect_ratio
+        if self.get_symbol_geometry() is not None and self._graphic_aspect_ratio is not None:
             return self._graphic_aspect_ratio
 
         count("shape: read graphic aspect ratio")
@@ -416,9 +520,12 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
         such as echelon markers or text labels, so the quotient says how much taller the
         decorations make the symbol. A bare symbol gives 1.0.
 
-        The factor is read from the office once and kept, like the aspect ratio.
+        The factor is read from the office once and kept, like the aspect ratio. A picture
+        that carries the symbol geometry gives the factor together with that geometry.
         """
         if self._graphic_frame_factor is not None:
+            return self._graphic_frame_factor
+        if self.get_symbol_geometry() is not None and self._graphic_frame_factor is not None:
             return self._graphic_frame_factor
 
         count("shape: read graphic frame factor")

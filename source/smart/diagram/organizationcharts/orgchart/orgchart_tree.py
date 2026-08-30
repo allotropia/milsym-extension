@@ -41,6 +41,7 @@ class OrgChartTree(OrganizationChartTree):
         # Where each row of the side by side levels starts, one y offset per level, and
         # the y offset of each stacked item measured from the top of its column head.
         self._row_starts = []
+        self._stacked_x_by_item = {}
         self._stacked_y_by_item = {}
 
         if root_item_shape is not None:
@@ -260,14 +261,17 @@ class OrgChartTree(OrganizationChartTree):
         A column is a shape on the last side by side level together with the shapes
         stacked below it. The shapes differ in size, because decorations such as echelon
         markers or text labels make a symbol larger. Each column is measured as its
-        widest shape and the next column starts after that width plus the gap. Down a
-        column each shape starts below the one before it, so a taller symbol moves the
-        shapes below it further down. The rows above the columns are each as tall as
-        their tallest shape.
+        widest shape and the next column starts after that width plus the gap. Within a
+        column the stacked shapes sit right of the connector channel that runs down from
+        the head's anchor, with their frame octagons on one line, the widest left overhang
+        among them keeping every label clear of the channel. Down a column each shape
+        starts below the one before it, so a taller symbol moves the shapes below it
+        further down. The rows above the columns are each as tall as their tallest shape.
         """
         self._column_starts = []
         self._column_x_by_head = {}
         self._row_starts = []
+        self._stacked_x_by_item = {}
         self._stacked_y_by_item = {}
 
         heads = []
@@ -299,7 +303,8 @@ class OrgChartTree(OrganizationChartTree):
         for head in heads:
             self._column_starts.append((head.get_pos(), x_offset))
             self._column_x_by_head[head] = x_offset
-            column_width, y_offset_by_item = head.measure_column()
+            column_width, x_offset_by_item, y_offset_by_item = head.measure_column()
+            self._stacked_x_by_item.update(x_offset_by_item)
             self._stacked_y_by_item.update(y_offset_by_item)
             x_offset += column_width + gap
 
@@ -307,9 +312,10 @@ class OrgChartTree(OrganizationChartTree):
         """The x distance from the left edge of the diagram to the shape of this item.
 
         Column heads sit where measure_columns placed their column. A stacked shape sits
-        at its column start plus its indent. A shape above the columns sits between the
-        columns around its layout position, in proportion to where that position falls
-        between theirs.
+        at its column start plus the offset measure_columns found for it, which puts its
+        frame octagon on the line shared by the whole column. A shape above the columns
+        sits between the columns around its layout position, in proportion to where that
+        position falls between theirs.
         """
         unit = OrgChartTreeItem.horizontal_pos_unit()
 
@@ -323,6 +329,9 @@ class OrgChartTree(OrganizationChartTree):
             while head is not None and head.get_level() > OrgChartTree.LAST_HOR_LEVEL:
                 head = head.get_dad()
             head_x = self._column_x_by_head.get(head)
+            stacked_x = self._stacked_x_by_item.get(item)
+            if head_x is not None and stacked_x is not None:
+                return head_x + stacked_x
             if head_x is not None:
                 return head_x + (item.get_pos() - head.get_pos()) * unit
             return item.get_pos() * unit
@@ -445,7 +454,7 @@ class OrgChartTree(OrganizationChartTree):
             )
 
             start_pos, end_pos = self.get_org_chart().connector_glue_positions(
-                expected_start_shape, child_tree_item.get_level()
+                parent_tree_item, child_tree_item, child_tree_item.get_level()
             )
 
             # Writing the ends of a connector makes the office reroute it, so leave alone

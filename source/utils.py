@@ -7,6 +7,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import os
+import tempfile
 import xml.etree.ElementTree as ET
 from contextlib import contextmanager
 
@@ -250,6 +251,94 @@ def parse_svg_anchor(svg_data):
     corner of the drawing at (0, 0). Returns None for an SVG without anchor information.
     """
     return parse_svg_geometry(svg_data, "anchor", 2)
+
+
+class SymbolGeometry:
+    """Where the frame octagon and the anchor of a milsymbol drawing sit.
+
+    Every value is a fraction of the drawing's width or height, with the top left corner
+    of the drawing at (0, 0), so the geometry holds at whatever size the drawing is shown.
+    octagon is (x, y, width, height) of the frame octagon. anchor is (x, y) of the symbol
+    anchor: the end of the staff for a headquarters and the octagon centre for every other
+    symbol.
+    """
+
+    def __init__(self, octagon, anchor):
+        self.octagon = octagon
+        self.anchor = anchor
+
+    def octagon_left(self):
+        return self.octagon[0]
+
+    def octagon_top(self):
+        return self.octagon[1]
+
+    def octagon_bottom(self):
+        return self.octagon[1] + self.octagon[3]
+
+    def octagon_centre_x(self):
+        return self.octagon[0] + self.octagon[2] / 2
+
+    def octagon_centre_y(self):
+        return self.octagon[1] + self.octagon[3] / 2
+
+    def anchor_x(self):
+        return self.anchor[0]
+
+    def anchor_y(self):
+        return self.anchor[1]
+
+
+def parse_svg_symbol_geometry(svg_data):
+    """The octagon and anchor of a generated symbol SVG as a SymbolGeometry, or None for an
+    SVG that carries no such information, such as one generated before the attributes were
+    added or a picture that is not a milsymbol drawing."""
+    if not svg_data:
+        return None
+    octagon = parse_svg_octagon(svg_data)
+    anchor = parse_svg_anchor(svg_data)
+    if octagon is None or anchor is None:
+        return None
+    return SymbolGeometry(octagon, anchor)
+
+
+def read_shape_svg(ctx, shape):
+    """The SVG source of the picture a shape shows, or None when it has none.
+
+    The office keeps the bytes a vector picture was loaded from and writes them back
+    unchanged when the picture is exported as SVG, so the string returned is the one the
+    picture was made from, with every attribute it carried. The export goes through a
+    temporary file, which is removed again before this returns.
+    """
+    try:
+        graphic = shape.getPropertyValue("Graphic")
+        if graphic is None:
+            return None
+        count("shape: read graphic svg")
+        provider = ctx.ServiceManager.createInstanceWithContext(
+            "com.sun.star.graphic.GraphicProvider", ctx
+        )
+        handle, path = tempfile.mkstemp(suffix=".svg")
+        os.close(handle)
+        try:
+            provider.storeGraphic(
+                graphic,
+                (
+                    PropertyValue("URL", 0, uno.systemPathToFileUrl(path), 0),
+                    PropertyValue("MimeType", 0, "image/svg+xml", 0),
+                ),
+            )
+            with open(path, "rb") as exported:
+                data = exported.read()
+        finally:
+            if os.path.exists(path):
+                os.remove(path)
+        if not data:
+            return None
+        return data.decode("utf-8")
+    except Exception as e:
+        print(f"Warning: Could not read the SVG of a shape: {e}")
+        return None
 
 
 def octagon_rect_in_shape(shape, svg_data):

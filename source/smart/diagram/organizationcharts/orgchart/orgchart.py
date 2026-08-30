@@ -14,7 +14,7 @@ OrgChart class - Main organization chart implementation
 Python port of OrgChart.java
 """
 
-from utils import generate_icon_svg, get_recorded_symbol_size_px
+from utils import generate_icon_svg, get_recorded_symbol_size_px, locked_controllers
 from perf import count
 from ...diagram import Diagram
 from ..organization_chart import OrganizationChart
@@ -23,14 +23,173 @@ from .orgchart_tree_item import OrgChartTreeItem
 
 from com.sun.star.awt import Point
 from com.sun.star.drawing import GluePoint2
+from com.sun.star.lang import IndexOutOfBoundsException
 from com.sun.star.drawing.EscapeDirection import VERTICAL as ESCAPE_VERTICAL
+from com.sun.star.drawing.EscapeDirection import DOWN as ESCAPE_DOWN
+from com.sun.star.drawing.EscapeDirection import UP as ESCAPE_UP
+from com.sun.star.drawing.EscapeDirection import LEFT as ESCAPE_LEFT
 from com.sun.star.drawing.Alignment import CENTER as ALIGNMENT_CENTER
 
-# Where on the bottom edge of a shape the connectors to its stacked children leave, as a
-# fraction of the shape's width on the relative glue point scale of 0 to 10000. On very
-# wide shapes the point moves further left than this, so that it stays left of the
-# children.
-STACKED_GLUE_FRACTION = 2500
+# A shape starts with four builtin glue points, indices 0 to 3, one on the middle of each
+# edge: 0 top, 1 left, 2 bottom, 3 right. The first user defined point gets index 4.
+BUILTIN_GLUE_POINT_COUNT = 4
+GLUE_TOP = 0
+GLUE_BOTTOM = 2
+GLUE_LEFT = 3
+
+# The user defined glue points of a shape that shows a milsymbol drawing. They are placed
+# from where the frame octagon and the anchor of the drawing sit within the picture.
+# ANCHOR_START_GLUE is where every connector to a child leaves: the anchor of the symbol,
+# moved down to the bottom of the octagon when the anchor lies inside it. For a
+# headquarters the anchor is the end of the staff, so the children hang off the staff.
+# ANCHOR_TOP_GLUE is where a connector arrives on a child that hangs below its parent: the
+# top of the octagon, above the anchor. ANCHOR_LEFT_GLUE is where a connector arrives on a
+# stacked child: the middle of the octagon's left edge.
+ANCHOR_START_GLUE = 4
+ANCHOR_TOP_GLUE = 5
+ANCHOR_LEFT_GLUE = 6
+
+# Where on the bottom edge of a shape without symbol geometry the connectors to its
+# stacked children leave: on the relative glue point scale, 4 percent of the width from
+# the left edge, so that the point stays left of the children whatever the shape's width.
+STACKED_GLUE_POSITION = Point(X=-4600, Y=5000)
+
+
+def relative_glue_position(x_fraction, y_fraction):
+    """The Position of a relative glue point aligned at the centre of its shape, for a point
+    given as fractions of the shape's width and height with the top left corner at (0, 0).
+
+    A relative glue point measures its position in hundredths of a percent of the shape's
+    width and height, offset from the alignment point. The centre lies at (0, 0) and the
+    edges at -5000 and 5000.
+    """
+    return Point(
+        X=int(round((x_fraction - 0.5) * 10000)),
+        Y=int(round((y_fraction - 0.5) * 10000)),
+    )
+
+
+def anchor_glue_point_positions(geometry):
+    """The Position and Escape of each user defined glue point of a shape with the given
+    SymbolGeometry, keyed by glue point index."""
+    return {
+        ANCHOR_START_GLUE: (
+            relative_glue_position(
+                geometry.anchor_x(), max(geometry.anchor_y(), geometry.octagon_bottom())
+            ),
+            ESCAPE_DOWN,
+        ),
+        ANCHOR_TOP_GLUE: (
+            relative_glue_position(geometry.anchor_x(), geometry.octagon_top()),
+            ESCAPE_UP,
+        ),
+        ANCHOR_LEFT_GLUE: (
+            relative_glue_position(geometry.octagon_left(), geometry.octagon_centre_y()),
+            ESCAPE_LEFT,
+        ),
+    }
+
+
+def _same_glue_point(glue, position, escape):
+    """Whether a glue point already is a relative, centre aligned point at this position
+    with this escape direction."""
+    return (
+        glue.IsRelative
+        and glue.PositionAlignment == ALIGNMENT_CENTER
+        and glue.Escape == escape
+        and glue.Position.X == position.X
+        and glue.Position.Y == position.Y
+    )
+
+
+def _make_glue_point(position, escape):
+    glue = GluePoint2()
+    glue.IsRelative = True
+    glue.Position = position
+    glue.Escape = escape
+    glue.PositionAlignment = ALIGNMENT_CENTER
+    glue.IsUserDefined = True
+    return glue
+
+
+def _replace_glue_point(glue_points, index, glue):
+    """Replace the glue point at this index and say whether the point now is the one given.
+
+    The office applies the replacement and then raises IndexOutOfBoundsException all the
+    same, so the exception says nothing about the outcome; the point is read back instead.
+    """
+    try:
+        glue_points.replaceByIndex(index, glue)
+    except IndexOutOfBoundsException:
+        pass
+    replaced = glue_points.getByIndex(index)
+    return _same_glue_point(replaced, glue.Position, glue.Escape)
+
+
+def update_anchor_glue_points(shape, geometry):
+    """Keep the three user defined glue points of a shape that shows a milsymbol drawing
+    at the places that follow from the drawing's SymbolGeometry.
+
+    The points are relative to the shape's size, so a shape that is only resized keeps
+    them without a write. A point already at its place is left alone. A shape that has
+    fewer user defined points than three, for example one made before these points were
+    introduced with only the stacked start point at index 4, gets the missing ones added.
+    """
+    try:
+        glue_points = shape.getGluePoints()
+        wanted = anchor_glue_point_positions(geometry)
+        for index in (ANCHOR_START_GLUE, ANCHOR_TOP_GLUE, ANCHOR_LEFT_GLUE):
+            position, escape = wanted[index]
+            if index < glue_points.getCount():
+                glue = glue_points.getByIndex(index)
+                if _same_glue_point(glue, position, escape):
+                    continue
+                count("shape: glue point moved")
+                if not _replace_glue_point(
+                    glue_points, index, _make_glue_point(position, escape)
+                ):
+                    print(f"Warning: glue point {index} of a shape could not be moved")
+            else:
+                count("shape: glue point added")
+                glue_points.insertByIndex(index, _make_glue_point(position, escape))
+    except Exception as ex:
+        print(f"Error setting the anchor glue points: {ex}")
+
+
+def update_stacked_glue_point(shape, add_if_missing=False):
+    """Keep the glue point the connectors to stacked children start on at its place on
+    the bottom edge of a shape without symbol geometry.
+
+    A shape that carries no user defined point yet is given one when add_if_missing says
+    so; otherwise, and when the point cannot be added, the index of the builtin bottom
+    centre point is returned instead. Returns the index of the point to start on.
+    """
+    try:
+        glue_points = shape.getGluePoints()
+        curr_count = glue_points.getCount()
+
+        if curr_count > ANCHOR_START_GLUE:
+            glue = glue_points.getByIndex(ANCHOR_START_GLUE)
+            if not _same_glue_point(glue, STACKED_GLUE_POSITION, ESCAPE_VERTICAL):
+                count("shape: glue point moved")
+                _replace_glue_point(
+                    glue_points,
+                    ANCHOR_START_GLUE,
+                    _make_glue_point(STACKED_GLUE_POSITION, ESCAPE_VERTICAL),
+                )
+            return ANCHOR_START_GLUE
+
+        if not add_if_missing:
+            return GLUE_BOTTOM
+
+        count("shape: glue point added")
+        glue_points.insertByIndex(
+            curr_count, _make_glue_point(STACKED_GLUE_POSITION, ESCAPE_VERTICAL)
+        )
+        return curr_count
+    except Exception as ex:
+        print(f"Error setting the stacked connector glue point: {ex}")
+        return GLUE_BOTTOM
 
 
 class OrgChart(OrganizationChart):
@@ -160,7 +319,7 @@ class OrgChart(OrganizationChart):
                     self.set_move_protect_of_shape(x_connector_shape)
 
                     start_conn_pos, end_shape_conn_pos = self.connector_glue_positions(
-                        dad_item.get_rectangle_shape(), dad_item.get_level() + 1
+                        dad_item, None, dad_item.get_level() + 1
                     )
 
                     self.set_connector_shape_props(
@@ -322,67 +481,75 @@ class OrgChart(OrganizationChart):
         self._diagram_tree.set_lists(read_geometry)
         self._diagram_tree.set_tree()
 
+    def update_anchor_glue_points(self, shape, geometry):
+        """Keep the user defined glue points of a shape with a milsymbol drawing at the
+        places that follow from its SymbolGeometry."""
+        update_anchor_glue_points(shape, geometry)
+
     def update_stacked_glue_point(self, shape, add_if_missing=False):
-        """Keep the glue point the connectors to stacked children
-        start on at its place on the bottom edge of the shape, where
-        its place follows from the shape's width.
-
-        A shape starts with the four builtin glue points, indices 0 to
-        3, one on the middle of each edge, so the first user defined
-        point gets index 4. A shape that carries no such point yet is
-        given one when add_if_missing says so; otherwise, and when the
-        point cannot be added, the index of the builtin bottom center
-        point is returned instead.
-
+        """Keep the stacked start glue point of a shape without symbol geometry at its
+        place. Returns the index of the point the connectors to stacked children start on.
         """
-        try:
-            # put glue point bottom-left corner
-            rel_pos_x = -4600
-            rel_pos_y = 5000
-            glue_points = shape.getGluePoints()
-            curr_count = glue_points.getCount()
+        return update_stacked_glue_point(shape, add_if_missing)
 
-            if curr_count > 4:
-                # check existing first user-defined
-                glue = glue_points.getByIndex(4)
-                if glue.Position.X != rel_pos_x:
-                    count("shape: glue point moved")
-                    glue.IsRelative = True
-                    glue.Position = Point(X=rel_pos_x, Y=rel_pos_y)
-                    glue_points.replaceByIndex(4, glue)
-                return 4
+    def connector_glue_positions(self, parent_item, child_item, child_level):
+        """The glue points the connector from a parent to a child at this level runs
+        between, as the pair of start and end glue point indices.
 
-            if not add_if_missing:
-                return 2 # fallback bottom-most
+        The items are tree items; either may be None, and the child's level is passed
+        separately because an item that is still being added does not know its level yet.
 
-            count("shape: glue point added")
-            glue = GluePoint2()
-            glue.IsRelative = True
-            glue.Position = Point(X=rel_pos_x, Y=rel_pos_y)
-            glue.Escape = ESCAPE_VERTICAL
-            glue.PositionAlignment = ALIGNMENT_CENTER
-            glue.IsUserDefined = True
-            glue_points.insertByIndex(curr_count, glue)
-            return curr_count
-        except Exception as ex:
-            print(f"Error setting the stacked connector glue point: {ex}")
-            return 2
-
-    def connector_glue_positions(self, parent_shape, child_level):
-        """The glue points the connector to a child at this level runs between.
-
-        Returns the pair of start and end glue point indices. A child on the side by
-        side levels hangs below its parent, so the connector runs from the parent's
-        bottom center to the child's top center. A stacked child is entered on its left
-        edge, and the connector starts on a point on the parent's bottom edge that lies
-        left of every stacked child whatever the width of the parent's picture, so the
-        connector routes downward and then right without doubling back.
+        On a shape with symbol geometry the connector leaves from the anchor point and
+        arrives at the top of the octagon, or at the left edge of the octagon for a
+        stacked child, and the glue points for that are put in place here. A shape
+        without geometry keeps the builtin points: a child on the side by side levels
+        hangs below its parent, so the connector runs from the parent's bottom centre to
+        the child's top centre. A stacked child is entered on its left edge, and the
+        connector starts on a point on the parent's bottom edge that lies left of every
+        stacked child whatever the width of the parent's picture, so the connector
+        routes downward and then right without doubling back.
         """
-        if child_level > OrgChartTree.LAST_HOR_LEVEL:
-            if parent_shape is not None:
-                return self.update_stacked_glue_point(parent_shape, True), 3
-            return 2, 3
-        return 2, 0
+        stacked = child_level > OrgChartTree.LAST_HOR_LEVEL
+
+        parent_shape = None
+        parent_geometry = None
+        if parent_item is not None:
+            parent_shape = parent_item.get_rectangle_shape()
+            parent_geometry = parent_item.get_symbol_geometry()
+        if parent_geometry is not None and parent_shape is not None:
+            update_anchor_glue_points(parent_shape, parent_geometry)
+            start = ANCHOR_START_GLUE
+        elif stacked and parent_shape is not None:
+            start = update_stacked_glue_point(parent_shape, True)
+        else:
+            start = GLUE_BOTTOM
+
+        child_geometry = None
+        if child_item is not None:
+            child_shape = child_item.get_rectangle_shape()
+            child_geometry = child_item.get_symbol_geometry()
+            if child_geometry is not None and child_shape is not None:
+                update_anchor_glue_points(child_shape, child_geometry)
+        if child_geometry is not None:
+            end = ANCHOR_LEFT_GLUE if stacked else ANCHOR_TOP_GLUE
+        else:
+            end = GLUE_LEFT if stacked else GLUE_TOP
+
+        return start, end
+
+    def refresh_diagram(self):
+        """Lay the diagram out again and join the connectors up at the points that follow
+        from the pictures the shapes show now.
+
+        A connector is made before its child gets a picture, so it starts out on the
+        builtin glue points. Once the layout has placed the anchor glue points, the
+        connectors are moved onto them here; a connector that already joins the right
+        points is left alone.
+        """
+        super().refresh_diagram()
+        if self._diagram_tree is not None:
+            with locked_controllers(self._x_model):
+                self._diagram_tree.refresh_connector_props()
 
     def paste_subtree(self, target_tree_item, clipboard_item, script=None):
         """Paste copied subtree as children of target item"""
@@ -456,7 +623,7 @@ class OrgChart(OrganizationChart):
         # Calculate actual level by traversing up the tree (parent's level + 1)
         new_item_level = self._calculate_actual_level(parent_tree_item) + 1
         start_conn_pos, end_shape_conn_pos = self.connector_glue_positions(
-            parent_tree_item.get_rectangle_shape(), new_item_level
+            parent_tree_item, new_tree_item, new_item_level
         )
 
         self.set_connector_shape_props(
@@ -595,20 +762,20 @@ class OrgChart(OrganizationChart):
                                 self._diagram_tree.add_to_connectors(x_connector_shape)
 
                                 x_start_shape = None
+                                start_item = None
                                 new_item_level = 0
-
                                 if self._new_item_h_type == self.UNDERLING:
-                                    x_start_shape = selected_item.get_rectangle_shape()
+                                    start_item = selected_item
                                     new_item_level = selected_item.get_level() + 1
                                 elif self._new_item_h_type == self.ASSOCIATE:
-                                    x_start_shape = (
-                                        selected_item.get_dad().get_rectangle_shape()
-                                    )
+                                    start_item = selected_item.get_dad()
                                     new_item_level = selected_item.get_level()
+                                if start_item is not None:
+                                    x_start_shape = start_item.get_rectangle_shape()
 
                                 start_conn_pos, end_shape_conn_pos = (
                                     self.connector_glue_positions(
-                                        x_start_shape, new_item_level
+                                        start_item, new_tree_item, new_item_level
                                     )
                                 )
 
