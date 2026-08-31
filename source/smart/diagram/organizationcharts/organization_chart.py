@@ -521,6 +521,12 @@ class OrganizationChart(Diagram):
                         selected_item = self.get_diagram_tree().get_tree_item(
                             x_selected_shape
                         )
+                        if selected_item is None:
+                            print(
+                                "Error removing shape: no tree item found for "
+                                f"{selected_shape_name}"
+                            )
+                            return
 
                         no_item = False
                         dad_item = selected_item.get_dad()
