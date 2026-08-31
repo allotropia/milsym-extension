@@ -211,8 +211,18 @@ class ContextMenuInterceptor(unohelper.Base, XContextMenuInterceptor):
                 if not self.orbat_enabled:
                     return IGNORED
                 menu_container = event.ActionTriggerContainer
-                self._insert_refresh_orbat_menu_item(menu_container)
-                self._insert_edit_orbat_menu_item(menu_container)
+                self._insert_orbat_menu_item(
+                    menu_container,
+                    "ContextMenu.RefreshOrbat",
+                    "service:com.collabora.milsymbol.do?refreshOrbat",
+                    insert_separator=True,
+                )
+                self._insert_orbat_menu_item(
+                    menu_container,
+                    "ContextMenu.EditOrbat",
+                    "service:com.collabora.milsymbol.do?editOrbat",
+                    insert_separator=False,
+                )
                 return EXECUTE_MODIFIED
 
             shape = ListenerRegistry.instance().get_selected_shape()
@@ -274,44 +284,31 @@ class ContextMenuInterceptor(unohelper.Base, XContextMenuInterceptor):
             print(f"Error checking for ORBAT group: {e}")
             return None
 
-    def _insert_edit_orbat_menu_item(self, menu_container):
-        """Insert 'Edit Orbat' menu item"""
+    def _insert_orbat_menu_item(
+        self, menu_container, translation_key, command_url, insert_separator
+    ):
+        """Insert one ORBAT context menu item, naming its translated text and command URL.
+
+        The ORBAT items sit above the rest of the context menu, set off from it by one
+        separator; pass insert_separator for the item inserted first, closest to the
+        rest of the menu.
+        """
         try:
             menu_item = menu_container.createInstance("com.sun.star.ui.ActionTrigger")
 
-            menu_text = translate(self.ctx, "ContextMenu.EditOrbat")
+            menu_text = translate(self.ctx, translation_key)
             menu_item.setPropertyValue("Text", menu_text)
-            menu_item.setPropertyValue(
-                "CommandURL", "service:com.collabora.milsymbol.do?editOrbat"
-            )
+            menu_item.setPropertyValue("CommandURL", command_url)
 
-            separator = menu_container.createInstance(
-                "com.sun.star.ui.ActionTriggerSeparator"
-            )
+            if insert_separator:
+                separator = menu_container.createInstance(
+                    "com.sun.star.ui.ActionTriggerSeparator"
+                )
+                menu_container.insertByIndex(0, separator)
 
             menu_container.insertByIndex(0, menu_item)
         except Exception as e:
-            print(f"_insert_edit_orbat_menu_item error: {e}")
-
-    def _insert_refresh_orbat_menu_item(self, menu_container):
-        """Insert 'Refresh Orbat' menu item"""
-        try:
-            menu_item = menu_container.createInstance("com.sun.star.ui.ActionTrigger")
-
-            menu_text = translate(self.ctx, "ContextMenu.RefreshOrbat")
-            menu_item.setPropertyValue("Text", menu_text)
-            menu_item.setPropertyValue(
-                "CommandURL", "service:com.collabora.milsymbol.do?refreshOrbat"
-            )
-
-            separator = menu_container.createInstance(
-                "com.sun.star.ui.ActionTriggerSeparator"
-            )
-
-            menu_container.insertByIndex(0, separator)
-            menu_container.insertByIndex(0, menu_item)
-        except Exception as e:
-            print(f"_insert_edit_orbat_menu_item error: {e}")
+            print(f"_insert_orbat_menu_item error: {e}")
 
     def _insert_menu_item(self, menu_container):
         """Insert 'Edit Military Symbol' and 'Add to Favorites' menu items"""
