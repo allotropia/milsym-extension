@@ -94,6 +94,11 @@ class Diagram(ABC):
         """Get shapes collection"""
         return self._x_shapes
 
+    def get_diagram_tree(self):
+        """Get the tree that tracks this diagram's shapes, or None for a diagram
+        kind that keeps no such tree - to be overridden in subclasses that have one"""
+        return None
+
     def set_draw_area(self):
         """Set drawing area dimensions - to be overridden in subclasses"""
         pass
@@ -231,9 +236,7 @@ class Diagram(ABC):
         item learns the geometry from the office once it exists and asks.
         """
         try:
-            diagram_tree = (
-                self.get_diagram_tree() if hasattr(self, "get_diagram_tree") else None
-            )
+            diagram_tree = self.get_diagram_tree()
             item = diagram_tree.get_tree_item(shape) if diagram_tree else None
             if item is not None:
                 item.note_symbol_svg(svg_data)
@@ -245,9 +248,7 @@ class Diagram(ABC):
     def forget_graphic_aspect_ratio_of(self, shape):
         """Tell the tree that this shape carries a different picture now."""
         try:
-            diagram_tree = (
-                self.get_diagram_tree() if hasattr(self, "get_diagram_tree") else None
-            )
+            diagram_tree = self.get_diagram_tree()
             if diagram_tree is None:
                 return
             item = diagram_tree.get_tree_item(shape)
@@ -264,9 +265,7 @@ class Diagram(ABC):
         the layout to give it the size it should have.
         """
         try:
-            diagram_tree = (
-                self.get_diagram_tree() if hasattr(self, "get_diagram_tree") else None
-            )
+            diagram_tree = self.get_diagram_tree()
             if diagram_tree is None:
                 return
             diagram_tree.forget_geometry_of(diagram_tree.name_of_shape(shape))
@@ -282,9 +281,7 @@ class Diagram(ABC):
         back here, and without it the layout would start from the corner of the group.
         """
         try:
-            diagram_tree = (
-                self.get_diagram_tree() if hasattr(self, "get_diagram_tree") else None
-            )
+            diagram_tree = self.get_diagram_tree()
             if diagram_tree is None:
                 return
             diagram_tree.forget_geometry()
@@ -447,9 +444,7 @@ class Diagram(ABC):
             else:
                 connector_shape.setPropertyValue("TextFitToSize", 0)  # NONE
 
-            diagram_tree = (
-                self.get_diagram_tree() if hasattr(self, "get_diagram_tree") else None
-            )
+            diagram_tree = self.get_diagram_tree()
             if diagram_tree is not None:
                 diagram_tree.note_connector_ends(
                     connector_shape,
