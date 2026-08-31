@@ -546,9 +546,9 @@ class OrgChart(OrganizationChart):
         connectors are moved onto them here; a connector that already joins the right
         points is left alone.
         """
-        super().refresh_diagram()
-        if self._diagram_tree is not None:
-            with locked_controllers(self._x_model):
+        with locked_controllers(self._x_model):
+            super().refresh_diagram()
+            if self._diagram_tree is not None:
                 self._diagram_tree.refresh_connector_props()
 
     def paste_subtree(self, target_tree_item, clipboard_item, script=None):
