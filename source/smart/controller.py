@@ -563,6 +563,13 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                     except Exception:
                         current_group_shape = None
 
+                current_group_name = ""
+                if current_group_shape is not None:
+                    try:
+                        current_group_name = current_group_shape.getName()
+                    except Exception:
+                        current_group_name = ""
+
                 # The control dialog can be showing a diagram of another document's
                 # controller, and then this document's diagram is set up afresh even
                 # when the click stayed in the same group.
@@ -578,13 +585,21 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                 # The group shapes stand for the diagrams. Two diagrams in one
                 # document can carry the same names, for example after copying one, so
                 # comparing the shapes themselves is what tells whether the click
-                # landed in another diagram.
+                # landed in another diagram. When the clicked shape's group cannot be
+                # resolved to a shape, fall back to comparing the diagram name prefix,
+                # so a click on a diagram whose group is unreachable is still told
+                # apart from the diagram that is currently open.
                 needs_new_diagram = (
                     dialog_belongs_elsewhere
                     or current_group_shape is None
                     or (
                         x_group_shape is not None
                         and x_group_shape != current_group_shape
+                    )
+                    or (
+                        x_group_shape is None
+                        and selected_shape_name.split("-", 1)[0]
+                        != current_group_name.split("-", 1)[0]
                     )
                 )
 
