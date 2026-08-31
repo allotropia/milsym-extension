@@ -570,6 +570,22 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                     except Exception:
                         current_group_name = ""
 
+                # A shape removed or added by something other than the diagram's own
+                # bookkeeping, such as the office's own Delete or an undo it did not
+                # tell the diagram about, leaves the tree accounting for fewer or more
+                # shapes than the group holds. Rebuild the diagram rather than reuse a
+                # tree that no longer matches the group.
+                diagram_tree_is_stale = False
+                if current_group_shape is not None and self._diagram is not None:
+                    try:
+                        diagram_tree = self._diagram.get_diagram_tree()
+                        diagram_tree_is_stale = (
+                            diagram_tree is not None
+                            and not diagram_tree.knows_every_shape_in_the_group()
+                        )
+                    except Exception:
+                        diagram_tree_is_stale = False
+
                 # The control dialog can be showing a diagram of another document's
                 # controller, and then this document's diagram is set up afresh even
                 # when the click stayed in the same group.
@@ -592,6 +608,7 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                 needs_new_diagram = (
                     dialog_belongs_elsewhere
                     or current_group_shape is None
+                    or diagram_tree_is_stale
                     or (
                         x_group_shape is not None
                         and x_group_shape != current_group_shape
