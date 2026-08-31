@@ -498,8 +498,13 @@ class MainJob(unohelper.Base, XJobExecutor):
         except Exception as e:
             print(f"Error clearing what a diagram keeps about a shape: {e}")
 
-    def onEditOrbat(self):
-        """Open the ORBAT dialog for the currently selected ORBAT group"""
+    def _get_selected_orbat_diagram(self):
+        """Set up the ORBAT diagram for the currently selected ORBAT group.
+
+        Returns the diagram, instantiated and initialized for the selected group, or
+        None when the current frame cannot be resolved, or the selection does not
+        name an ORBAT group.
+        """
         frame = self.desktop.getCurrentFrame()
         controller_manager = ControllerManager(self.ctx)
 
@@ -508,12 +513,12 @@ class MainJob(unohelper.Base, XJobExecutor):
         else:
             controller = controller_manager.get_or_create_controller(self.ctx, frame)
             if controller is None:
-                return
+                return None
 
         xcontroller = frame.getController()
         selection = xcontroller.getSelection()
         if selection is None:
-            return
+            return None
 
         shape = None
         if selection.supportsService("com.sun.star.drawing.GroupShape"):
@@ -523,17 +528,17 @@ class MainJob(unohelper.Base, XJobExecutor):
                 shape = selection.getByIndex(0)
 
         if shape is None:
-            return
+            return None
 
         shape_name = shape.getName() if hasattr(shape, "getName") else ""
         if not shape_name.startswith("OrbatDiagram"):
-            return
+            return None
 
         # The selection can be the group itself or a shape inside it. The group shape
         # is what names the diagram, and the diagram binds to that exact group.
         group_shape = controller.get_containing_diagram_group(shape)
         if group_shape is None:
-            return
+            return None
 
         controller.set_group_type(controller.ORGANIGROUP)
         controller.set_diagram_type(controller.ORGANIGRAM)
@@ -541,51 +546,23 @@ class MainJob(unohelper.Base, XJobExecutor):
         controller.get_diagram().init_diagram(group_shape=group_shape)
         controller.get_diagram().init_properties()
 
-        controller._gui.set_visible_control_dialog(True)
+        return controller.get_diagram()
+
+    def onEditOrbat(self):
+        """Open the ORBAT dialog for the currently selected ORBAT group"""
+        diagram = self._get_selected_orbat_diagram()
+        if diagram is None:
+            return
+
+        diagram.get_controller()._gui.set_visible_control_dialog(True)
 
     def onRefreshOrbat(self):
         """Refresh layout for the currently selected ORBAT group"""
-        frame = self.desktop.getCurrentFrame()
-        controller_manager = ControllerManager(self.ctx)
-
-        if frame in controller_manager._controllers:
-            controller = controller_manager._controllers[frame]
-        else:
-            controller = controller_manager.get_or_create_controller(self.ctx, frame)
-            if controller is None:
-                return
-
-        xcontroller = frame.getController()
-        selection = xcontroller.getSelection()
-        if selection is None:
+        diagram = self._get_selected_orbat_diagram()
+        if diagram is None:
             return
 
-        shape = None
-        if selection.supportsService("com.sun.star.drawing.GroupShape"):
-            shape = selection
-        elif selection.supportsService("com.sun.star.drawing.Shapes"):
-            if selection.getCount() == 1:
-                shape = selection.getByIndex(0)
-
-        if shape is None:
-            return
-
-        shape_name = shape.getName() if hasattr(shape, "getName") else ""
-        if not shape_name.startswith("OrbatDiagram"):
-            return
-
-        # The selection can be the group itself or a shape inside it. The group shape
-        # is what names the diagram, and the diagram binds to that exact group.
-        group_shape = controller.get_containing_diagram_group(shape)
-        if group_shape is None:
-            return
-
-        controller.set_group_type(controller.ORGANIGROUP)
-        controller.set_diagram_type(controller.ORGANIGRAM)
-        controller.instantiate_diagram()
-        controller.get_diagram().init_diagram(group_shape=group_shape)
-        controller.get_diagram().init_properties()
-        controller.get_diagram().refresh_diagram()
+        diagram.refresh_diagram()
 
     def onOrgChart(self):
         """Create a simple organization chart"""
