@@ -253,19 +253,34 @@ def parse_svg_anchor(svg_data):
     return parse_svg_geometry(svg_data, "anchor", 2)
 
 
+def parse_svg_frame(svg_data):
+    """The bounding box of the visible frame outline of a generated symbol SVG, as
+    fractions of the drawing size.
+
+    Returns (x, y, width, height), each a fraction of the drawing's width or height with
+    the top left corner of the drawing at (0, 0). Returns None for an SVG without frame
+    information, such as one generated before the attribute was added.
+    """
+    return parse_svg_geometry(svg_data, "frame", 4)
+
+
 class SymbolGeometry:
-    """Where the frame octagon and the anchor of a milsymbol drawing sit.
+    """Where the frame octagon, the frame outline and the anchor of a milsymbol drawing sit.
 
     Every value is a fraction of the drawing's width or height, with the top left corner
     of the drawing at (0, 0), so the geometry holds at whatever size the drawing is shown.
-    octagon is (x, y, width, height) of the frame octagon. anchor is (x, y) of the symbol
-    anchor: the end of the staff for a headquarters and the octagon centre for every other
-    symbol.
+    octagon is (x, y, width, height) of the frame octagon: the square the symbol icon fits
+    in, which the visible frame surrounds and can extend beyond. frame is (x, y, width,
+    height) of the bounding box of the visible frame outline; for a drawing recorded
+    before that value was added it falls back to the octagon. anchor is (x, y) of the
+    symbol anchor: the end of the staff for a headquarters and the octagon centre for
+    every other symbol.
     """
 
-    def __init__(self, octagon, anchor):
+    def __init__(self, octagon, anchor, frame=None):
         self.octagon = octagon
         self.anchor = anchor
+        self.frame = frame if frame is not None else octagon
 
     def octagon_left(self):
         return self.octagon[0]
@@ -282,6 +297,18 @@ class SymbolGeometry:
     def octagon_centre_y(self):
         return self.octagon[1] + self.octagon[3] / 2
 
+    def frame_left(self):
+        return self.frame[0]
+
+    def frame_top(self):
+        return self.frame[1]
+
+    def frame_bottom(self):
+        return self.frame[1] + self.frame[3]
+
+    def frame_centre_y(self):
+        return self.frame[1] + self.frame[3] / 2
+
     def anchor_x(self):
         return self.anchor[0]
 
@@ -290,16 +317,16 @@ class SymbolGeometry:
 
 
 def parse_svg_symbol_geometry(svg_data):
-    """The octagon and anchor of a generated symbol SVG as a SymbolGeometry, or None for an
-    SVG that carries no such information, such as one generated before the attributes were
-    added or a picture that is not a milsymbol drawing."""
+    """The octagon, frame and anchor of a generated symbol SVG as a SymbolGeometry, or None
+    for an SVG that carries no octagon or anchor information, such as one generated before
+    the attributes were added or a picture that is not a milsymbol drawing."""
     if not svg_data:
         return None
     octagon = parse_svg_octagon(svg_data)
     anchor = parse_svg_anchor(svg_data)
     if octagon is None or anchor is None:
         return None
-    return SymbolGeometry(octagon, anchor)
+    return SymbolGeometry(octagon, anchor, parse_svg_frame(svg_data))
 
 
 def read_shape_svg(ctx, shape):

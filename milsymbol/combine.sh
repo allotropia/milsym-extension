@@ -61,9 +61,27 @@ var svg = symbol.asSVG();
 var octagonSize = Number(symbol.getStyle().size);
 var octagon = symbol.getOctagonAnchor();
 var anchor = symbol.getAnchor();
+
+// The frame geometry bounding box is in milsymbol's 200 unit grid, where the frame octagon
+// is the 100 by 100 square centred on (100, 100). The octagon anchor and size are in the
+// same scaled space as the SVG width and height attributes, so a grid coordinate maps into
+// that space as the octagon centre plus the distance from grid 100, times octagonSize / 100.
+var frameAttribute = "";
+var frameBox = symbol.getMetadata().baseGeometry.bbox;
+if (frameBox && isFinite(frameBox.x1) && isFinite(frameBox.y1)
+        && isFinite(frameBox.x2) && isFinite(frameBox.y2)
+        && frameBox.x2 > frameBox.x1 && frameBox.y2 > frameBox.y1) {
+    var gridScale = octagonSize / 100;
+    frameAttribute = ' milsym:frame="'
+        + (octagon.x + (frameBox.x1 - 100) * gridScale) + " "
+        + (octagon.y + (frameBox.y1 - 100) * gridScale) + " "
+        + ((frameBox.x2 - frameBox.x1) * gridScale) + " "
+        + ((frameBox.y2 - frameBox.y1) * gridScale) + '"';
+}
 svg.replace("<svg ", '<svg xmlns:milsym="urn:collabora:milsym"'
     + ' milsym:octagon="' + (octagon.x - octagonSize / 2) + " " + (octagon.y - octagonSize / 2)
     + " " + octagonSize + " " + octagonSize + '"'
+    + frameAttribute
     + ' milsym:anchor="' + anchor.x + " " + anchor.y + '" ');
 EOF
 

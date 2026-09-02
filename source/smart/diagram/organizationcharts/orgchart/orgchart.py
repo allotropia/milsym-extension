@@ -38,13 +38,13 @@ GLUE_BOTTOM = 2
 GLUE_LEFT = 3
 
 # The user defined glue points of a shape that shows a milsymbol drawing. They are placed
-# from where the frame octagon and the anchor of the drawing sit within the picture.
+# from where the frame outline and the anchor of the drawing sit within the picture.
 # ANCHOR_START_GLUE is where every connector to a child leaves: the anchor of the symbol,
-# moved down to the bottom of the octagon when the anchor lies inside it. For a
+# moved down to the bottom of the frame when the anchor lies inside it. For a
 # headquarters the anchor is the end of the staff, so the children hang off the staff.
 # ANCHOR_TOP_GLUE is where a connector arrives on a child that hangs below its parent: the
-# top of the octagon, above the anchor. ANCHOR_LEFT_GLUE is where a connector arrives on a
-# stacked child: the middle of the octagon's left edge.
+# top of the frame, above the anchor. ANCHOR_LEFT_GLUE is where a connector arrives on a
+# stacked child: the middle of the frame's left edge.
 ANCHOR_START_GLUE = 4
 ANCHOR_TOP_GLUE = 5
 ANCHOR_LEFT_GLUE = 6
@@ -75,16 +75,16 @@ def anchor_glue_point_positions(geometry):
     return {
         ANCHOR_START_GLUE: (
             relative_glue_position(
-                geometry.anchor_x(), max(geometry.anchor_y(), geometry.octagon_bottom())
+                geometry.anchor_x(), max(geometry.anchor_y(), geometry.frame_bottom())
             ),
             ESCAPE_DOWN,
         ),
         ANCHOR_TOP_GLUE: (
-            relative_glue_position(geometry.anchor_x(), geometry.octagon_top()),
+            relative_glue_position(geometry.anchor_x(), geometry.frame_top()),
             ESCAPE_UP,
         ),
         ANCHOR_LEFT_GLUE: (
-            relative_glue_position(geometry.octagon_left(), geometry.octagon_centre_y()),
+            relative_glue_position(geometry.frame_left(), geometry.frame_centre_y()),
             ESCAPE_LEFT,
         ),
     }
@@ -500,7 +500,7 @@ class OrgChart(OrganizationChart):
         separately because an item that is still being added does not know its level yet.
 
         On a shape with symbol geometry the connector leaves from the anchor point and
-        arrives at the top of the octagon, or at the left edge of the octagon for a
+        arrives at the top of the frame, or at the left edge of the frame for a
         stacked child, and the glue points for that are put in place here. A shape
         without geometry keeps the builtin points: a child on the side by side levels
         hangs below its parent, so the connector runs from the parent's bottom centre to
