@@ -355,9 +355,9 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
         column.
         """
         if OrgChartTreeItem._configured_symbol_height is not None:
-            air = OrgChartTreeItem._configured_symbol_height // 4
+            air = OrgChartTreeItem._configured_symbol_height // 2
         else:
-            air = OrgChartTreeItem._shape_height // 10
+            air = OrgChartTreeItem._shape_height // 5
         return CONNECTOR_ROUTING_DISTANCE + air
 
     def left_overhang(self):
