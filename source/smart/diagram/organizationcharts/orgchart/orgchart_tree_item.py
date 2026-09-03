@@ -29,33 +29,50 @@ from ..organization_chart_tree_item import OrganizationChartTreeItem
 from com.sun.star.awt import Point, Size
 
 
-def stacked_column_offsets(channel_x, gap, unit, stacked):
-    """Work out where the shapes stacked below a column head sit horizontally.
+# Where the connectors to stacked children leave a shape without symbol geometry, as a
+# fraction of the shape's width from its left edge.
+STACKED_CHANNEL_FRACTION = 0.04
+
+# The distance the office's standard connector keeps between the shapes it joins and the
+# bends of its route, in 1/100 mm.
+CONNECTOR_ROUTING_DISTANCE = 500
+
+
+def stacked_column_offsets(channel_x, gap, children):
+    """Work out where the shapes stacked below a parent sit horizontally.
 
     channel_x is the x distance from the column start to the connector channel that runs
-    down from the head's anchor. gap is the empty x distance kept between the channel and
-    the nearest left edge of a stacked shape. unit is the x distance one layout position
-    stands for. stacked is a list of (pos_delta, width, overhang) tuples, one per stacked
-    shape: its layout position relative to the head, its width, and the distance from its
-    left edge to the left edge of its octagon.
+    down from the parent. gap is the empty x distance kept between a channel and the
+    nearest left edge of a shape hanging off it. children is a list of (key, width,
+    overhang, channel, grandchildren) tuples, one per shape stacked directly below the
+    parent: the key its offset is reported under, its width, the distance from its left
+    edge to the left edge of its octagon, the distance from its left edge to its own
+    connector channel, and the list of the same tuples for the shapes stacked below it.
 
-    The octagons of the column line up: every shape is placed so that its octagon's left
-    edge sits on one line, shifted right by its own pos_delta for nesting. That line is
-    far enough from the channel for the widest overhang in the column, so the left labels
-    of every symbol stay clear of the channel.
+    The octagons of the siblings line up: every child is placed so that its octagon's left
+    edge sits on one line. That line is far enough from the channel for the widest overhang
+    among the siblings, so the left labels of every symbol stay clear of the channel. The
+    shapes below a child are placed the same way from that child's own channel, so each
+    nesting level moves right by what the connector into it needs and no further.
 
-    Returns the list of x offsets from the column start, in the order of stacked, and the
-    right edge of the widest shape among them (0 when stacked is empty).
+    Returns a dictionary of the x offsets from the column start, keyed by the given keys,
+    and the right edge of the widest shape among them (0 when children is empty).
     """
-    widest_overhang = max((overhang for _, _, overhang in stacked), default=0)
+    widest_overhang = max((overhang for _, _, overhang, _, _ in children), default=0)
     octagon_left = channel_x + gap + widest_overhang
-    x_offsets = []
+    x_offsets = {}
     right_edge = 0
-    for pos_delta, width, overhang in stacked:
-        x_offset = octagon_left + pos_delta * unit - overhang
-        x_offsets.append(x_offset)
+    for key, width, overhang, channel, grandchildren in children:
+        x_offset = octagon_left - overhang
+        x_offsets[key] = x_offset
         if x_offset + width > right_edge:
             right_edge = x_offset + width
+        below, below_right_edge = stacked_column_offsets(
+            x_offset + channel, gap, grandchildren
+        )
+        x_offsets.update(below)
+        if below_right_edge > right_edge:
+            right_edge = below_right_edge
     return x_offsets, right_edge
 
 
@@ -79,8 +96,8 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
     # layout pass has read it.
     _configured_symbol_height = None
 
-    # The gap between one column and the next, and the indent of the shapes stacked
-    # below a column head, are widened by this factor to give the columns more air.
+    # The x distance one layout position stands for is widened by this factor, so that
+    # shapes placed by position alone, before the columns are measured, get more air.
     HORIZONTAL_STEP_FACTOR = 1.5
 
     def __init__(
@@ -329,13 +346,19 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
 
     @staticmethod
     def channel_gap():
-        """The empty x distance between the connector channel that runs down from a
-        column head's anchor and the nearest left edge of a shape stacked below it. A
-        quarter of the configured symbol height, the same for every column.
+        """The empty x distance between the connector channel that runs down from a shape
+        and the nearest left edge of a shape stacked below it. The distance the connector
+        keeps from the shapes it joins, so that its route down and then right into the
+        child has room to bend, plus a quarter of the configured symbol height of air. The
+        air also covers the office rounding the glue point positions on its own, so the
+        channel never comes out a unit short of what the route needs. The same for every
+        column.
         """
         if OrgChartTreeItem._configured_symbol_height is not None:
-            return OrgChartTreeItem._configured_symbol_height // 4
-        return OrgChartTreeItem._shape_height // 10
+            air = OrgChartTreeItem._configured_symbol_height // 4
+        else:
+            air = OrgChartTreeItem._shape_height // 10
+        return CONNECTOR_ROUTING_DISTANCE + air
 
     def left_overhang(self):
         """The x distance from the left edge of this item's shape to the left edge of its
@@ -348,72 +371,76 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
         width = self._calculate_size_for_aspect_ratio()[0]
         return int(geometry.octagon_left() * width)
 
-    def anchor_x_offset(self):
-        """The x distance from the left edge of this item's shape to its symbol anchor, in
-        1/100 mm. The middle of the shape for a picture without symbol geometry.
+    def channel_x_offset(self):
+        """The x distance from the left edge of this item's shape to the connector channel
+        that runs down from it to its stacked children, in 1/100 mm. The channel starts at
+        the glue point the connectors leave from: the symbol anchor for a picture with
+        symbol geometry, and for any other picture the point near the left end of the
+        bottom edge that the stacked connectors of such a shape start on.
         """
         geometry = self.get_symbol_geometry()
         width = self._calculate_size_for_aspect_ratio()[0]
         if geometry is None:
-            return width // 2
+            return int(STACKED_CHANNEL_FRACTION * width)
         return int(geometry.anchor_x() * width)
+
+    def _stacked_measures(self):
+        """The (key, width, overhang, channel, children) tuple of every shape stacked
+        directly below this item, in sibling order, with the item itself as the key and
+        the tuples of the shapes below it as children."""
+        measures = []
+        item = self._first_child
+        while item is not None:
+            measures.append(
+                (
+                    item,
+                    item._calculate_size_for_aspect_ratio()[0],
+                    item.left_overhang(),
+                    item.channel_x_offset(),
+                    item._stacked_measures(),
+                )
+            )
+            item = item.get_first_sibling()
+        return measures
 
     def measure_column(self):
         """Measure the column this item heads. Returns the width the column needs, the x
         offset of every shape stacked below the head and the y offset of each of them.
 
-        The x offsets are measured from the column start. The connector channel runs down
-        from the head's anchor, and the stacked shapes sit to the right of it with their
-        frame octagons on one line, a shape further right the deeper it nests. The line
-        keeps the widest left overhang in the column clear of the channel, so the labels
-        left of a symbol never cross the connectors. A head without symbol geometry has
-        its channel on its left edge, so that a column of pictures without geometry keeps
-        the width it had when the shapes lined up on their left edges. The width reaches
-        to the right edge of the widest shape, head or stacked.
+        The x offsets are measured from the column start. A connector channel runs down
+        from every shape that has stacked children, starting at the glue point its
+        connectors leave from, and the children sit to the right of that channel with
+        their frame octagons on one line. The line keeps the widest left overhang among
+        the children clear of the channel, so the labels left of a symbol never cross the
+        connectors. The children of a stacked shape are placed the same way from its own
+        channel, so a shape sits further right the deeper it nests, by as much as the
+        connector into it needs. The width reaches to the right edge of the widest shape,
+        head or stacked.
 
         The y offsets are measured from the top of the head. The stacked shapes follow
         each other down the column, each starting below the one before it, so a taller
         symbol moves every shape below it further down.
         """
-        unit = OrgChartTreeItem.horizontal_pos_unit()
         quarter_space = OrgChartTreeItem._ver_space // 4
-        base_pos = self.get_pos()
         width, head_height = self._calculate_size_for_aspect_ratio()
-        if self.get_symbol_geometry() is not None:
-            channel_x = self.anchor_x_offset()
-        else:
-            channel_x = 0
 
-        stacked = []
-        pending = [self._first_child]
-        while pending:
-            item = pending.pop()
-            if item is None:
-                continue
-            stacked.append(item)
-            pending.append(item.get_first_child())
-            pending.append(item.get_first_sibling())
-
-        # The level of a stacked item counts the rows above it in its column, so sorting
-        # by level walks the column from top to bottom
-        stacked.sort(key=lambda item: item.get_level())
-
-        measures = [
-            (item.get_pos() - base_pos, item._calculate_size_for_aspect_ratio()[0],
-             item.left_overhang())
-            for item in stacked
-        ]
         x_offsets, right_edge = stacked_column_offsets(
-            channel_x, OrgChartTreeItem.channel_gap(), unit, measures
+            self.channel_x_offset(),
+            OrgChartTreeItem.channel_gap(),
+            self._stacked_measures(),
         )
         if right_edge > width:
             width = right_edge
 
+        # The level of a stacked item counts the rows above it in its column, so sorting
+        # by level walks the column from top to bottom
+        stacked = sorted(x_offsets, key=lambda item: item.get_level())
+
         x_offset_by_item = {}
         y_offset_by_item = {}
         y_offset = head_height + quarter_space
-        for item, x_offset in zip(stacked, x_offsets):
-            x_offset_by_item[item] = int(x_offset)
+        for item in stacked:
+            x_offset_by_item[item] = int(x_offsets[item])
             y_offset_by_item[item] = y_offset
             y_offset += item._calculate_size_for_aspect_ratio()[1] + quarter_space
 

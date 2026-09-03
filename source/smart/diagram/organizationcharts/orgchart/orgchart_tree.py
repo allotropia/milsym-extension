@@ -262,9 +262,10 @@ class OrgChartTree(OrganizationChartTree):
         stacked below it. The shapes differ in size, because decorations such as echelon
         markers or text labels make a symbol larger. Each column is measured as its
         widest shape and the next column starts after that width plus the gap. Within a
-        column the stacked shapes sit right of the connector channel that runs down from
-        the head's anchor, with their frame octagons on one line, the widest left overhang
-        among them keeping every label clear of the channel. Down a column each shape
+        column the shapes stacked below a shape sit right of the connector channel that
+        runs down from it, with their frame octagons on one line, the widest left overhang
+        among them keeping every label clear of the channel. The children of a stacked
+        shape are placed the same way from its own channel. Down a column each shape
         starts below the one before it, so a taller symbol moves the shapes below it
         further down. The rows above the columns are each as tall as their tallest shape.
         """
@@ -313,9 +314,10 @@ class OrgChartTree(OrganizationChartTree):
 
         Column heads sit where measure_columns placed their column. A stacked shape sits
         at its column start plus the offset measure_columns found for it, which puts its
-        frame octagon on the line shared by the whole column. A shape above the columns
-        sits between the columns around its layout position, in proportion to where that
-        position falls between theirs.
+        frame octagon on the line shared with its siblings, right of the connector
+        channel of its parent. A stacked shape the measuring did not reach falls back to
+        its layout position. A shape above the columns sits between the columns around
+        its layout position, in proportion to where that position falls between theirs.
         """
         unit = OrgChartTreeItem.horizontal_pos_unit()
 

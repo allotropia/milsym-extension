@@ -19,7 +19,7 @@ from perf import count
 from ...diagram import Diagram
 from ..organization_chart import OrganizationChart
 from .orgchart_tree import OrgChartTree
-from .orgchart_tree_item import OrgChartTreeItem
+from .orgchart_tree_item import OrgChartTreeItem, STACKED_CHANNEL_FRACTION
 
 from com.sun.star.awt import Point
 from com.sun.star.drawing import GluePoint2
@@ -31,7 +31,7 @@ from com.sun.star.drawing.EscapeDirection import LEFT as ESCAPE_LEFT
 from com.sun.star.drawing.Alignment import CENTER as ALIGNMENT_CENTER
 
 # A shape starts with four builtin glue points, indices 0 to 3, one on the middle of each
-# edge: 0 top, 1 left, 2 bottom, 3 right. The first user defined point gets index 4.
+# edge: 0 top, 1 right, 2 bottom, 3 left. The first user defined point gets index 4.
 BUILTIN_GLUE_POINT_COUNT = 4
 GLUE_TOP = 0
 GLUE_BOTTOM = 2
@@ -49,12 +49,6 @@ ANCHOR_START_GLUE = 4
 ANCHOR_TOP_GLUE = 5
 ANCHOR_LEFT_GLUE = 6
 
-# Where on the bottom edge of a shape without symbol geometry the connectors to its
-# stacked children leave: on the relative glue point scale, 4 percent of the width from
-# the left edge, so that the point stays left of the children whatever the shape's width.
-STACKED_GLUE_POSITION = Point(X=-4600, Y=5000)
-
-
 def relative_glue_position(x_fraction, y_fraction):
     """The Position of a relative glue point aligned at the centre of its shape, for a point
     given as fractions of the shape's width and height with the top left corner at (0, 0).
@@ -67,6 +61,12 @@ def relative_glue_position(x_fraction, y_fraction):
         X=int(round((x_fraction - 0.5) * 10000)),
         Y=int(round((y_fraction - 0.5) * 10000)),
     )
+
+
+# Where on the bottom edge of a shape without symbol geometry the connectors to its
+# stacked children leave: a small fraction of the width in from the left edge, so that
+# the point stays left of the children whatever the shape's width.
+STACKED_GLUE_POSITION = relative_glue_position(STACKED_CHANNEL_FRACTION, 1.0)
 
 
 def anchor_glue_point_positions(geometry):
