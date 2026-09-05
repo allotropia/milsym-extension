@@ -646,8 +646,13 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                     )
                     self.get_diagram().init_properties()
 
-                    # Auto-open dialog if user hasn't explicitly closed it this session
-                    if not Gui._user_closed_dialog:
+                    # control dialog is open? just follow the
+                    # selection. but keep it closed, if user did so
+                    # earlier.
+                    if (
+                        self._gui.is_visible_control_dialog()
+                        or not Gui._user_closed_dialog
+                    ):
                         self._gui.set_visible_control_dialog(True)
 
                 # Handle organization chart shape selection

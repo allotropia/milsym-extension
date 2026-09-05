@@ -19,6 +19,7 @@ if base_dir not in sys.path:
 from symbol_dialog import open_symbol_dialog
 from smart.controller import Controller
 from smart.diagram.data_of_diagram import DataOfDiagram
+from smart.gui import Gui
 from sidebar import SidebarFactory
 from utils import is_orbat_feature_enabled, extract_symbol_params_from_shape
 
@@ -554,6 +555,8 @@ class MainJob(unohelper.Base, XJobExecutor):
         if diagram is None:
             return
 
+        # Reset flag, user just now requested the dialog again
+        Gui._user_closed_dialog = False
         diagram.get_controller()._gui.set_visible_control_dialog(True)
 
     def onRefreshOrbat(self):
@@ -589,7 +592,8 @@ class MainJob(unohelper.Base, XJobExecutor):
         data.add(1, "")  # Level 1
         data.add(1, "")  # Level 1
 
-        # Create the diagram and show the dialog
+        # Reset flag, user just now requested the dialog again
+        Gui._user_closed_dialog = False
         controller.create_diagram(data)
         controller._gui.set_visible_control_dialog(True)
 
