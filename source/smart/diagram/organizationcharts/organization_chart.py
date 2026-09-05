@@ -515,11 +515,15 @@ class OrganizationChart(Diagram):
             if x_selected_shape is not None:
                 self.update_origin()
                 selected_shape_name = x_selected_shape.getName()
-                if (
-                    Diagram.DIAGRAM_SHAPE_TYPE in selected_shape_name
-                    and Diagram.DIAGRAM_BASE_SHAPE_TYPE not in selected_shape_name
-                ):
-                    if selected_shape_name.endswith(Diagram.DIAGRAM_SHAPE_TYPE + "1"):
+                role = Diagram.shape_role(selected_shape_name)
+                if role == Diagram.DIAGRAM_SHAPE_TYPE:
+                    # Find root shape. It's known by its tree item rather than by its
+                    # number (which the office might have renumbered)
+                    root_item = self.get_diagram_tree().get_root_item()
+                    if (
+                        root_item is not None
+                        and root_item.get_rectangle_shape() == x_selected_shape
+                    ):
                         title = self.get_gui().get_dialog_property_value(
                             "Strings", "ShapeRemoveError.Title"
                         )

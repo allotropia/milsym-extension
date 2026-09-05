@@ -613,13 +613,13 @@ class OrganizationChartTree(ABC):
             for i in range(self._x_shapes.getCount()):
                 curr_shape = self._x_shapes.getByIndex(i)
                 curr_shape_name = self.get_org_chart().get_shape_name(curr_shape)
+                role = Diagram.shape_role(curr_shape_name)
 
-                if curr_shape_name.endswith(Diagram.DIAGRAM_BASE_SHAPE_TYPE):
+                if role == Diagram.DIAGRAM_BASE_SHAPE_TYPE:
                     self.set_control_shape(curr_shape)
-                elif Diagram.DIAGRAM_SHAPE_TYPE in curr_shape_name:
+                elif role == Diagram.DIAGRAM_SHAPE_TYPE:
                     self.add_to_rectangles(curr_shape)
-
-                if Diagram.CONNECTOR_SHAPE in curr_shape_name:
+                elif role == Diagram.CONNECTOR_SHAPE:
                     self.add_to_connectors(curr_shape)
 
             self.build_indexes(read_geometry)

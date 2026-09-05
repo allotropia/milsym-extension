@@ -34,6 +34,31 @@ class Diagram(ABC):
     DIAGRAM_BASE_SHAPE_TYPE = "RectangleShape"  # base control shape
     CONNECTOR_SHAPE = "ConnectorShape"  # connector shape
 
+    # A shape name is the diagram name, a dash, the shape type, and for every shape but
+    # the control shape its number: "OrbatDiagram12-GraphicObjectShape3". The office
+    # keeps the names in a document unique when a diagram is pasted into it, by giving
+    # every shape of the copy a space and a counter, as in
+    # "OrbatDiagram12-GraphicObjectShape 3", so a space may sit between the type and
+    # the number.
+    _SHAPE_NAME_PATTERN = re.compile(r"^[A-Za-z]+\d*-([A-Za-z]+) ?\d*$")
+
+    @classmethod
+    def shape_role(cls, shape_name):
+        """The type of shape a name stands for, as one of the shape type constants
+        above, or an empty string for a name that is not one of the diagram's own.
+        """
+        match = cls._SHAPE_NAME_PATTERN.match(shape_name or "")
+        if match is None:
+            return ""
+        role = match.group(1)
+        if role in (
+            cls.DIAGRAM_SHAPE_TYPE,
+            cls.DIAGRAM_BASE_SHAPE_TYPE,
+            cls.CONNECTOR_SHAPE,
+        ):
+            return role
+        return ""
+
     # Connection types
     CONN_LINE = 0
     CONN_CURVE = 1

@@ -672,10 +672,8 @@ class OrgChart(OrganizationChart):
                 # Get shape name (in real implementation, would use UNO API)
                 selected_shape_name = self.get_shape_name(x_selected_shape)
 
-                if (
-                    Diagram.DIAGRAM_SHAPE_TYPE in selected_shape_name
-                    and Diagram.DIAGRAM_BASE_SHAPE_TYPE not in selected_shape_name
-                ):
+                role = Diagram.shape_role(selected_shape_name)
+                if role == Diagram.DIAGRAM_SHAPE_TYPE:
                     selected_item = self._diagram_tree.get_tree_item(x_selected_shape)
 
                     # Can't be associate of root item
