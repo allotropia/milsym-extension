@@ -21,7 +21,11 @@ from smart.controller import Controller
 from smart.diagram.data_of_diagram import DataOfDiagram
 from smart.gui import Gui
 from sidebar import SidebarFactory
-from utils import is_orbat_feature_enabled, extract_symbol_params_from_shape
+from utils import (
+    containing_orbat_group,
+    is_orbat_feature_enabled,
+    extract_symbol_params_from_shape,
+)
 
 from com.sun.star.task import XJobExecutor, XJob
 from com.sun.star.view import XSelectionChangeListener
@@ -239,6 +243,14 @@ class ContextMenuInterceptor(unohelper.Base, XContextMenuInterceptor):
                 return IGNORED
 
             menu_container = event.ActionTriggerContainer
+
+            # special-case a symbol inside an ORBAT - it needs a
+            # different symbol-editing, the plain symbol dialog would
+            # rename the shape and take it out of the group.
+            if self.orbat_enabled and containing_orbat_group(shape) is not None:
+                self._insert_orbat_symbol_menu_items(menu_container)
+                return EXECUTE_MODIFIED
+
             self._insert_menu_item(menu_container)
 
             return EXECUTE_MODIFIED
@@ -310,6 +322,37 @@ class ContextMenuInterceptor(unohelper.Base, XContextMenuInterceptor):
             menu_container.insertByIndex(0, menu_item)
         except Exception as e:
             print(f"_insert_orbat_menu_item error: {e}")
+
+    def _insert_orbat_symbol_menu_items(self, menu_container):
+        """Insert the menu items for a symbol that sits inside an ORBAT.
+
+        From the top: edit this symbol through the ORBAT, add it to the favorites, open
+        the ORBAT dialog, and lay the ORBAT out again.
+        """
+        self._insert_orbat_menu_item(
+            menu_container,
+            "ContextMenu.RefreshOrbat",
+            "service:com.collabora.milsymbol.do?refreshOrbat",
+            insert_separator=True,
+        )
+        self._insert_orbat_menu_item(
+            menu_container,
+            "ContextMenu.EditOrbat",
+            "service:com.collabora.milsymbol.do?editOrbat",
+            insert_separator=False,
+        )
+        self._insert_orbat_menu_item(
+            menu_container,
+            "ContextMenu.AddToFavorites",
+            "service:com.collabora.milsymbol.do?addToFavorites",
+            insert_separator=False,
+        )
+        self._insert_orbat_menu_item(
+            menu_container,
+            "ContextMenu.EditOrbatSymbol",
+            "service:com.collabora.milsymbol.do?editOrbatSymbol",
+            insert_separator=False,
+        )
 
     def _insert_menu_item(self, menu_container):
         """Insert 'Edit Military Symbol' and 'Add to Favorites' menu items"""
@@ -451,8 +494,18 @@ class MainJob(unohelper.Base, XJobExecutor):
 
         if args == "symbolDialog":
             selected_shape = ListenerRegistry.instance().get_selected_shape()
-            open_symbol_dialog(self.ctx, self.model, None, None, selected_shape, None)
-            self.forget_kept_state_of_shape(selected_shape)
+            inside_orbat = containing_orbat_group(selected_shape) is not None
+            if self.orbat_enabled and inside_orbat:
+                # A symbol inside an ORBAT is edited through its diagram, whichever
+                # menu or toolbar entry asked for the symbol dialog
+                self.onEditOrbatSymbol()
+            else:
+                open_symbol_dialog(
+                    self.ctx, self.model, None, None, selected_shape, None
+                )
+                self.forget_kept_state_of_shape(selected_shape)
+        if self.orbat_enabled and args == "editOrbatSymbol":
+            self.onEditOrbatSymbol()
         if self.orbat_enabled and args == "orgChart":
             self.onOrgChart()
         if self.orbat_enabled and args == "editOrbat":
@@ -558,6 +611,34 @@ class MainJob(unohelper.Base, XJobExecutor):
         # Reset flag, user just now requested the dialog again
         Gui._user_closed_dialog = False
         diagram.get_controller()._gui.set_visible_control_dialog(True)
+
+    def onEditOrbatSymbol(self):
+        """Open the symbol dialog for the selected symbol of an ORBAT, through its
+        diagram.
+
+        Saving then replaces the picture on the shape in place, so the shape keeps its
+        name and its place in the group, and the diagram is laid out again afterwards.
+        With the ORBAT dialog showing, its own edit action runs, which also records the
+        change for undo and refreshes the dialog's tree.
+        """
+        diagram = self._get_selected_orbat_diagram()
+        if diagram is None:
+            return
+
+        controller = diagram.get_controller()
+        handler = Gui._global_control_dlg_listener
+        dialog_is_this_controllers = False
+        if handler is not None:
+            try:
+                dialog_is_this_controllers = handler.get_controller() == controller
+            except Exception:
+                dialog_is_this_controllers = False
+
+        if dialog_is_this_controllers and controller._gui.is_visible_control_dialog():
+            handler.edit_selected_item()
+        else:
+            controller._gui.execute_properties_dialog()
+            diagram.refresh_diagram()
 
     def onRefreshOrbat(self):
         """Refresh layout for the currently selected ORBAT group"""

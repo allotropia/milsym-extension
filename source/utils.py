@@ -138,6 +138,33 @@ def get_recorded_symbol_size_px(attributes, ctx):
         return get_symbol_generation_size_px(ctx)
 
 
+def containing_orbat_group(shape):
+    """The ORBAT group shape a shape belongs to, or None when it belongs to none.
+
+    A group shape named for an ORBAT answers for itself. A shape inside such a group,
+    at any depth, answers with that group.
+    """
+    current = shape
+    while current is not None:
+        try:
+            if current.supportsService(
+                "com.sun.star.drawing.GroupShape"
+            ) and current.getName().startswith("OrbatDiagram"):
+                return current
+            parent = current.getParent()
+        except Exception:
+            return None
+        if parent is None or not hasattr(parent, "supportsService"):
+            return None
+        try:
+            if not parent.supportsService("com.sun.star.drawing.Shape"):
+                return None
+        except Exception:
+            return None
+        current = parent
+    return None
+
+
 def is_orbat_feature_enabled(ctx):
     """Check if hidden feature flag for Orbat handling is enabled.
 

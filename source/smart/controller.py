@@ -16,7 +16,7 @@ Controller class for LibreOffice extension
 import unohelper
 
 from perf import timed
-from utils import locked_controllers
+from utils import containing_orbat_group, locked_controllers
 
 from .gui import Gui
 
@@ -177,25 +177,7 @@ class Controller(unohelper.Base, XSelectionChangeListener):
         A diagram group shape answers for itself. A shape inside a diagram group answers
         with that group.
         """
-        current = shape
-        while current is not None:
-            try:
-                if current.supportsService(
-                    "com.sun.star.drawing.GroupShape"
-                ) and self.is_smart_diagram_shape(current.getName()):
-                    return current
-                parent = current.getParent()
-            except Exception:
-                return None
-            if parent is None or not hasattr(parent, "supportsService"):
-                return None
-            try:
-                if not parent.supportsService("com.sun.star.drawing.Shape"):
-                    return None
-            except Exception:
-                return None
-            current = parent
-        return None
+        return containing_orbat_group(shape)
 
     def _shape_is_inside(self, shape, group):
         """Whether a shape sits inside a group shape, at any depth."""
