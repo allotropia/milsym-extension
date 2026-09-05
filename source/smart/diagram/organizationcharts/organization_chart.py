@@ -486,6 +486,16 @@ class OrganizationChart(Diagram):
     def paste_subtree(self):
         """Paste copied subtree - to be implemented by subclasses"""
 
+    def update_origin(self):
+        """Read again where the diagram group shape sits on the page, before an edit lays it out.
+
+        The group may have been dragged since the diagram tree learned where its control
+        shape sits, and the layout is measured from that corner.
+        """
+        diagram_tree = self.get_diagram_tree()
+        if diagram_tree is not None:
+            diagram_tree.update_origin()
+
     def remove_shape(self, x_selected_shape=None):
         """Remove shape from organization chart"""
         if x_selected_shape is None:
@@ -503,6 +513,7 @@ class OrganizationChart(Diagram):
         else:
             # Remove specific shape
             if x_selected_shape is not None:
+                self.update_origin()
                 selected_shape_name = x_selected_shape.getName()
                 if (
                     Diagram.DIAGRAM_SHAPE_TYPE in selected_shape_name
@@ -677,11 +688,17 @@ class OrganizationChart(Diagram):
             return False
 
     def _remove_item_from_tree(self, item):
-        """Remove an item from its current position in the tree"""
+        """Remove an item from its current position in the tree.
+
+        Every move of an item through the tree starts here, and ends with the layout
+        placing the item again, so this is where the origin is learned again first.
+        """
         try:
             dad = item.get_dad()
             if dad is None:
                 return  # Cannot remove root
+
+            self.update_origin()
 
             # Find if this is the first child of its parent
             if dad.get_first_child() == item:

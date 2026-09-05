@@ -275,10 +275,10 @@ class Diagram(ABC):
     def forget_kept_shape_state(self):
         """Drop what is kept about every shape, after the document changed on its own.
 
-        The corner the layout is measured from stays. It is the position of the control
-        shape, which cannot be moved on its own, and a group that moves takes its shapes
-        with it, so it still describes the diagram. There is also no safe way to read it
-        back here, and without it the layout would start from the corner of the group.
+        The corner the layout is measured from stays, because there is no safe way to
+        read it back here, and without it the layout would start from the corner of the
+        group. An undo that moves the whole group leaves it out of date, and the next
+        edit reads it again before laying anything out.
         """
         try:
             diagram_tree = self.get_diagram_tree()

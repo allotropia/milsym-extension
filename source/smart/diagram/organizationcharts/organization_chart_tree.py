@@ -476,6 +476,42 @@ class OrganizationChartTree(ABC):
         self._control_shape_pos = (position.X, position.Y)
         return position
 
+    def update_origin(self):
+        """Read again where the control shape group shape sits, and
+        move what is kept about the other shapes along with it.
+
+        The kept origin is a page coordinate. Dragging the group, or undoing such a
+        drag, carries the control shape and every other shape the same distance, and
+        what is kept then describes where the shapes stood before the move. Reading the
+        origin again and shifting the kept positions by the distance it moved makes them
+        describe the shapes as they stand now, so the next layout writes only what the
+        edit itself changes.
+
+        This asks the office where a shape is. That is safe while nothing has been
+        changed yet: every connector route is current, so working out the bounding box of
+        the group has nothing to route again and nothing to announce.
+
+        """
+        if self._x_control_shape is None:
+            return
+        try:
+            count("shape: read control shape position")
+            position = self._x_control_shape.getPosition()
+        except Exception as ex:
+            print(f"Error reading the control shape position: {ex}")
+            return
+
+        origin = (position.X, position.Y)
+        kept_origin = self._control_shape_pos
+        self._control_shape_pos = origin
+        if kept_origin is None or kept_origin == origin:
+            return
+
+        dx = origin[0] - kept_origin[0]
+        dy = origin[1] - kept_origin[1]
+        for name, (x, y) in list(self._position_by_rect_name.items()):
+            self._position_by_rect_name[name] = (x + dx, y + dy)
+
     def add_to_rectangles(self, shape):
         """Add shape to rectangles list"""
         self._rectangle_list.append(shape)

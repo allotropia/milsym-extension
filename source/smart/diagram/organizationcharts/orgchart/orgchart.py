@@ -558,6 +558,7 @@ class OrgChart(OrganizationChart):
         if target_tree_item is None or clipboard_item is None:
             return False
 
+        self.update_origin()
         try:
             self._paste_script = script
             self._paste_item_recursive(target_tree_item, clipboard_item)
@@ -663,6 +664,7 @@ class OrgChart(OrganizationChart):
             x_selected_shape: Optional shape to use as parent. If None, uses current selection.
         """
         if self._diagram_tree is not None:
+            self.update_origin()
             if x_selected_shape is None:
                 x_selected_shape = self.get_controller().get_selected_shape()
 
