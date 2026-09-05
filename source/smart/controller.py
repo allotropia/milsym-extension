@@ -136,6 +136,9 @@ class Controller(unohelper.Base, XSelectionChangeListener):
         # carry the same names, for example after copying one, so a name or an id
         # parsed from a name cannot tell them apart.
         self._last_diagram_group_shape = None
+        # The group shape this controller entered on the user's behalf. None if
+        # nothing is selected.
+        self._entered_group = None
 
         self._undo_watch = None
 
@@ -155,6 +158,7 @@ class Controller(unohelper.Base, XSelectionChangeListener):
 
             self._diagram = None
             self._last_diagram_group_shape = None
+            self._entered_group = None
 
             self._x_controller = None
             self._x_frame = None
@@ -192,6 +196,26 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                 return None
             current = parent
         return None
+
+    def _shape_is_inside(self, shape, group):
+        """Whether a shape sits inside a group shape, at any depth."""
+        current = shape
+        while current is not None:
+            try:
+                parent = current.getParent()
+            except Exception:
+                return False
+            if parent is None or not hasattr(parent, "supportsService"):
+                return False
+            try:
+                if not parent.supportsService("com.sun.star.drawing.Shape"):
+                    return False
+            except Exception:
+                return False
+            if parent == group:
+                return True
+            current = parent
+        return False
 
     def set_new_size(self):
         """Set new diagram size"""
@@ -542,15 +566,32 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                 selected_shape_name = ""
 
             if selected_shape.supportsService("com.sun.star.drawing.GroupShape"):
-                try:
-                    # Enter group only if drag orbat is disabled and dialog is visible
-                    if (
-                        not self._gui._global_control_dlg_listener.is_drag_orbat_enabled()
-                        and self._gui.is_visible_control_dialog()
-                    ):
-                        selected_shape.enterGroup()
-                except Exception:
-                    print("Error entering group shape")
+                if (
+                    self._entered_group is not None
+                    and selected_shape == self._entered_group
+                ):
+                    # The office selects the group it has just
+                    # left. The user wants out, don't touch things &
+                    # keep stuff un-entered.
+                    self._entered_group = None
+                else:
+                    try:
+                        # Enter group only if drag orbat checkbox is
+                        # disabled **and** dialog is visible
+                        dialog_handler = self._gui._global_control_dlg_listener
+                        drag_orbat = dialog_handler.is_drag_orbat_enabled()
+                        if not drag_orbat and self._gui.is_visible_control_dialog():
+                            selected_shape.enterGroup()
+                            self._entered_group = selected_shape
+                    except Exception:
+                        print("Error entering group shape")
+            elif self._entered_group is not None and not self._shape_is_inside(
+                selected_shape, self._entered_group
+            ):
+                # The selection moved to a shape outside the entered
+                # group, so lets have the next click on that group be
+                # a fresh one
+                self._entered_group = None
 
             # Listen for clicks on diagrams
             if self.is_smart_diagram_shape(selected_shape_name):
