@@ -37,11 +37,13 @@ from com.sun.star.beans import NamedValue
 from com.sun.star.document import XUndoAction
 from utils import (
     extractGraphicAttributes,
+    extract_symbol_params_from_shape,
     generate_icon_svg,
     get_recorded_symbol_size_px,
     insertGraphicAttributes,
     createMilSymbolScriptInstance,
 )
+from sidebar import SidebarFactory
 from unohelper import systemPathToFileUrl
 from translator import translate
 from perf import SKIP_TREE_REBUILD, count, timed
@@ -279,6 +281,36 @@ class ControlDlgHandler(
         self.refresh_tree()
         if self.tree_control is not None:
             self.tree_control.setFocus()
+
+    def add_selected_item_to_favorites(self):
+        """Put the symbol of the selected entry into the favorites of the sidebar.
+
+        The symbol is read off the shape's attributes and drawn again at the sidebar's
+        preview size. A placeholder without a symbol code has nothing to add, and so has
+        a document whose sidebar panel is not open.
+        """
+        controller = self.get_controller()
+        if controller.get_diagram() is None:
+            return
+        selected_shape = controller.get_diagram().get_last_shape()
+        if selected_shape is None:
+            return
+
+        sidebar_panel = SidebarFactory.get_sidebar_panel()
+        if sidebar_panel is None:
+            print(
+                "Milsymbol: the sidebar panel is not open, nothing added to favorites"
+            )
+            return
+
+        model = controller._x_controller.getModel()
+        category_name, svg_data, svg_args, is_editing = (
+            extract_symbol_params_from_shape(self.x_context, model, selected_shape)
+        )
+        if category_name is None:
+            return
+
+        sidebar_panel.insert_symbol_node(category_name, svg_data, svg_args, is_editing)
 
     def paste_to_selected_item(self):
         """Paste clipboard contents to currently selected item.
@@ -2560,6 +2592,9 @@ class TreeKeyHandler(unohelper.Base, XKeyListener):
                 # The selection stays on the current line, so pressing the key again
                 # adds another child to the same item
                 self.dialog_handler.add_child_to_selected_item(select_new_child=False)
+                return
+            elif event.KeyCode == Key.MULTIPLY or event.KeyChar == "*":
+                self.dialog_handler.add_selected_item_to_favorites()
                 return
             elif event.KeyCode == Key.C and (event.Modifiers & KeyModifier.MOD1):
                 self.dialog_handler.copy_selected_item()
