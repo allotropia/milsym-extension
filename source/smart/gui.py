@@ -68,8 +68,6 @@ class Gui:
             ) and (
                 self.get_controller().get_last_diagram_type()
                 != self.get_controller().get_diagram_type()
-                or self.get_controller().get_last_diagram_group_shape()
-                != new_diagram_group
             ):
                 need_new_dialog = True
 
