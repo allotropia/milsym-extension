@@ -28,6 +28,32 @@ from com.sun.star.awt import XFocusListener, XKeyListener, XMouseListener
 from com.sun.star.awt.Key import UP, DOWN, LEFT, RIGHT, RETURN
 from collections import defaultdict
 
+# The milsymbol text modifier option that each textbox of the symbol dialog holds, keyed
+# by the name of the textbox control.
+TEXTBOX_OPTION_NAMES = {
+    "tbSpecialHeadquart": "specialHeadquarters",
+    "tbUnitNameUniqDesign": "uniqueDesignation",
+    "tbHigherFormation": "higherFormation",
+    "tbAdditionalInfo": "additionalInformation",
+    "tbAltitudeDepth": "altitudeDepth",
+    "tbCombatEffect": "combatEffectiveness",
+    "tbCommonIdentifier": "commonIdentifier",
+    "tbDateTimeGroup": "dtg",
+    "tbEngageBarText": "engagementBar",
+    "tbEquipTeardownTime": "equipmentTeardownTime",
+    "tbEvaluatRating": "evaluationRating",
+    "tbGuardedUnit": "guardedUnit",
+    "tbIFF_SIF_AIS": "iffSif",
+    "tbLocation": "location",
+    "tbPlatformType": "platformType",
+    "tbQuantity": "quantity",
+    "tbSpecialDesign": "specialDesignator",
+    "tbSpeed": "speed",
+    "tbStaffComments": "staffComments",
+    "tbType": "type",
+    "tbDirection": "direction",
+}
+
 
 class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
     TREES_CACHE = {}
@@ -84,30 +110,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             self.init_base_preview()
 
     def init_textboxes(self):
-        # Mapping of dialog textbox control names to their corresponding option names
-        self.textbox_map = {
-            "tbSpecialHeadquart": "specialHeadquarters",
-            "tbUnitNameUniqDesign": "uniqueDesignation",
-            "tbHigherFormation": "higherFormation",
-            "tbAdditionalInfo": "additionalInformation",
-            "tbAltitudeDepth": "altitudeDepth",
-            "tbCombatEffect": "combatEffectiveness",
-            "tbCommonIdentifier": "commonIdentifier",
-            "tbDateTimeGroup": "dtg",
-            "tbEngageBarText": "engagementBar",
-            "tbEquipTeardownTime": "equipmentTeardownTime",
-            "tbEvaluatRating": "evaluationRating",
-            "tbGuardedUnit": "guardedUnit",
-            "tbIFF_SIF_AIS": "iffSif",
-            "tbLocation": "location",
-            "tbPlatformType": "platformType",
-            "tbQuantity": "quantity",
-            "tbSpecialDesign": "specialDesignator",
-            "tbSpeed": "speed",
-            "tbStaffComments": "staffComments",
-            "tbType": "type",
-            "tbDirection": "direction",
-        }
+        self.textbox_map = TEXTBOX_OPTION_NAMES
         self.reverse_textbox_map = {
             value: key for key, value in self.textbox_map.items()
         }

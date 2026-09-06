@@ -17,6 +17,7 @@ if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
 
 from symbol_dialog import open_symbol_dialog
+from cell_symbols import generate_symbols_from_rows, selected_cell_ranges
 from smart.controller import Controller
 from smart.diagram.data_of_diagram import DataOfDiagram
 from smart.gui import Gui
@@ -201,7 +202,8 @@ class ControllerManager:
 
 
 class ContextMenuInterceptor(unohelper.Base, XContextMenuInterceptor):
-    """Intercepts context menu to add 'Edit Military Symbol' and 'Edit Orbat' options"""
+    """Intercepts context menu to add 'Edit Military Symbol' and 'Edit Orbat' options,
+    and 'Generate Military Symbols from Rows' for a selection of several cells"""
 
     def __init__(self, ctx):
         self.ctx = ctx
@@ -210,19 +212,30 @@ class ContextMenuInterceptor(unohelper.Base, XContextMenuInterceptor):
     def notifyContextMenuExecute(self, event):
         """Called when a context menu is about to be displayed"""
         try:
-            orbat_shape = self._get_orbat_group_shape(event)
+            selection = self._get_event_selection(event)
+
+            if selected_cell_ranges(selection):
+                self._insert_top_menu_item(
+                    event.ActionTriggerContainer,
+                    "ContextMenu.GenerateSymbolsFromRows",
+                    "service:com.collabora.milsymbol.do?generateSymbolsFromRows",
+                    insert_separator=True,
+                )
+                return EXECUTE_MODIFIED
+
+            orbat_shape = self._get_orbat_group_shape(selection)
 
             if orbat_shape is not None:
                 if not self.orbat_enabled:
                     return IGNORED
                 menu_container = event.ActionTriggerContainer
-                self._insert_orbat_menu_item(
+                self._insert_top_menu_item(
                     menu_container,
                     "ContextMenu.RefreshOrbat",
                     "service:com.collabora.milsymbol.do?refreshOrbat",
                     insert_separator=True,
                 )
-                self._insert_orbat_menu_item(
+                self._insert_top_menu_item(
                     menu_container,
                     "ContextMenu.EditOrbat",
                     "service:com.collabora.milsymbol.do?editOrbat",
@@ -259,19 +272,29 @@ class ContextMenuInterceptor(unohelper.Base, XContextMenuInterceptor):
             print(f"ContextMenuInterceptor error: {e}")
             return IGNORED
 
-    def _get_orbat_group_shape(self, event):
-        """Check if the selected shape is an ORBAT group shape"""
+    def _get_event_selection(self, event):
+        """The selection a context menu event is about, or None when there is none.
+
+        The event carries the selection supplier of the view, which the selection itself
+        has to be asked from.
+        """
         try:
             controller = event.Selection
             if controller is None:
                 return None
 
-            selection = (
+            return (
                 controller.getSelection()
                 if hasattr(controller, "getSelection")
                 else controller
             )
+        except Exception as e:
+            print(f"Error reading the context menu selection: {e}")
+            return None
 
+    def _get_orbat_group_shape(self, selection):
+        """Check if the selected shape is an ORBAT group shape"""
+        try:
             if selection is None:
                 return None
 
@@ -297,13 +320,14 @@ class ContextMenuInterceptor(unohelper.Base, XContextMenuInterceptor):
             print(f"Error checking for ORBAT group: {e}")
             return None
 
-    def _insert_orbat_menu_item(
+    def _insert_top_menu_item(
         self, menu_container, translation_key, command_url, insert_separator
     ):
-        """Insert one ORBAT context menu item, naming its translated text and command URL.
+        """Insert one context menu item at the top, naming its translated text and
+        command URL.
 
-        The ORBAT items sit above the rest of the context menu, set off from it by one
-        separator; pass insert_separator for the item inserted first, closest to the
+        The extension's items sit above the rest of the context menu, set off from it by
+        one separator; pass insert_separator for the item inserted first, closest to the
         rest of the menu.
         """
         try:
@@ -321,7 +345,7 @@ class ContextMenuInterceptor(unohelper.Base, XContextMenuInterceptor):
 
             menu_container.insertByIndex(0, menu_item)
         except Exception as e:
-            print(f"_insert_orbat_menu_item error: {e}")
+            print(f"_insert_top_menu_item error: {e}")
 
     def _insert_orbat_symbol_menu_items(self, menu_container):
         """Insert the menu items for a symbol that sits inside an ORBAT.
@@ -329,25 +353,25 @@ class ContextMenuInterceptor(unohelper.Base, XContextMenuInterceptor):
         From the top: edit this symbol through the ORBAT, add it to the favorites, open
         the ORBAT dialog, and lay the ORBAT out again.
         """
-        self._insert_orbat_menu_item(
+        self._insert_top_menu_item(
             menu_container,
             "ContextMenu.RefreshOrbat",
             "service:com.collabora.milsymbol.do?refreshOrbat",
             insert_separator=True,
         )
-        self._insert_orbat_menu_item(
+        self._insert_top_menu_item(
             menu_container,
             "ContextMenu.EditOrbat",
             "service:com.collabora.milsymbol.do?editOrbat",
             insert_separator=False,
         )
-        self._insert_orbat_menu_item(
+        self._insert_top_menu_item(
             menu_container,
             "ContextMenu.AddToFavorites",
             "service:com.collabora.milsymbol.do?addToFavorites",
             insert_separator=False,
         )
-        self._insert_orbat_menu_item(
+        self._insert_top_menu_item(
             menu_container,
             "ContextMenu.EditOrbatSymbol",
             "service:com.collabora.milsymbol.do?editOrbatSymbol",
@@ -504,6 +528,10 @@ class MainJob(unohelper.Base, XJobExecutor):
                     self.ctx, self.model, None, None, selected_shape, None
                 )
                 self.forget_kept_state_of_shape(selected_shape)
+        if args == "generateSymbolsFromRows":
+            generate_symbols_from_rows(
+                self.ctx, self.model, self.model.getCurrentSelection()
+            )
         if self.orbat_enabled and args == "editOrbatSymbol":
             self.onEditOrbatSymbol()
         if self.orbat_enabled and args == "orgChart":

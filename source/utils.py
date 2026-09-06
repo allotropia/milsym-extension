@@ -51,6 +51,25 @@ def locked_controllers(model):
     finally:
         model.unlockControllers()
 
+
+@contextmanager
+def locked_undo_manager(undo_manager):
+    """Hold the lock of an undo manager for the body, and release it however the body ends.
+
+    While the lock is held, the changes made to the document are not recorded for undo.
+    The manager counts the locks it is given, so holding one inside another is safe.
+    """
+    if undo_manager is None:
+        yield
+        return
+
+    undo_manager.lock()
+    try:
+        yield
+    finally:
+        undo_manager.unlock()
+
+
 # The settings branch that holds the extension's own configuration
 SETTINGS_NODEPATH = "/com.collabora.milsymbol.Configuration/Settings"
 
@@ -486,6 +505,37 @@ def extractGraphicAttributes(shape):
     return attributes
 
 
+def build_symbol_shape(ctx, model, svg_data, params, selected_shape=None):
+    """Put the drawing of a symbol and its MilSym attributes onto a shape.
+
+    With selected_shape given, its picture is replaced and its size is kept, adjusted to
+    the aspect ratio of the new drawing so the content is not distorted. Otherwise a new
+    graphic shape is created, sized to the drawing: the SVG is generated so that its
+    intrinsic size gives the frame octagon the configured height, and decorations enlarge
+    the shape beyond that. The returned shape still has to be put onto a page.
+    """
+    graphic = create_graphic_from_svg(ctx, svg_data)
+
+    if selected_shape is None:
+        shape = model.createInstance("com.sun.star.drawing.GraphicObjectShape")
+    else:
+        shape = selected_shape
+
+    existing_size = selected_shape.getSize() if selected_shape is not None else None
+
+    shape.setPropertyValue("Graphic", graphic)
+
+    if existing_size is not None and existing_size.Width > 0 and existing_size.Height > 0:
+        shape.setSize(
+            fit_size_to_aspect_ratio(existing_size, parse_svg_dimensions(svg_data))
+        )
+    else:
+        shape.setSize(parse_svg_dimensions(svg_data))
+
+    insertGraphicAttributes(shape, params)
+    return shape
+
+
 def insertSvgGraphic(
     ctx, model, svg_data, params, selected_shape, smybol_name
 ):
@@ -496,32 +546,7 @@ def insertSvgGraphic(
     ) or model.supportsService("com.sun.star.drawing.DrawingDocument")
 
     try:
-        graphic = create_graphic_from_svg(ctx, svg_data)
-
-        # For Writer, create a TextGraphicObject which behaves better (keeps aspect ratio, etc.)
-        if selected_shape is None:
-            shape = model.createInstance("com.sun.star.drawing.GraphicObjectShape")
-        else:
-            shape = selected_shape
-
-        # Preserve user's custom size when editing an existing shape
-        existing_size = selected_shape.getSize() if selected_shape is not None else None
-
-        shape.setPropertyValue("Graphic", graphic)
-
-        if existing_size is not None and existing_size.Width > 0 and existing_size.Height > 0:
-            # Keep the user's size, adjusted to the aspect ratio of the new graphic so
-            # the content is not distorted
-            shape.setSize(
-                fit_size_to_aspect_ratio(existing_size, parse_svg_dimensions(svg_data))
-            )
-        else:
-            # The SVG is generated so that its intrinsic size gives the frame octagon the
-            # configured height. Decorations enlarge the shape beyond that.
-            shape.setSize(parse_svg_dimensions(svg_data))
-
-        # set MilSym-specific user defined attributes
-        insertGraphicAttributes(shape, params)
+        shape = build_symbol_shape(ctx, model, svg_data, params, selected_shape)
 
         # Writer
         if is_writer:
