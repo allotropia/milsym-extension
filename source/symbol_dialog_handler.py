@@ -78,7 +78,7 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         self.ui_indexes = {}
         self.ignore_event = False
         self.is_editing = False
-        self.color = None
+        self.color = "Light"
         self.hex_color = None
         self.final_svg_data = None
         self.final_svg_args = None
@@ -92,6 +92,10 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         self.selected_shape = selected_shape
         self.translator = Translator(ctx)
         self.script = createMilSymbolScriptInstance(ctx, model)
+        self.stack = "0"
+        self.signature = ""
+        self.reinforced = ""
+        self.engagement = "TARGET"
 
     def init_dialog_controls(self):
         self.init_textboxes()
