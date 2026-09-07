@@ -78,7 +78,9 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         self.ui_indexes = {}
         self.ignore_event = False
         self.is_editing = False
-        self.color = "Light"
+        # Left unset, so that a symbol that records no color mode can be told from one
+        # that records a custom fill or no fill at all
+        self.color = None
         self.hex_color = None
         self.final_svg_data = None
         self.final_svg_args = None
@@ -824,14 +826,18 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
                     self.signature = value
                 elif element == "MilSymEngagementType":
                     self.engagement = value
+                elif element == "MilSymFill" and value == "false":
+                    self.color = "NoFill"
                 elif element == "MilSymFillColor":
                     self.hex_color = value
 
         if not self.color:
+            # A symbol drawn with a custom fill records the color but no color mode.
+            # What records no color of any kind was drawn in the default mode.
             if self.hex_color:
                 self.color = "Custom"
             else:
-                self.color = "NoFill"
+                self.color = symbols_data.BUTTONS["COLOR"]["btLight"]
 
         self.update_tree_controls()
         self.update_buttons_state(dialog)
