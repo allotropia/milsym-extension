@@ -37,10 +37,11 @@ class Diagram(ABC):
     # A shape name is the diagram name, a dash, the shape type, and for every shape but
     # the control shape its number: "OrbatDiagram12-GraphicObjectShape3". The office
     # keeps the names in a document unique when a diagram is pasted into it, by giving
-    # every shape of the copy a space and a counter, as in
-    # "OrbatDiagram12-GraphicObjectShape 3", so a space may sit between the type and
-    # the number.
-    _SHAPE_NAME_PATTERN = re.compile(r"^[A-Za-z]+\d*-([A-Za-z]+) ?\d*$")
+    # every shape of the copy a space and a counter, which it appends to whatever the
+    # name already ends in: "OrbatDiagram12-GraphicObjectShape 3" for the control shape
+    # and "OrbatDiagram12-GraphicObjectShape3 2" for a numbered one. So spaces and
+    # numbers in any order may follow the type.
+    _SHAPE_NAME_PATTERN = re.compile(r"^[A-Za-z]+\d*-([A-Za-z]+)[ \d]*$")
 
     @classmethod
     def shape_role(cls, shape_name):
