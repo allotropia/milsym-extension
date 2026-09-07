@@ -327,40 +327,66 @@ class GenerateSymbolsUndoAction(unohelper.Base, XUndoAction):
         self.row_heights.append((row_properties, old_height, new_height))
 
     def undo(self):
+        """Take the symbols of the run off their pages, and put back what it changed.
+
+        Every symbol is answered for on its own, so that one that cannot be reached any
+        more, because the user removed it after the run, does not keep the rest of the
+        step from being undone.
+        """
         try:
             with locked_undo_manager(self.undo_manager):
                 for symbol in reversed(self.inserted):
-                    if symbol.shape is not None:
+                    if symbol.shape is None:
+                        continue
+                    try:
                         symbol.draw_page.remove(symbol.shape)
-                        symbol.shape = None
+                    except Exception as e:
+                        print(f"Error removing a generated symbol: {e}")
+                    symbol.shape = None
                 for symbol in self.replaced:
-                    apply_shape_state(symbol.shape, symbol.before)
+                    try:
+                        apply_shape_state(symbol.shape, symbol.before)
+                    except Exception as e:
+                        print(f"Error putting back a redrawn symbol: {e}")
                 for row_properties, old_height, new_height in self.row_heights:
-                    set_row_height_unrecorded(
-                        self.undo_manager, row_properties, old_height
-                    )
+                    try:
+                        set_row_height_unrecorded(
+                            self.undo_manager, row_properties, old_height
+                        )
+                    except Exception as e:
+                        print(f"Error putting back a row height: {e}")
         except Exception as e:
             print(f"Error undoing the generated symbols: {e}")
 
     def redo(self):
+        """Put the symbols of the run back, one by one as undo takes them off."""
         try:
             with locked_undo_manager(self.undo_manager):
                 for symbol in self.replaced:
-                    apply_shape_state(symbol.shape, symbol.after)
+                    try:
+                        apply_shape_state(symbol.shape, symbol.after)
+                    except Exception as e:
+                        print(f"Error drawing a symbol again: {e}")
                 for symbol in self.inserted:
-                    symbol.shape = insert_symbol_shape(
-                        self.ctx,
-                        self.model,
-                        symbol.draw_page,
-                        symbol.svg_data,
-                        symbol.attributes,
-                        symbol.size,
-                        symbol.cell,
-                    )
+                    try:
+                        symbol.shape = insert_symbol_shape(
+                            self.ctx,
+                            self.model,
+                            symbol.draw_page,
+                            symbol.svg_data,
+                            symbol.attributes,
+                            symbol.size,
+                            symbol.cell,
+                        )
+                    except Exception as e:
+                        print(f"Error inserting a generated symbol again: {e}")
                 for row_properties, old_height, new_height in self.row_heights:
-                    set_row_height_unrecorded(
-                        self.undo_manager, row_properties, new_height
-                    )
+                    try:
+                        set_row_height_unrecorded(
+                            self.undo_manager, row_properties, new_height
+                        )
+                    except Exception as e:
+                        print(f"Error setting a row height again: {e}")
         except Exception as e:
             print(f"Error redoing the generated symbols: {e}")
 
