@@ -37,14 +37,23 @@ GLUE_TOP = 0
 GLUE_BOTTOM = 2
 GLUE_LEFT = 3
 
-# The user defined glue points of a shape that shows a milsymbol drawing. They are placed
-# from where the frame outline and the anchor of the drawing sit within the picture.
-# ANCHOR_START_GLUE is where every connector to a child leaves: the anchor of the symbol,
-# moved down to the bottom of the frame when the anchor lies inside it. For a
-# headquarters the anchor is the end of the staff, so the children hang off the staff.
-# ANCHOR_TOP_GLUE is where a connector arrives on a child that hangs below its parent: the
-# top of the frame, above the anchor. ANCHOR_LEFT_GLUE is where a connector arrives on a
-# stacked child: the middle of the frame's left edge.
+# The user defined glue points of a shape that shows a milsymbol
+# drawing. They are placed from where the frame outline and the anchor
+# of the drawing sit within the picture.
+#
+# ANCHOR_START_GLUE is where every connector to a child leaves: the
+# anchor of the symbol, moved down to the bottom of the frame when the
+# anchor lies inside it. For a headquarters the anchor is the end of
+# the staff, so the children hang off the staff.
+#
+# ANCHOR_TOP_GLUE is where a connector arrives on a child that hangs
+# below its parent: the top of the frame, above the anchor. Since the
+# unit size indicators sit on top of the octagon shape, we always use
+# a relative y position of -5000 (i.e. the outer shape top) for that,
+# to avoid clobbering those decorations.
+#
+# ANCHOR_LEFT_GLUE is where a connector arrives on a stacked child:
+# the middle of the frame's left edge.
 ANCHOR_START_GLUE = 4
 ANCHOR_TOP_GLUE = 5
 ANCHOR_LEFT_GLUE = 6
@@ -80,7 +89,7 @@ def anchor_glue_point_positions(geometry):
             ESCAPE_DOWN,
         ),
         ANCHOR_TOP_GLUE: (
-            relative_glue_position(geometry.anchor_x(), geometry.frame_top()),
+            relative_glue_position(geometry.anchor_x(), 0),
             ESCAPE_UP,
         ),
         ANCHOR_LEFT_GLUE: (
