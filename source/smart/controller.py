@@ -538,15 +538,41 @@ class Controller(unohelper.Base, XSelectionChangeListener):
         """Handle selection change events - XSelectionChangeListener implementation"""
         selected_shape = self.get_selected_shape()
 
+        # Get shape name
+        selected_shape_name = ""
         if selected_shape:
-            # Get shape name
-            selected_shape_name = ""
             try:
                 if hasattr(selected_shape, "getName"):
                     selected_shape_name = selected_shape.getName()
             except Exception:
                 selected_shape_name = ""
 
+        try:
+            self._handle_selection_change(selected_shape, selected_shape_name)
+        finally:
+            self._pass_selection_to_control_dialog()
+
+    def _pass_selection_to_control_dialog(self):
+        """Pass the current document selection on to the control dialog of the document.
+
+        The view calls one selection listener of the extension, this controller, and the
+        controller passes the selection on to the dialog. The dialog is told only when
+        it was built for this controller, so a dialog showing another document's diagram
+        is left as it is. An error inside the dialog is printed and stays here.
+        """
+        dialog_handler = Gui._global_control_dlg_listener
+        if dialog_handler is None:
+            return
+        try:
+            if dialog_handler.get_controller() is not self:
+                return
+            dialog_handler.document_selection_changed(self.get_selected_shapes())
+        except Exception as e:
+            print(f"Error passing the selection on to the control dialog: {e}")
+
+    def _handle_selection_change(self, selected_shape, selected_shape_name):
+        """The body of selectionChanged, for the selected shape and its name"""
+        if selected_shape:
             if selected_shape.supportsService("com.sun.star.drawing.GroupShape"):
                 if (
                     self._entered_group is not None

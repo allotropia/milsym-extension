@@ -27,7 +27,6 @@ from com.sun.star.view.SelectionType import (
     MULTI as SELECTION_TYPE_MULTI,
     SINGLE as SELECTION_TYPE_SINGLE,
 )
-from com.sun.star.view import XSelectionChangeListener
 from com.sun.star.datatransfer.dnd import XDragGestureListener, XDropTargetListener
 from com.sun.star.datatransfer.dnd import XDragSourceListener
 from com.sun.star.datatransfer.dnd.DNDConstants import ACTION_MOVE
@@ -777,8 +776,6 @@ class ControlDlgHandler(
             tree_key_handler = TreeKeyHandler(self)
             self.tree_control.addKeyListener(tree_key_handler)
 
-            # Set up selection listener for bidirectional selection
-            self._setup_selection_listener()
             # Enable drag & drop functionality
             self._setup_drag_and_drop()
 
@@ -1020,6 +1017,8 @@ class ControlDlgHandler(
                 # Clear the node mappings before repopulating
                 self._clear_node_maps()
                 self.populate_tree()
+                # The rebuilt tree has no selected row, so the buttons follow that
+                self._update_button_states()
         except Exception as e:
             print(f"Error refreshing tree: {e}")
 
@@ -1357,18 +1356,46 @@ class ControlDlgHandler(
 
         except Exception as e:
             print(f"Error selecting tree nodes for shapes: {e}")
+        finally:
+            self._update_button_states()
 
-    def _setup_selection_listener(self):
-        """Set up selection change listener for shape-to-tree selection"""
+    def document_selection_changed(self, selection):
+        """Follow a change of the document selection in the tree.
+
+        The rows of the selected shapes are selected in the tree. The tree is left alone
+        while it has the focus, while the tree itself is changing the document
+        selection, and during a drag. The button states are refreshed however the call
+        ends.
+
+        Args:
+            selection: XShapes or shape collection from the document, or None
+        """
         try:
-            controller = self.get_controller()
-            # Create and add selection listener
-            selection_listener = TreeSelectionListener(self)
-            controller._x_controller.addSelectionChangeListener(selection_listener)
-            # Store reference to prevent garbage collection
-            self._selection_listener = selection_listener
-        except Exception as e:
-            print(f"Error setting up selection listener: {e}")
+            # Skip if tree control has focus (user is navigating tree with keyboard)
+            tree_control = getattr(self, "tree_control", None)
+            if tree_control and tree_control.hasFocus():
+                return
+
+            # Skip if we're currently syncing from tree to document
+            if getattr(self, "_syncing_selection", False):
+                return
+
+            # Skip if we're currently dragging
+            if getattr(self, "_is_dragging", False):
+                return
+
+            # Skip if sync was initiated from tree
+            if getattr(self, "_syncing_from_tree", False):
+                return
+
+            # Sync ALL selected shapes to tree
+            if selection and selection.getCount() > 0:
+                self.sync_document_selection_to_tree(selection)
+        except Exception:
+            # Silently ignore selection errors to avoid spam
+            pass
+        finally:
+            self._update_button_states()
 
     def select_tree_node_for_shape(self, shape):
         """Select the tree node corresponding to the given shape"""
@@ -1700,6 +1727,12 @@ class ControlDlgHandler(
                     if new_shape:
                         controller = self.get_controller()
                         controller.set_selected_shape(new_shape)
+                        # The selection listener of the controller is switched off
+                        # while a shape is added, so the tree is told about the new
+                        # selection here.
+                        self.document_selection_changed(
+                            controller.get_selected_shapes()
+                        )
                         return
         except Exception as e:
             print(f"Error selecting newly added child: {e}")
@@ -1745,18 +1778,6 @@ class ControlDlgHandler(
     def cleanup(self):
         """Clean up all resources before dialog disposal"""
         try:
-            if (
-                hasattr(self, "_selection_listener")
-                and self._selection_listener is not None
-            ):
-                try:
-                    self.get_controller()._x_controller.removeSelectionChangeListener(
-                        self._selection_listener
-                    )
-                except Exception:
-                    pass
-                self._selection_listener = None
-
             if hasattr(self, "_node_to_tree_item_map"):
                 self._clear_node_maps()
 
@@ -1940,11 +1961,10 @@ class EditShapeUndoAction(unohelper.Base, XUndoAction):
         controller = self.dialog_handler.get_controller()
         if controller is None:
             return
-        controller.remove_selection_listener()
-
         diagram = controller.get_diagram()
         if diagram is None:
             return
+        controller.remove_selection_listener()
 
         if len(attributes) == 0:
             insertGraphicAttributes(self.shape, [""])  # Empty SIDC code, no other attrs
@@ -2381,6 +2401,12 @@ class AddShapeUndoAction(unohelper.Base, XUndoAction):
                         parent_shape = self.parent_tree_item.get_rectangle_shape()
                         if parent_shape:
                             controller.set_selected_shape(parent_shape)
+                            # The selection listener of the controller is switched off
+                            # during the undo, so the tree is told about the new
+                            # selection here.
+                            self.dialog_handler.document_selection_changed(
+                                controller.get_selected_shapes()
+                            )
 
                     # Re-add selection listener
                     controller.add_selection_listener()
@@ -2690,47 +2716,6 @@ class TreeMouseHandler(unohelper.Base, XMouseListener):
     def mouseExited(self, event):
         """Handle mouse exited events"""
         pass
-
-    def disposing(self, event):
-        """Handle disposing events"""
-        pass
-
-
-class TreeSelectionListener(unohelper.Base, XSelectionChangeListener):
-    """Listen for shape selection changes to update tree selection"""
-
-    def __init__(self, dialog_handler):
-        self.dialog_handler = dialog_handler
-
-    def selectionChanged(self, event):
-        """Handle selection change events from the document"""
-        try:
-            # Skip if tree control has focus (user is navigating tree with keyboard)
-            tree_control = getattr(self.dialog_handler, "tree_control", None)
-            if tree_control and tree_control.hasFocus():
-                return
-
-            # Skip if we're currently syncing from tree to document
-            if getattr(self.dialog_handler, "_syncing_selection", False):
-                return
-
-            # Skip if we're currently dragging
-            if getattr(self.dialog_handler, "_is_dragging", False):
-                return
-
-            # Skip if sync was initiated from tree
-            if getattr(self.dialog_handler, "_syncing_from_tree", False):
-                return
-
-            # Get the selected shapes and sync ALL of them to tree
-            selection = event.Source.getSelection()
-            if selection and selection.getCount() > 0:
-                self.dialog_handler.sync_document_selection_to_tree(selection)
-        except Exception:
-            # Silently ignore selection errors to avoid spam
-            pass
-        finally:
-            self.dialog_handler._update_button_states()
 
     def disposing(self, event):
         """Handle disposing events"""
