@@ -12,8 +12,10 @@ import xml.etree.ElementTree as ET
 from contextlib import contextmanager
 
 import uno
+import unohelper
 
 from com.sun.star.awt import Point, Rectangle, Size
+from com.sun.star.awt import XCallback
 from com.sun.star.beans import NamedValue, PropertyValue
 from com.sun.star.xml import AttributeData
 
@@ -31,6 +33,40 @@ PX_TO_MM100 = 26.46
 #   anchor  = "x y" of the symbol anchor, the end of the staff for
 #             a headquarters and the octagon centre for every other symbol
 MILSYM_SVG_NAMESPACE = "urn:collabora:milsym"
+
+
+class _PostedAction(unohelper.Base, XCallback):
+    """Runs a stored action when the office calls back into it."""
+
+    def __init__(self, action):
+        self._action = action
+
+    def notify(self, data):
+        self._action()
+
+
+def post_office_action(x_context, action):
+    """Run action from the office's own event queue rather than on the call stack that
+    asked for it.
+
+    Everything this extension does to a document has to run on the main thread while it
+    holds the solar mutex, the lock that guards the whole drawing layer. Some of the call
+    stacks that reach our code do not hold it. A menu or toolbar command is dispatched
+    with the mutex released, so that a handler is free to put up a dialog, and a dialog
+    button's on-performaction event reaches our handler several layers into the office's
+    own event dispatch. Writing to a shape from there, adding a glue point say, reaches
+    straight through to a window repaint with no lock held, which trips the assertion on
+    a build with extra consistency checks compiled in and races the main thread on any
+    other build.
+
+    Posting the action through the office's callback queue runs it as a plain user event
+    on the main thread, where the mutex is held and the dispatch that asked for it has
+    finished.
+    """
+    async_callback = x_context.getServiceManager().createInstanceWithContext(
+        "com.sun.star.awt.AsyncCallback", x_context
+    )
+    async_callback.addCallback(_PostedAction(action), None)
 
 
 @contextmanager

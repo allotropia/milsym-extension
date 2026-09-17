@@ -15,7 +15,6 @@ import uno
 import unohelper
 from com.sun.star.awt import (
     KeyModifier,
-    XCallback,
     XDialogEventHandler,
     XTopWindowListener,
     XMouseListener,
@@ -42,40 +41,13 @@ from utils import (
     get_recorded_symbol_size_px,
     insertGraphicAttributes,
     createMilSymbolScriptInstance,
+    post_office_action,
 )
 from sidebar import SidebarFactory
 from unohelper import systemPathToFileUrl
 from translator import translate
 from perf import SKIP_TREE_REBUILD, count, timed
 import tempfile
-
-
-class _PostedAction(unohelper.Base, XCallback):
-    """Runs a stored action when the office calls back into it."""
-
-    def __init__(self, action):
-        self._action = action
-
-    def notify(self, data):
-        self._action()
-
-
-def post_dialog_action(x_context, action):
-    """Run action once the dialog button click that asked for it has returned control
-    to the office, rather than while still inside the button's own event dispatch.
-
-    A dialog button's on-performaction event reaches XDialogEventHandler through
-    several layers of the office's own event dispatch, still on the same call stack
-    as the click itself. A layout change made from there, such as a new glue point
-    on a shape, asks a window to repaint immediately, and that repaint can run before
-    the click's dispatch has finished setting up the state a repaint expects, which
-    aborts a build with extra consistency checks compiled in. Posting the action
-    through the office's own callback queue runs it once that dispatch is done.
-    """
-    async_callback = x_context.getServiceManager().createInstanceWithContext(
-        "com.sun.star.awt.AsyncCallback", x_context
-    )
-    async_callback.addCallback(_PostedAction(action), None)
 
 
 class ControlDlgHandler(
@@ -111,13 +83,13 @@ class ControlDlgHandler(
 
     def callHandlerMethod(self, dialog, eventObject, methodName):
         if methodName == "OnAdd":
-            post_dialog_action(self.x_context, self.add_child_to_selected_item)
+            post_office_action(self.x_context, self.add_child_to_selected_item)
             return True
         elif methodName == "OnRemove":
-            post_dialog_action(self.x_context, self.remove_selected_shape)
+            post_office_action(self.x_context, self.remove_selected_shape)
             return True
         elif methodName == "OnEdit":
-            post_dialog_action(self.x_context, self.edit_selected_item)
+            post_office_action(self.x_context, self.edit_selected_item)
             return True
         elif methodName == "OnDragOrbatChange":
             if self.is_drag_orbat_enabled():

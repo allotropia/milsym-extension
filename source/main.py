@@ -26,6 +26,7 @@ from utils import (
     containing_orbat_group,
     is_orbat_feature_enabled,
     extract_symbol_params_from_shape,
+    post_office_action,
 )
 
 from com.sun.star.task import XJobExecutor, XJob
@@ -740,7 +741,12 @@ class Dispatcher(unohelper.Base, XDispatch):
         self.job = MainJob(self.ctx, orbat_enabled)
 
     def dispatch(self, url, args):
-        self.job.trigger(url.Path)
+        # The office dispatches a menu or toolbar command with the solar mutex released,
+        # so the command runs here on the main thread without the lock that guards the
+        # drawing layer. Everything the commands do writes to a document, so hand the
+        # work to the office's callback queue, where it runs with the mutex held. See
+        # post_office_action.
+        post_office_action(self.ctx, lambda: self.job.trigger(url.Path))
 
     def addStatusListener(self, listener, url):
         event = uno.createUnoStruct("com.sun.star.frame.FeatureStateEvent")
