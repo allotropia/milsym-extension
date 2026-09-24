@@ -24,7 +24,12 @@ from utils import (
 )
 from translator import Translator
 from com.sun.star.view.SelectionType import SINGLE
-from com.sun.star.awt import XFocusListener, XKeyListener, XMouseListener
+from com.sun.star.awt import (
+    XFocusListener,
+    XKeyListener,
+    XMouseListener,
+    XWindowListener,
+)
 from com.sun.star.awt.Key import UP, DOWN, LEFT, RIGHT, RETURN
 from collections import defaultdict
 
@@ -179,6 +184,10 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         treeSearch_mosuse_listener = SearchTreeMouseListener(self)
         treeSearch_ctrl.addMouseListener(treeSearch_mosuse_listener)
 
+        list_visibility_listener = ListVisibilityListener(self)
+        for tree_ctrl in self.tree_ctrls.values():
+            tree_ctrl.addWindowListener(list_visibility_listener)
+
         for name, tree_ctrl in self.tree_ctrls.items():
             if name == "treeSearch":
                 continue
@@ -195,6 +204,19 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
             tree_key_listener = TreeKeyListener(self, listbox_ctrl)
             tree_ctrl.addKeyListener(tree_key_listener)
+
+    def update_default_button(self):
+        """Make Save the default button, unless a search result list or a dropdown tree
+        is shown.
+
+        Return picks the selected entry of a shown list, and the office also sends that
+        key to the default button of the dialog. With no default button while a list is
+        shown, Return only picks the entry there, and saves the symbol otherwise.
+        """
+        list_shown = any(
+            tree_ctrl.isVisible() for tree_ctrl in self.tree_ctrls.values()
+        )
+        self.dialog.getControl("btSave").getModel().DefaultButton = not list_shown
 
     def init_default_values(self, selected_index=4, update_country=True):
         self.init_default_tree(update_country)
@@ -1251,6 +1273,29 @@ class ListboxMouseListener(unohelper.Base, XMouseListener):
         pass
 
     def mouseExited(self, event):
+        pass
+
+    def disposing(self, event):
+        pass
+
+
+class ListVisibilityListener(unohelper.Base, XWindowListener):
+    """Follow the search result list and the dropdown trees as they are shown and
+    hidden, and set the default button of the dialog to match."""
+
+    def __init__(self, dialog_handler):
+        self.dialog_handler = dialog_handler
+
+    def windowShown(self, event):
+        self.dialog_handler.update_default_button()
+
+    def windowHidden(self, event):
+        self.dialog_handler.update_default_button()
+
+    def windowResized(self, event):
+        pass
+
+    def windowMoved(self, event):
         pass
 
     def disposing(self, event):
