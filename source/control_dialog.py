@@ -2687,19 +2687,16 @@ class TreeMouseHandler(unohelper.Base, XMouseListener):
         self.dialog_handler = dialog_handler
 
     def mousePressed(self, event):
-        """Handle mouse pressed events"""
-        log_tree_mouse_event("pressed", event)
+        """Handle mouse pressed events - open the symbol dialog on double click
 
-    def mouseReleased(self, event):
-        """Handle mouse released events - sync selection to document shapes
+        The office counts clicks when the button goes down, and a
+        release reports the count of the last press in the same
+        window. A double click is therefore taken from the press,
+        where the count belongs to this very click. Avoids accidental
+        button-up events to trigger spurious double clicks.
 
-        Supports:
-        - Normal click: Select single item (replaces selection)
-        - Shift+click: Range selection
-        - Ctrl+click: Toggle item selection
-        - Double click: Open the symbol properties dialog for the item
         """
-        log_tree_mouse_event("released", event)
+        log_tree_mouse_event("pressed", event)
         try:
             if getattr(self.dialog_handler, "_is_dragging", False):
                 return
@@ -2715,6 +2712,21 @@ class TreeMouseHandler(unohelper.Base, XMouseListener):
                     # selected first
                     self.dialog_handler.handle_tree_selection(clicked_node)
                     self.dialog_handler.edit_selected_item()
+
+        except Exception as e:
+            print(f"Error in mousePressed: {e}")
+
+    def mouseReleased(self, event):
+        """Handle mouse released events - sync selection to document shapes
+
+        Supports:
+        - Normal click: Select single item (replaces selection)
+        - Shift+click: Range selection
+        - Ctrl+click: Toggle item selection
+        """
+        log_tree_mouse_event("released", event)
+        try:
+            if getattr(self.dialog_handler, "_is_dragging", False):
                 return
 
             if event.Buttons == MouseButton.LEFT and event.ClickCount == 1:
