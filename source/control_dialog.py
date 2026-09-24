@@ -2588,16 +2588,14 @@ class TreeKeyHandler(unohelper.Base, XKeyListener):
         self.dialog_handler = dialog_handler
 
     def keyPressed(self, event):
-        """Handle key pressed events for navigation"""
-        pass
+        """Handle key pressed events - open the symbol dialog on Return
 
-    def keyReleased(self, event):
-        """Handle key released events"""
+        A key release also reaches this tree when the press of that key went to another
+        window, such as a dialog that closed on it. The press always belongs to a key
+        stroke made in this tree, so the dialog opens on the press.
+        """
         try:
-            if event.KeyCode == Key.DELETE:
-                self.dialog_handler.remove_selected_shape()
-                return
-            elif event.KeyCode == Key.RETURN:
+            if event.KeyCode == Key.RETURN:
                 selection = event.Source.getSelection()
                 selected_node = None
                 if hasattr(selection, "getDisplayValue"):
@@ -2610,6 +2608,14 @@ class TreeKeyHandler(unohelper.Base, XKeyListener):
                     # selected in the document first
                     self.dialog_handler.handle_tree_selection(selected_node)
                     self.dialog_handler.edit_selected_item()
+        except Exception as e:
+            print(f"Error handling key press: {e}")
+
+    def keyReleased(self, event):
+        """Handle key released events"""
+        try:
+            if event.KeyCode == Key.DELETE:
+                self.dialog_handler.remove_selected_shape()
                 return
             elif event.KeyCode == Key.ADD or event.KeyChar == "+":
                 # The selection stays on the current line, so pressing the key again
