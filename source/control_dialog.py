@@ -10,6 +10,8 @@ import hashlib
 import json
 import os
 import shutil
+import sys
+import time
 
 import uno
 import unohelper
@@ -47,6 +49,27 @@ from unohelper import systemPathToFileUrl
 from translator import translate
 from perf import SKIP_TREE_REBUILD, count, timed
 import tempfile
+
+# Set MILSYM_MOUSE_LOG=1 to print every mouse press and release on the ORBAT tree to
+# stderr, with a timestamp, the click count and the position of the pointer.
+MOUSE_LOG_ENABLED = os.environ.get("MILSYM_MOUSE_LOG") == "1"
+
+
+def log_tree_mouse_event(kind, event):
+    """Print one mouse event of the ORBAT tree to stderr, if the mouse log is switched on."""
+    if not MOUSE_LOG_ENABLED:
+        return
+    log_mouse_message(
+        f"{kind} ClickCount={event.ClickCount} Buttons={event.Buttons} "
+        f"Modifiers={event.Modifiers} X={event.X} Y={event.Y}"
+    )
+
+
+def log_mouse_message(message):
+    """Print a line of the mouse log to stderr, if the mouse log is switched on."""
+    if not MOUSE_LOG_ENABLED:
+        return
+    print(f"[milsym-mouse] {time.monotonic():.3f} {message}", file=sys.stderr)
 
 
 class ControlDlgHandler(
@@ -233,7 +256,9 @@ class ControlDlgHandler(
             return
 
         original_attributes = extractGraphicAttributes(selected_shape)
+        log_mouse_message("symbol dialog opens")
         self.dialog.execute_properties_dialog()
+        log_mouse_message("symbol dialog closed")
         edited_attributes = extractGraphicAttributes(selected_shape)
 
         if original_attributes != edited_attributes:
@@ -2663,7 +2688,7 @@ class TreeMouseHandler(unohelper.Base, XMouseListener):
 
     def mousePressed(self, event):
         """Handle mouse pressed events"""
-        pass
+        log_tree_mouse_event("pressed", event)
 
     def mouseReleased(self, event):
         """Handle mouse released events - sync selection to document shapes
@@ -2674,6 +2699,7 @@ class TreeMouseHandler(unohelper.Base, XMouseListener):
         - Ctrl+click: Toggle item selection
         - Double click: Open the symbol properties dialog for the item
         """
+        log_tree_mouse_event("released", event)
         try:
             if getattr(self.dialog_handler, "_is_dragging", False):
                 return
