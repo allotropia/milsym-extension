@@ -26,11 +26,12 @@ from translator import Translator
 from com.sun.star.view.SelectionType import SINGLE
 from com.sun.star.awt import (
     XFocusListener,
+    XKeyHandler,
     XKeyListener,
     XMouseListener,
     XWindowListener,
 )
-from com.sun.star.awt.Key import UP, DOWN, LEFT, RIGHT, RETURN, SPACE
+from com.sun.star.awt.Key import UP, DOWN, LEFT, RIGHT, RETURN, SPACE, ESCAPE
 from collections import defaultdict
 
 # The milsymbol text modifier option that each textbox of the symbol dialog holds, keyed
@@ -205,6 +206,33 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
             tree_key_listener = TreeKeyListener(self, listbox_ctrl)
             tree_ctrl.addKeyListener(tree_key_listener)
+
+    def close_list_with_focus(self):
+        """Hide the dropdown tree or the search result list that has the keyboard focus,
+        and give the focus back to the control that opened it.
+
+        The search box keeps the focus while its result list is shown, so the focus in
+        the search box counts as the focus in that list. Returns True when a list was
+        hidden.
+        """
+        search_box = self.dialog.getControl("tbSearch")
+        for name, tree_ctrl in self.tree_ctrls.items():
+            if not tree_ctrl.isVisible():
+                continue
+
+            if name == "treeSearch":
+                opener = search_box
+                has_focus = control_has_focus(tree_ctrl) or control_has_focus(opener)
+            else:
+                opener = self.dialog.getControl("ltb" + name.removeprefix("tree"))
+                has_focus = control_has_focus(tree_ctrl)
+
+            if has_focus:
+                tree_ctrl.setVisible(False)
+                opener.setFocus()
+                return True
+
+        return False
 
     def update_default_button(self):
         """Make Save the default button, unless a search result list or a dropdown tree
@@ -1000,6 +1028,31 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
         return attrs
 
 
+def control_has_focus(control):
+    """Tell whether the window of a dialog control has the keyboard focus"""
+    peer = control.getPeer()
+    return peer is not None and peer.hasFocus()
+
+
+class ListEscapeKeyHandler(unohelper.Base, XKeyHandler):
+    """Take the Escape key for closing the dropdown tree or the search result list that
+    has the keyboard focus. The office handles all other keys as usual."""
+
+    def __init__(self, dialog_handler):
+        self.dialog_handler = dialog_handler
+
+    def keyPressed(self, event):
+        if event.KeyCode != ESCAPE or event.Modifiers:
+            return False
+        return self.dialog_handler.close_list_with_focus()
+
+    def keyReleased(self, event):
+        return False
+
+    def disposing(self, event):
+        pass
+
+
 class SearchTreeMouseListener(unohelper.Base, XMouseListener):
     def __init__(self, dialog_handler):
         self.dialog_handler = dialog_handler
@@ -1094,7 +1147,7 @@ class SearchTextboxKeyListener(unohelper.Base, XKeyListener):
             self.treeSearch_ctrl.setVisible(False)
 
     def keyReleased(self, event):
-        if event.KeyCode in (UP, DOWN, LEFT, RIGHT, RETURN):
+        if event.KeyCode in (UP, DOWN, LEFT, RIGHT, RETURN, ESCAPE):
             return
 
         text = event.Source.getText().strip().lower()
