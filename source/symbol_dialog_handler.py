@@ -30,7 +30,7 @@ from com.sun.star.awt import (
     XMouseListener,
     XWindowListener,
 )
-from com.sun.star.awt.Key import UP, DOWN, LEFT, RIGHT, RETURN
+from com.sun.star.awt.Key import UP, DOWN, LEFT, RIGHT, RETURN, SPACE
 from collections import defaultdict
 
 # The milsymbol text modifier option that each textbox of the symbol dialog holds, keyed
@@ -196,8 +196,9 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
 
             suffix = name.removeprefix("tree")
             listbox_ctrl = self.dialog.getControl(f"ltb{suffix}")
-            ltb_mouse_listener = ListboxMouseListener(self, tree_ctrl)
-            listbox_ctrl.addMouseListener(ltb_mouse_listener)
+            ltb_listener = ListboxListener(self, tree_ctrl)
+            listbox_ctrl.addMouseListener(ltb_listener)
+            listbox_ctrl.addKeyListener(ltb_listener)
 
             tree_mosuse_listener = TreeMouseListener(self, listbox_ctrl)
             tree_ctrl.addMouseListener(tree_mosuse_listener)
@@ -1208,12 +1209,32 @@ class SearchTextBoxFocusListener(unohelper.Base, XFocusListener):
         pass
 
 
-class ListboxMouseListener(unohelper.Base, XMouseListener):
+class ListboxListener(unohelper.Base, XMouseListener, XKeyListener):
+    """Open and close the dropdown tree of a listbox, on a mouse click and on the space
+    key."""
+
     def __init__(self, dialog_handler, tree_ctrl):
         self.dialog_handler = dialog_handler
         self.tree_ctrl = tree_ctrl
 
     def mousePressed(self, event):
+        self.toggle_tree()
+
+    def mouseReleased(self, event):
+        self.show_selected_node()
+
+    def keyPressed(self, event):
+        pass
+
+    def keyReleased(self, event):
+        # The listbox is a dropdown listbox, which takes the press of the space key for
+        # itself, so only the release of that key reaches the listeners
+        if event.KeyCode == SPACE:
+            self.toggle_tree()
+            self.show_selected_node()
+
+    def toggle_tree(self):
+        """Fill the dropdown tree and show it, or hide it when it is shown already"""
         control_name = self.tree_ctrl.getModel().Name
         symbolSet_index = self.dialog_handler.current_symbolSet_index
 
@@ -1264,7 +1285,8 @@ class ListboxMouseListener(unohelper.Base, XMouseListener):
 
         return self.dialog_handler.ui_indexes.get(control_name, 0)
 
-    def mouseReleased(self, event):
+    def show_selected_node(self):
+        """Scroll the dropdown tree to its selected entry, and make it the active one"""
         node = self.tree_ctrl.getSelection()
         self.tree_ctrl.makeNodeVisible(node)
         self.dialog_handler.active_tree_ctrl = self.tree_ctrl
