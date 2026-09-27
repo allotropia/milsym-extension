@@ -37,6 +37,8 @@ echo "Copying files to temporary directory..."
 rsync -av \
     --exclude="README.md" \
     --exclude="build.sh" \
+    --exclude="example_symbols_list.csv" \
+    --exclude="pyrightconfig.json" \
     --exclude="milsymbol/combine.sh" \
     --exclude="milsymbol/milsymbol-3.0.3.js" \
     --exclude="milsymbol/paths-reinforced.js" \
@@ -45,6 +47,7 @@ rsync -av \
     --exclude="milsymbol/country-flags.js" \
     --exclude="milsymbol/convert-to-unicode.py" \
     --exclude=".*" \
+    --exclude="#*" \
     --exclude="*~" \
     --exclude="__pycache__" \
     --exclude=".git/" \

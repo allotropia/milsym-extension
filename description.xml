@@ -9,6 +9,17 @@
         <name xlink:href="https://www.collaboraonline.com">Collabora Productivity</name>
     </publisher>
     <display-name>
-        <name>Military Symbols</name>
+        <name lang="en">Military Symbols</name>
+        <name lang="de">Taktische Zeichen</name>
     </display-name>
+    <extension-description>
+        <src xlink:href="pkg-description/pkg-description.en" lang="en"/>
+        <src xlink:href="pkg-description/pkg-description.de" lang="de"/>
+    </extension-description>
+    <registration>
+        <simple-license accept-by="admin" suppress-on-update="true"
+						suppress-if-required="true">
+            <license-text xlink:href="LICENSE" lang="en"/>
+        </simple-license>
+    </registration>
 </description>
