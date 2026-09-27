@@ -560,6 +560,31 @@ class OrgChart(OrganizationChart):
             if self._diagram_tree is not None:
                 self._diagram_tree.refresh_connector_props()
 
+    def refresh_after_edit(self):
+        """Lay the diagram out, then lay it out once more from where the group sits now.
+
+        In Writer and Calc the group is anchored to a paragraph or a cell, and the office
+        places the group frame again when a shape inside it grows or arrives, so an edit
+        can move the whole group on the page while it runs. What the tree keeps about the
+        shapes then describes places the group no longer occupies, and a single layout
+        pass from the kept record puts some members into the old frame while the write
+        skipping leaves the others in the new one.
+
+        The first pass is the ordinary layout: it places and sizes a shape the edit has
+        just made, and it brings every connector route up to date, which is what reading
+        the group position requires. The origin is then read again, the record of where
+        the members sit is dropped, and the second pass writes every member once, all
+        measured from the place the group holds now, so the whole diagram lands in one
+        frame.
+        """
+        self.refresh_diagram()
+
+        if self._diagram_tree is not None:
+            self._diagram_tree.update_origin()
+            self._diagram_tree.forget_geometry()
+
+        self.refresh_diagram()
+
     def paste_subtree(self, target_tree_item, clipboard_item, script=None):
         """Paste copied subtree as children of target item"""
         if self._diagram_tree is None:

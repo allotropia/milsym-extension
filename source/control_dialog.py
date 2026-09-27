@@ -215,7 +215,7 @@ class ControlDlgHandler(
             undo_manager.lock()
         try:
             self.get_controller().get_diagram().add_shape()
-            self.get_controller().get_diagram().refresh_diagram()
+            self.get_controller().get_diagram().refresh_after_edit()
 
             added_shape = self._find_newly_added_shape(parent_tree_item)
         finally:
@@ -273,7 +273,7 @@ class ControlDlgHandler(
                 except Exception as e:
                     print(f"Failed to register edit undo action: {e}")
 
-        self.get_controller().get_diagram().refresh_diagram()
+        self.get_controller().get_diagram().refresh_after_edit()
         self.refresh_tree()
         if self.tree_control is not None:
             self.tree_control.setFocus()
@@ -652,7 +652,7 @@ class ControlDlgHandler(
                     self.get_controller().set_selected_shape(shape)
                     self.get_controller().get_diagram().remove_shape()
 
-            self.get_controller().get_diagram().refresh_diagram()
+            self.get_controller().get_diagram().refresh_after_edit()
             self.refresh_tree()
 
             if undo_manager and removal_data:
@@ -2410,7 +2410,7 @@ class AddShapeUndoAction(unohelper.Base, XUndoAction):
                     try:
                         # Remove the shape using the diagram's remove method
                         controller.get_diagram().remove_shape(self.added_shape)
-                        controller.get_diagram().refresh_diagram()
+                        controller.get_diagram().refresh_after_edit()
                     finally:
                         if undo_manager:
                             undo_manager.unlock()
@@ -2456,7 +2456,7 @@ class AddShapeUndoAction(unohelper.Base, XUndoAction):
                         parent_shape = self.parent_tree_item.get_rectangle_shape()
 
                         controller.get_diagram().add_shape(parent_shape)
-                        controller.get_diagram().refresh_diagram()
+                        controller.get_diagram().refresh_after_edit()
 
                         # Look up the CURRENT tree item from the diagram tree
                         current_parent_tree_item = (

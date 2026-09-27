@@ -667,7 +667,7 @@ class MainJob(unohelper.Base, XJobExecutor):
             handler.edit_selected_item()
         else:
             controller._gui.execute_properties_dialog()
-            diagram.refresh_diagram()
+            diagram.refresh_after_edit()
 
     def onRefreshOrbat(self):
         """Refresh layout for the currently selected ORBAT group"""
