@@ -14,6 +14,8 @@ Color scheme definitions
 Python port of SchemeDefinitions.java
 """
 
+from typing import ClassVar
+
 
 class SchemeDefinitions:
     """Color scheme definitions for diagrams"""
@@ -33,7 +35,7 @@ class SchemeDefinitions:
     BROWN_SCHEME = (0xECBA74, 0x5C2D0A)
 
     # Array of all color schemes
-    COLOR_SCHEMES = [
+    COLOR_SCHEMES: ClassVar[list] = [
         BLUE_SCHEME,
         AQUA_SCHEME,
         RED_SCHEME,

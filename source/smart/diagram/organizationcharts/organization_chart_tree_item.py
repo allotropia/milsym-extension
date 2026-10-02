@@ -16,13 +16,17 @@ Python port of OrganizationChartTreeItem.java
 
 from abc import ABC
 
-from perf import SKIP_GEOMETRY_WRITES, count
-
-from com.sun.star.drawing.FillStyle import GRADIENT, NONE as FILL_STYLE_NONE, SOLID
+from com.sun.star.drawing.FillStyle import GRADIENT, SOLID
+from com.sun.star.drawing.FillStyle import NONE as FILL_STYLE_NONE
 from com.sun.star.drawing.LineStyle import (
     NONE as LINE_STYLE_NONE,
+)
+from com.sun.star.drawing.LineStyle import (
     SOLID as LINE_STYLE_SOLID,
 )
+from perf import SKIP_GEOMETRY_WRITES, count
+
+from ..diagram import Diagram
 
 # Writer holds the geometry of a drawing object in twips while the drawing API speaks
 # 1/100 mm, so a coordinate reads back up to two units away from the one that was
@@ -319,8 +323,7 @@ class OrganizationChartTreeItem(ABC):
     def set_level(self, level: int):
         """Set level"""
         self._level = level
-        if self._level > OrganizationChartTreeItem._max_level:
-            OrganizationChartTreeItem._max_level = self._level
+        OrganizationChartTreeItem._max_level = max(OrganizationChartTreeItem._max_level, self._level)
 
     def get_level(self) -> int:
         """Get level"""
@@ -358,9 +361,9 @@ class OrganizationChartTreeItem(ABC):
             return True
         if self._first_child is not None and self._first_child.search_item(x_shape):
             return True
-        if self._first_sibling is not None and self._first_sibling.search_item(x_shape):
-            return True
-        return False
+        return self._first_sibling is not None and self._first_sibling.search_item(
+            x_shape
+        )
 
     def display(self):
         """Display the item - calls set_pos_of_rect and recurses to children"""
@@ -436,8 +439,7 @@ class OrganizationChartTreeItem(ABC):
             item = tree_item._first_child
             while item is not None:
                 depth = self.get_deep_of_tree_branch(item)
-                if depth > max_depth:
-                    max_depth = depth
+                max_depth = max(max_depth, depth)
                 item = item._first_sibling
             return max_depth + 1
 

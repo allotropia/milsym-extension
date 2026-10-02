@@ -5,11 +5,11 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import os
-import unohelper
 
-from unohelper import systemPathToFileUrl
+import unohelper
 from com.sun.star.awt import XDialogEventHandler
 from com.sun.star.awt.Key import RETURN
+from unohelper import systemPathToFileUrl
 
 
 class RenameDialog:

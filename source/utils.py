@@ -13,12 +13,9 @@ from contextlib import contextmanager
 
 import uno
 import unohelper
-
-from com.sun.star.awt import Point, Rectangle, Size
-from com.sun.star.awt import XCallback
+from com.sun.star.awt import Point, Rectangle, Size, XCallback
 from com.sun.star.beans import NamedValue, PropertyValue
 from com.sun.star.xml import AttributeData
-
 from perf import count
 
 # Conversion factor from pixels to 1/100mm, assuming 96 DPI (2540 / 96)
@@ -298,7 +295,7 @@ def parse_svg_geometry(svg_data, name, count):
     """
     try:
         root = ET.fromstring(svg_data)
-        value = root.get("{%s}%s" % (MILSYM_SVG_NAMESPACE, name))
+        value = root.get(f"{{{MILSYM_SVG_NAMESPACE}}}{name}")
         if value is None:
             return None
         numbers = [float(part) for part in value.split()]
@@ -464,10 +461,10 @@ def octagon_rect_in_shape(shape, svg_data):
     position = shape.getPosition()
     size = shape.getSize()
     rect = Rectangle()
-    rect.X = int(round(position.X + octagon[0] * size.Width))
-    rect.Y = int(round(position.Y + octagon[1] * size.Height))
-    rect.Width = int(round(octagon[2] * size.Width))
-    rect.Height = int(round(octagon[3] * size.Height))
+    rect.X = round(position.X + octagon[0] * size.Width)
+    rect.Y = round(position.Y + octagon[1] * size.Height)
+    rect.Width = round(octagon[2] * size.Width)
+    rect.Height = round(octagon[3] * size.Height)
     return rect
 
 
@@ -482,8 +479,8 @@ def anchor_point_in_shape(shape, svg_data):
     position = shape.getPosition()
     size = shape.getSize()
     point = Point()
-    point.X = int(round(position.X + anchor[0] * size.Width))
-    point.Y = int(round(position.Y + anchor[1] * size.Height))
+    point.X = round(position.X + anchor[0] * size.Width)
+    point.Y = round(position.Y + anchor[1] * size.Height)
     return point
 
 
@@ -608,7 +605,7 @@ def insertSvgGraphic(
                     current_selection = model.getCurrentSelection()
                     cell_position = current_selection.getPropertyValue("Position")
                     shape.setPosition(cell_position)
-                except:
+                except Exception:
                     # Default position if we can't get cell position
                     default_pos = Point()
                     default_pos.X = 1000
@@ -705,12 +702,13 @@ def icon_cache_key(attributes, size):
     can change the drawing. The pairs are sorted, so two shapes carrying the same
     attributes in a different order share one key.
     """
-    return (size,) + tuple(
-        sorted(
+    return (
+        size,
+        *sorted(
             (name, value)
             for name, value in attributes.items()
             if name.startswith("MilSym") and name != "MilSymSize"
-        )
+        ),
     )
 
 

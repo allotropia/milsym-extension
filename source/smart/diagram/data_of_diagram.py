@@ -14,7 +14,6 @@ Data structure for diagram data
 Python port of DataOfDiagram.java
 """
 
-from typing import List
 
 
 class DataOfDiagram:
@@ -38,7 +37,7 @@ class DataOfDiagram:
             self.level += 1
 
     def __init__(self):
-        self._datas: List[DataOfDiagram.Data] = []
+        self._datas: list[DataOfDiagram.Data] = []
 
     def add(self, level: int, value: str):
         """Add a new data point"""

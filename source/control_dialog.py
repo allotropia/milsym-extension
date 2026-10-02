@@ -11,44 +11,50 @@ import json
 import os
 import shutil
 import sys
+import tempfile
 import time
+from typing import ClassVar
 
 import uno
 import unohelper
 from com.sun.star.awt import (
-    KeyModifier,
-    XDialogEventHandler,
-    XTopWindowListener,
-    XMouseListener,
-    XKeyListener,
     Key,
+    KeyModifier,
+    MouseButton,
+    XDialogEventHandler,
+    XKeyListener,
+    XMouseListener,
+    XTopWindowListener,
     XWindowListener,
 )
-from com.sun.star.awt import MouseButton
+from com.sun.star.beans import NamedValue
+from com.sun.star.datatransfer import DataFlavor, XTransferable
+from com.sun.star.datatransfer.dnd import (
+    XDragGestureListener,
+    XDragSourceListener,
+    XDropTargetListener,
+)
+from com.sun.star.datatransfer.dnd.DNDConstants import ACTION_MOVE
+from com.sun.star.document import XUndoAction
 from com.sun.star.view.SelectionType import (
     MULTI as SELECTION_TYPE_MULTI,
+)
+from com.sun.star.view.SelectionType import (
     SINGLE as SELECTION_TYPE_SINGLE,
 )
-from com.sun.star.datatransfer.dnd import XDragGestureListener, XDropTargetListener
-from com.sun.star.datatransfer.dnd import XDragSourceListener
-from com.sun.star.datatransfer.dnd.DNDConstants import ACTION_MOVE
-from com.sun.star.datatransfer import XTransferable, DataFlavor
-from com.sun.star.beans import NamedValue
-from com.sun.star.document import XUndoAction
+from perf import SKIP_TREE_REBUILD, timed
+from sidebar import SidebarFactory
+from translator import translate
+from unohelper import systemPathToFileUrl
 from utils import (
-    extractGraphicAttributes,
+    createMilSymbolScriptInstance,
     extract_symbol_params_from_shape,
+    extractGraphicAttributes,
     generate_icon_svg,
     get_recorded_symbol_size_px,
     insertGraphicAttributes,
-    createMilSymbolScriptInstance,
     post_office_action,
 )
-from sidebar import SidebarFactory
-from unohelper import systemPathToFileUrl
-from translator import translate
-from perf import SKIP_TREE_REBUILD, count, timed
-import tempfile
 
 # Set MILSYM_MOUSE_LOG=1 to print every mouse press and release on the ORBAT tree to
 # stderr, with a timestamp, the click count and the position of the pointer.
@@ -75,7 +81,7 @@ def log_mouse_message(message):
 class ControlDlgHandler(
     unohelper.Base, XDialogEventHandler, XTopWindowListener, XWindowListener
 ):
-    buttons = ["addShape", "removeShape", "editShape"]
+    buttons: ClassVar[list[str]] = ["addShape", "removeShape", "editShape"]
 
     def __init__(self, dialog, x_context, model):
         self.dialog = dialog
@@ -722,23 +728,18 @@ class ControlDlgHandler(
 
     def windowClosed(self, event):
         """Handle window closed event"""
-        pass
 
     def windowMinimized(self, event):
         """Handle window minimized event"""
-        pass
 
     def windowNormalized(self, event):
         """Handle window normalized event"""
-        pass
 
     def windowActivated(self, event):
         """Handle window activated event"""
-        pass
 
     def windowDeactivated(self, event):
         """Handle window deactivated event"""
-        pass
 
     # XWindowListener methods for resize handling
     def windowResized(self, event):
@@ -751,15 +752,12 @@ class ControlDlgHandler(
 
     def windowMoved(self, event):
         """Handle window moved event"""
-        pass
 
     def windowShown(self, event):
         """Handle window shown event"""
-        pass
 
     def windowHidden(self, event):
         """Handle window hidden event"""
-        pass
 
     def _resize_controls(self, event):
         """Resize controls based on new dialog size"""
@@ -859,7 +857,7 @@ class ControlDlgHandler(
                         root_node_name = self._get_tree_node_display_name(
                             temp_root_item, 1
                         )
-            except:
+            except Exception:
                 pass
 
             root_node = data_model.createNode(root_node_name, True)
@@ -895,7 +893,7 @@ class ControlDlgHandler(
             # Expand all nodes in the tree to show full structure
             try:
                 self._expand_all_nodes(root_node)
-            except:
+            except Exception:
                 pass
 
         except Exception as e:
@@ -1216,10 +1214,10 @@ class ControlDlgHandler(
                         controller = self.get_controller()
                         try:
                             controller.set_selected_shape(shape)
-                        except:
+                        except Exception:
                             try:
                                 controller._x_controller.select(shape)
-                            except:
+                            except Exception:
                                 pass
                     finally:
                         self._syncing_selection = False
@@ -1250,23 +1248,23 @@ class ControlDlgHandler(
                 # move one level up, as next sibling of immediate parent
                 parent_item = tree_item.get_dad()
                 # prevent a direct child element of root being moved up the hierarchy
-                if parent_item != None and parent_item.get_dad() != None:
+                if parent_item is not None and parent_item.get_dad() is not None:
                     diagram.move_tree_item(tree_item, parent_item, "sibling")
             elif event.KeyCode == Key.RIGHT:
                 # move one level down, relative to next-upwards sibling
                 insert_child_item = diagram.get_diagram_tree().get_previous_sibling(tree_item)
-                if insert_child_item != None:
+                if insert_child_item is not None:
                     diagram.move_tree_item(tree_item, insert_child_item, "child")
             elif event.KeyCode == Key.UP:
                 # move one sibling position up - stop at index 0
                 insert_before_item = diagram.get_diagram_tree().get_previous_sibling(tree_item)
                 parent_item = tree_item.get_dad()
-                if insert_before_item != None:
+                if insert_before_item is not None:
                     insert_before_item2 = diagram.get_diagram_tree().get_previous_sibling(insert_before_item)
                     diagram._remove_item_from_tree(tree_item)
-                    if insert_before_item2 != None:
+                    if insert_before_item2 is not None:
                         diagram._insert_as_sibling_after(tree_item, insert_before_item2)
-                    elif parent_item != None:
+                    elif parent_item is not None:
                         tree_item.set_dad(parent_item)
                         tree_item.set_first_sibling(insert_before_item)
                         parent_item.set_first_child(tree_item)
@@ -1889,7 +1887,7 @@ class ControlDlgHandler(
             if settings_path is None or not os.path.exists(settings_path):
                 return None
 
-            with open(settings_path, "r", encoding="utf-8") as f:
+            with open(settings_path, encoding="utf-8") as f:
                 geometry = json.load(f)
 
             # Validate that all required keys exist
@@ -2054,7 +2052,6 @@ class EditShapeUndoAction(unohelper.Base, XUndoAction):
 
     def disposing(self, event):
         """Handle disposing event"""
-        pass
 
 
 class RemoveShapeUndoAction(unohelper.Base, XUndoAction):
@@ -2235,7 +2232,6 @@ class RemoveShapeUndoAction(unohelper.Base, XUndoAction):
 
     def disposing(self, event):
         """Handle disposing event"""
-        pass
 
 
 class PasteShapeUndoAction(unohelper.Base, XUndoAction):
@@ -2382,7 +2378,6 @@ class PasteShapeUndoAction(unohelper.Base, XUndoAction):
 
     def disposing(self, event):
         """Handle disposing event"""
-        pass
 
 
 class AddShapeUndoAction(unohelper.Base, XUndoAction):
@@ -2495,7 +2490,6 @@ class AddShapeUndoAction(unohelper.Base, XUndoAction):
 
     def disposing(self, event):
         """Handle disposing event"""
-        pass
 
 
 class DragDropUndoAction(unohelper.Base, XUndoAction):
@@ -2578,7 +2572,6 @@ class DragDropUndoAction(unohelper.Base, XUndoAction):
 
     def disposing(self, event):
         """Handle disposing event"""
-        pass
 
 
 class TreeKeyHandler(unohelper.Base, XKeyListener):
@@ -2683,7 +2676,6 @@ class TreeKeyHandler(unohelper.Base, XKeyListener):
 
     def disposing(self, event):
         """Handle disposing events"""
-        pass
 
 
 class TreeMouseHandler(unohelper.Base, XMouseListener):
@@ -2755,15 +2747,12 @@ class TreeMouseHandler(unohelper.Base, XMouseListener):
 
     def mouseEntered(self, event):
         """Handle mouse entered events"""
-        pass
 
     def mouseExited(self, event):
         """Handle mouse exited events"""
-        pass
 
     def disposing(self, event):
         """Handle disposing events"""
-        pass
 
 
 class TreeDragHandler(unohelper.Base, XDragGestureListener, XDragSourceListener):
@@ -2802,9 +2791,7 @@ class TreeDragHandler(unohelper.Base, XDragGestureListener, XDragSourceListener)
                     nodes = []
                     if hasattr(selection, "getDisplayValue"):
                         nodes = [selection]
-                    elif hasattr(selection, "__len__"):
-                        nodes = list(selection)
-                    elif hasattr(selection, "__iter__"):
+                    elif hasattr(selection, "__len__") or hasattr(selection, "__iter__"):
                         nodes = list(selection)
 
                     for node in nodes:
@@ -2833,19 +2820,15 @@ class TreeDragHandler(unohelper.Base, XDragGestureListener, XDragSourceListener)
 
     def dragEnter(self, event):
         """Handle drag enter"""
-        pass
 
     def dragExit(self, event):
         """Handle drag exit"""
-        pass
 
     def dragOver(self, event):
         """Handle drag over"""
-        pass
 
     def dropActionChanged(self, event):
         """Handle drop action changed"""
-        pass
 
     def dragDropEnd(self, event):
         """Handle drag drop end"""
@@ -2888,7 +2871,6 @@ class TreeDragHandler(unohelper.Base, XDragGestureListener, XDragSourceListener)
 
     def disposing(self, event):
         """Handle disposing"""
-        pass
 
 
 class TreeDropHandler(unohelper.Base, XDropTargetListener):
@@ -2964,7 +2946,7 @@ class TreeDropHandler(unohelper.Base, XDropTargetListener):
             print(f"Error handling drop: {e}")
             try:
                 event.Source.dropComplete(False)
-            except:
+            except Exception:
                 pass
 
     def dragEnter(self, event):
@@ -2981,7 +2963,6 @@ class TreeDropHandler(unohelper.Base, XDropTargetListener):
 
     def dragExit(self, event):
         """Handle drag exit from drop target"""
-        pass
 
     def dragOver(self, event):
         """Handle drag over drop target"""
@@ -2997,11 +2978,9 @@ class TreeDropHandler(unohelper.Base, XDropTargetListener):
 
     def dropActionChanged(self, event):
         """Handle drop action changed"""
-        pass
 
     def disposing(self, event):
         """Handle disposing"""
-        pass
 
 
 class TreeNodeTransferable(unohelper.Base, XTransferable):

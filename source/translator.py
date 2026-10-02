@@ -23,7 +23,7 @@ class Translator:
     def __new__(cls, x_context=None):
         """Singleton pattern to ensure only one Translator instance"""
         if cls._instance is None:
-            cls._instance = super(Translator, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
         return cls._instance
 
     def __init__(self, x_context):

@@ -6,38 +6,38 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import os
 import sys
+from typing import ClassVar
+
+import officehelper
 import uno
 import unohelper
-import officehelper
-import os
 
 base_dir = os.path.dirname(__file__)
 if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
 
-from symbol_dialog import open_symbol_dialog
 from cell_symbols import generate_symbols_from_rows, selected_cell_ranges
+from com.sun.star.frame import XDispatch, XDispatchProvider
+from com.sun.star.lang import XInitialization
+from com.sun.star.task import XJob, XJobExecutor
+from com.sun.star.ui import XContextMenuInterceptor
+from com.sun.star.ui.ContextMenuInterceptorAction import EXECUTE_MODIFIED, IGNORED
+from com.sun.star.util import XCloseListener
+from com.sun.star.view import XSelectionChangeListener
+from sidebar import SidebarFactory
 from smart.controller import Controller
 from smart.diagram.data_of_diagram import DataOfDiagram
 from smart.gui import Gui
-from sidebar import SidebarFactory
+from symbol_dialog import open_symbol_dialog
+from translator import translate
 from utils import (
     containing_orbat_group,
-    is_orbat_feature_enabled,
     extract_symbol_params_from_shape,
+    is_orbat_feature_enabled,
     post_office_action,
 )
-
-from com.sun.star.task import XJobExecutor, XJob
-from com.sun.star.view import XSelectionChangeListener
-from com.sun.star.util import XCloseListener
-from com.sun.star.ui import XContextMenuInterceptor
-from com.sun.star.ui.ContextMenuInterceptorAction import EXECUTE_MODIFIED
-from com.sun.star.ui.ContextMenuInterceptorAction import IGNORED
-from com.sun.star.frame import XDispatchProvider, XDispatch
-from com.sun.star.lang import XInitialization
-from translator import translate
 
 
 class DocumentCloseListener(unohelper.Base, XCloseListener):
@@ -125,11 +125,11 @@ class ControllerManager:
     """Manages Controller instances for different frames"""
 
     _instance = None
-    _controllers = {}
+    _controllers: ClassVar[dict] = {}
 
     def __new__(cls, ctx=None):
         if cls._instance is None:
-            cls._instance = super(ControllerManager, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
             cls._instance.ctx = ctx
             cls._instance.orbat_enabled = is_orbat_feature_enabled(ctx)
         return cls._instance
@@ -253,7 +253,7 @@ class ContextMenuInterceptor(unohelper.Base, XContextMenuInterceptor):
                 attrs = shape.UserDefinedAttributes
                 if not attrs or not attrs.hasByName("MilSymCode"):
                     return IGNORED
-            except:
+            except Exception:
                 return IGNORED
 
             menu_container = event.ActionTriggerContainer
@@ -303,11 +303,13 @@ class ContextMenuInterceptor(unohelper.Base, XContextMenuInterceptor):
             shape = None
             if selection.supportsService("com.sun.star.drawing.GroupShape"):
                 shape = selection
-            elif selection.supportsService("com.sun.star.drawing.Shapes"):
-                if selection.getCount() == 1:
-                    shape = selection.getByIndex(0)
-                    if not shape.supportsService("com.sun.star.drawing.GroupShape"):
-                        return None
+            elif (
+                selection.supportsService("com.sun.star.drawing.Shapes")
+                and selection.getCount() == 1
+            ):
+                shape = selection.getByIndex(0)
+                if not shape.supportsService("com.sun.star.drawing.GroupShape"):
+                    return None
 
             if shape is None:
                 return None
@@ -453,7 +455,6 @@ class StartupJob(unohelper.Base, XJob, XSelectionChangeListener):
 
     def disposing(self, event):
         """Handle disposing event from XEventListener"""
-        pass
 
     def initialize_controllers(self):
         """Initialize controllers for documents with smart diagrams"""
@@ -606,9 +607,11 @@ class MainJob(unohelper.Base, XJobExecutor):
         shape = None
         if selection.supportsService("com.sun.star.drawing.GroupShape"):
             shape = selection
-        elif selection.supportsService("com.sun.star.drawing.Shapes"):
-            if selection.getCount() == 1:
-                shape = selection.getByIndex(0)
+        elif (
+            selection.supportsService("com.sun.star.drawing.Shapes")
+            and selection.getCount() == 1
+        ):
+            shape = selection.getByIndex(0)
 
         if shape is None:
             return None

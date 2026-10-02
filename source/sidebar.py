@@ -6,12 +6,35 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import os
-import uno
-import json
 import base64
-import unohelper
+import json
+import os
 
+import uno
+import unohelper
+from com.sun.star.awt import (
+    XActionListener,
+    XFocusListener,
+    XKeyListener,
+    XWindowListener,
+)
+from com.sun.star.datatransfer import DataFlavor, XTransferable
+from com.sun.star.datatransfer.dnd import XDragGestureListener, XDragSourceListener
+from com.sun.star.datatransfer.dnd.DNDConstants import ACTION_COPY
+from com.sun.star.ui import (
+    LayoutSize,
+    XSidebarPanel,
+    XToolPanel,
+    XUIElement,
+    XUIElementFactory,
+)
+from com.sun.star.ui.dialogs.TemplateDescription import (
+    FILEOPEN_SIMPLE,
+    FILESAVE_AUTOEXTENSION,
+)
+from com.sun.star.uno import RuntimeException
+from com.sun.star.view.SelectionType import SINGLE
+from sidebar_rename_dialog import RenameDialog
 from sidebar_tree import (
     SidebarTree,
     TreeKeyListener,
@@ -19,33 +42,13 @@ from sidebar_tree import (
     TreeSelectionChangeListener,
 )
 from symbol_dialog import open_symbol_dialog
+from unohelper import fileUrlToSystemPath, systemPathToFileUrl
 from utils import (
     PX_TO_MM100,
+    get_default_symbol_height_cm,
     get_package_location,
     parse_svg_dimensions,
-    get_default_symbol_height_cm,
 )
-from sidebar_rename_dialog import RenameDialog
-
-from unohelper import fileUrlToSystemPath, systemPathToFileUrl
-from com.sun.star.ui.dialogs.TemplateDescription import (
-    FILESAVE_AUTOEXTENSION,
-    FILEOPEN_SIMPLE,
-)
-from com.sun.star.ui import (
-    LayoutSize,
-    XToolPanel,
-    XSidebarPanel,
-    XUIElement,
-    XUIElementFactory,
-)
-from com.sun.star.awt import XWindowListener, XActionListener
-from com.sun.star.awt import XFocusListener, XKeyListener
-from com.sun.star.view.SelectionType import SINGLE
-from com.sun.star.datatransfer.dnd import XDragGestureListener, XDragSourceListener
-from com.sun.star.datatransfer import DataFlavor, XTransferable
-from com.sun.star.datatransfer.dnd.DNDConstants import ACTION_COPY
-from com.sun.star.uno import RuntimeException
 
 # we now version our sidebar JSON export and local config
 SIDEBAR_FILE_VERSION = 1
@@ -367,7 +370,7 @@ class SidebarPanel(unohelper.Base, XSidebarPanel, XUIElement, XToolPanel):
         json_path = os.path.join(category_path, symbol_name + ".json")
         if os.path.exists(json_path):
             try:
-                with open(json_path, "r", encoding="utf-8") as f:
+                with open(json_path, encoding="utf-8") as f:
                     json_data = json.load(f)
 
                 if json_data:
@@ -717,7 +720,7 @@ class ImportButtonListener(unohelper.Base, XActionListener):
 
             file_picker.dispose()
 
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 all_data = json.load(f)
 
             favorites_dir = self.sidebar.favorites_dir_path
@@ -786,15 +789,12 @@ class TreeDragDropHandler(unohelper.Base, XDragGestureListener, XDragSourceListe
     # XDragSourceListener methods
     def dragEnter(self, event):
         """Drag entered a drop target"""
-        pass
 
     def dragExit(self, event):
         """Drag exited a drop target"""
-        pass
 
     def dragOver(self, event):
         """Drag is over a drop target"""
-        pass
 
     def dragDropEnd(self, event):
         """Drag operation ended"""
@@ -856,7 +856,7 @@ class SymbolTransferable(unohelper.Base, XTransferable):
             template_path = os.path.join(
                 package_path, "source", "data", "dragdropgraphic.fodg"
             )
-            with open(template_path, "r", encoding="utf-8") as f:
+            with open(template_path, encoding="utf-8") as f:
                 data_string = f.read()
 
             # Get SVG content from the dragged node
@@ -939,7 +939,7 @@ class SymbolTransferable(unohelper.Base, XTransferable):
 
             # Read and return the SVG content
             if os.path.exists(svg_file_path):
-                with open(svg_file_path, "r", encoding="utf-8") as f:
+                with open(svg_file_path, encoding="utf-8") as f:
                     return f.read()
             else:
                 print(f"SVG file not found: {svg_file_path}")
@@ -993,11 +993,11 @@ class ExportButtonListener(unohelper.Base, XActionListener):
                         file_base = os.path.splitext(file_name)[0]
 
                         json_path = os.path.join(category_path, f"{file_base}.json")
-                        with open(json_path, "r", encoding="utf-8") as f:
+                        with open(json_path, encoding="utf-8") as f:
                             data = json.load(f)
 
                         svg_path = os.path.join(category_path, f"{file_base}.svg")
-                        with open(svg_path, "r", encoding="utf-8") as f:
+                        with open(svg_path, encoding="utf-8") as f:
                             svg_content = f.read()
 
                         all_data[category_name][file_base] = {

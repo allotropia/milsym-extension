@@ -7,13 +7,12 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import uno
-
-from symbol_dialog import open_symbol_dialog
-from control_dialog import ControlDlgHandler
-from ..utils import get_package_location
-
 from com.sun.star.awt import WindowAttribute, WindowDescriptor
 from com.sun.star.awt.WindowClass import MODALTOP
+from control_dialog import ControlDlgHandler
+from symbol_dialog import open_symbol_dialog
+
+from ..utils import get_package_location
 
 
 class Gui:
@@ -61,15 +60,18 @@ class Gui:
             except Exception:
                 need_new_dialog = True  # Can't get controller, recreate dialog
 
-        if not need_new_dialog:
-            if (
+        if (
+            not need_new_dialog
+            and (
                 self.get_controller().get_last_diagram_type() != -1
                 or self.get_controller().get_last_diagram_group_shape() is not None
-            ) and (
+            )
+            and (
                 self.get_controller().get_last_diagram_type()
                 != self.get_controller().get_diagram_type()
-            ):
-                need_new_dialog = True
+            )
+        ):
+            need_new_dialog = True
 
         if Gui._global_control_dialog is None or need_new_dialog:
             if need_new_dialog:

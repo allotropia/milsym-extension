@@ -7,6 +7,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import platform
+
 from symbol_dialog_handler import ListEscapeKeyHandler, SymbolDialogHandler
 
 

@@ -15,13 +15,13 @@ Python port of OrganizationChart.java
 """
 
 from abc import abstractmethod
+from typing import ClassVar
 
+from com.sun.star.awt import Point, Size
 from utils import locked_controllers
 
 # Import base classes
 from ..diagram import Diagram
-
-from com.sun.star.awt import Point, Size
 
 # from com.sun.star.drawing import LineStyle
 # from com.sun.star.drawing.ConnectorType import STANDARD as CONN_STANDARD_VALUE
@@ -272,8 +272,7 @@ class OrganizationChart(Diagram):
             for curr_shape_name in names:
                 if Diagram.DIAGRAM_SHAPE_TYPE in curr_shape_name:
                     shape_id = self.get_controller().get_shape_id(curr_shape_name)
-                    if shape_id > i_top_shape_id:
-                        i_top_shape_id = shape_id
+                    i_top_shape_id = max(i_top_shape_id, shape_id)
         except Exception as ex:
             print(f"Error getting top shape ID: {ex}")
 
@@ -789,10 +788,10 @@ class OrganizationChart(Diagram):
     # Color arrays (simplified versions of the Java arrays)
 
     # Base orange colors
-    _LO_ORANGES = [0xFFC000, 0xFF8000, 0xFF4000, 0xFF0000]
+    _LO_ORANGES: ClassVar[list[int]] = [0xFFC000, 0xFF8000, 0xFF4000, 0xFF0000]
 
     # Base colors for organization charts
-    _ORG_CHART_COLORS = [
+    _ORG_CHART_COLORS: ClassVar[list[int]] = [
         0x4F81BD,
         0x9CBB58,
         0xF79646,
@@ -804,7 +803,7 @@ class OrganizationChart(Diagram):
     ]
 
     # Color matrix for organization charts (5 colors x 5 levels)
-    _LO_COLORS_2 = [
+    _LO_COLORS_2: ClassVar[list[list[int]]] = [
         [0xFFC000, 0xFFD966, 0xFFE699, 0xFFF2CC, 0xFFFDF4],  # Yellow series
         [0x70AD47, 0x9DC268, 0xC5E0B4, 0xE2EFDA, 0xF2F8F0],  # Green series
         [0x4472C4, 0x8DB4E2, 0xC5D9F1, 0xE1ECF7, 0xF4F8FD],  # Blue series

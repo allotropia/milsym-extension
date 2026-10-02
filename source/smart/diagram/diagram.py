@@ -15,15 +15,14 @@ Python port of Diagram.java
 """
 
 import re
+from abc import ABC, abstractmethod
+from typing import ClassVar
 
 import uno
-
-from utils import locked_controllers, mark_document_modified, parse_svg_dimensions
-from perf import timed
-
-from abc import ABC, abstractmethod
 from com.sun.star.awt import Point, Size
 from com.sun.star.beans import PropertyValue
+from perf import timed
+from utils import locked_controllers, mark_document_modified, parse_svg_dimensions
 
 
 class Diagram(ABC):
@@ -69,7 +68,7 @@ class Diagram(ABC):
     FIRST_COLORSCHEME_MODE_VALUE = 10
 
     # Base colors array (simplified)
-    _BASE_COLORS = [
+    _BASE_COLORS: ClassVar[list[int]] = [
         0xFF0000,
         0x00FF00,
         0x0000FF,
@@ -123,11 +122,10 @@ class Diagram(ABC):
     def get_diagram_tree(self):
         """Get the tree that tracks this diagram's shapes, or None for a diagram
         kind that keeps no such tree - to be overridden in subclasses that have one"""
-        return None
+        return
 
     def set_draw_area(self):
         """Set drawing area dimensions - to be overridden in subclasses"""
-        pass
 
     def get_group_shape(self):
         """Get group shape"""
@@ -186,11 +184,9 @@ class Diagram(ABC):
 
     def remove_shape(self):
         """Remove shape - to be overridden in subclasses"""
-        pass
 
     def show_edit_dialog(self):
         """Show edit dialog - to be overridden in subclasses"""
-        pass
 
     def set_move_protect_of_shape(self, shape):
         """Set move/resize protection on a shape"""
@@ -203,7 +199,6 @@ class Diagram(ABC):
     def set_color_prop(self, color: int):
         """Set color property"""
         # not needed
-        pass
 
     def get_last_shape(self):
         return self.get_controller().get_selected_shape()
@@ -566,7 +561,6 @@ class Diagram(ABC):
 
     def init_properties(self):
         """Initialize diagram properties - to be overridden in subclasses"""
-        pass
 
     def create_diagram(self, data):
         """Create diagram from data"""
@@ -634,14 +628,10 @@ class Diagram(ABC):
                 border_bottom = int(self._x_draw_page.getPropertyValue("BorderBottom"))
 
                 # Ensure minimum border values
-                if border_left < 1000:
-                    border_left = 1000
-                if border_right < 1000:
-                    border_right = 1000
-                if border_top < 1000:
-                    border_top = 1000
-                if border_bottom < 1000:
-                    border_bottom = 1000
+                border_left = max(border_left, 1000)
+                border_right = max(border_right, 1000)
+                border_top = max(border_top, 1000)
+                border_bottom = max(border_bottom, 1000)
             except Exception as ex:
                 print(f"Error in adjust_page_props: {ex}")
 

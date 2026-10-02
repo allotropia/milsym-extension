@@ -4,22 +4,23 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import os
-import uno
 import json
+import os
+
+import uno
 import unohelper
-
-from symbol_dialog import open_symbol_dialog
-
-from unohelper import systemPathToFileUrl
-from com.sun.star.awt import Key, MouseButton, MenuItemStyle
 from com.sun.star.awt import (
+    Key,
+    MenuItemStyle,
+    MouseButton,
     XKeyListener,
     XMenuListener,
     XMouseListener,
     XMouseMotionListener,
 )
 from com.sun.star.view import XSelectionChangeListener
+from symbol_dialog import open_symbol_dialog
+from unohelper import systemPathToFileUrl
 
 
 class SidebarTree:
@@ -83,7 +84,7 @@ class SidebarTree:
         return False
 
     def get_order_index_from_json(self, json_path):
-        with open(json_path, "r", encoding="utf-8") as f:
+        with open(json_path, encoding="utf-8") as f:
             data = json.load(f)
             return data.get("order_index")
 
@@ -95,7 +96,7 @@ class SidebarTree:
         items = []
         for file_name in json_files:
             full_path = os.path.join(category_path, file_name)
-            with open(full_path, "r", encoding="utf-8") as name:
+            with open(full_path, encoding="utf-8") as name:
                 data = json.load(name)
                 items.append((data.get("order_index"), file_name, data))
 
@@ -359,11 +360,9 @@ class TreeMouseListener(unohelper.Base, XMouseListener, XMouseMotionListener):
 
     def mouseMoved(self, event):
         """Handle mouse moved events"""
-        pass
 
     def mouseDragged(self, event):
         """Handle mouse dragged events"""
-        pass
 
     def mouseReleased(self, event):
         try:
@@ -391,11 +390,9 @@ class TreeMouseListener(unohelper.Base, XMouseListener, XMouseMotionListener):
 
     def mouseEntered(self, event):
         """Handle mouse entered events"""
-        pass
 
     def mouseExited(self, event):
         """Handle mouse exited events"""
-        pass
 
     def _create_popup_menu(self):
         sm = self.ctx.getServiceManager()

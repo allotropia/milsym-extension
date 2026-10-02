@@ -14,16 +14,14 @@ Controller class for LibreOffice extension
 """
 
 import unohelper
-
+from com.sun.star.document import XUndoManagerListener
+from com.sun.star.view import XSelectionChangeListener
 from perf import timed
 from utils import containing_orbat_group, locked_controllers
 
-from .gui import Gui
-
-from com.sun.star.document import XUndoManagerListener
-from com.sun.star.view import XSelectionChangeListener
-
 from smart.diagram.organizationcharts.orgchart.orgchart import OrgChart
+
+from .gui import Gui
 
 
 class DocumentUndoWatch(unohelper.Base, XUndoManagerListener):
@@ -267,9 +265,10 @@ class Controller(unohelper.Base, XSelectionChangeListener):
             # Clear all undo action references from the dialog handler
             if self._gui is not None:
                 dialog_handler = Gui._global_control_dlg_listener
-                if dialog_handler is not None:
-                    if hasattr(dialog_handler, "clear_all_undo_action_references"):
-                        dialog_handler.clear_all_undo_action_references()
+                if dialog_handler is not None and hasattr(
+                    dialog_handler, "clear_all_undo_action_references"
+                ):
+                    dialog_handler.clear_all_undo_action_references()
 
             self._diagram = None
             self._last_diagram_group_shape = None
@@ -531,7 +530,6 @@ class Controller(unohelper.Base, XSelectionChangeListener):
 
     def disposing(self, event):
         """Handle disposing event from XEventListener"""
-        pass
 
     @timed("selectionChanged")
     def selectionChanged(self, event):
@@ -705,11 +703,12 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                         self._gui.set_visible_control_dialog(True)
 
                 # Handle organization chart shape selection
-                if selected_shape_name.startswith(
-                    "OrbatDiagram"
-                ) and selected_shape_name.endswith("RectangleShape0"):
-                    if self.get_diagram() is not None:
-                        self.get_diagram().select_shapes()
+                if (
+                    selected_shape_name.startswith("OrbatDiagram")
+                    and selected_shape_name.endswith("RectangleShape0")
+                    and self.get_diagram() is not None
+                ):
+                    self.get_diagram().select_shapes()
 
                 # Focus the dialog if it's visible (don't auto-open)
                 if self._gui is not None and self._gui.is_visible_control_dialog():

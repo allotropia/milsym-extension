@@ -14,21 +14,21 @@ OrgChart class - Main organization chart implementation
 Python port of OrgChart.java
 """
 
-from utils import generate_icon_svg, get_recorded_symbol_size_px, locked_controllers
+from com.sun.star.awt import Point
+from com.sun.star.drawing import GluePoint2
+from com.sun.star.drawing.Alignment import CENTER as ALIGNMENT_CENTER
+from com.sun.star.drawing.EscapeDirection import DOWN as ESCAPE_DOWN
+from com.sun.star.drawing.EscapeDirection import LEFT as ESCAPE_LEFT
+from com.sun.star.drawing.EscapeDirection import UP as ESCAPE_UP
+from com.sun.star.drawing.EscapeDirection import VERTICAL as ESCAPE_VERTICAL
+from com.sun.star.lang import IndexOutOfBoundsException
 from perf import count
+from utils import generate_icon_svg, get_recorded_symbol_size_px, locked_controllers
+
 from ...diagram import Diagram
 from ..organization_chart import OrganizationChart
 from .orgchart_tree import OrgChartTree
-from .orgchart_tree_item import OrgChartTreeItem, STACKED_CHANNEL_FRACTION
-
-from com.sun.star.awt import Point
-from com.sun.star.drawing import GluePoint2
-from com.sun.star.lang import IndexOutOfBoundsException
-from com.sun.star.drawing.EscapeDirection import VERTICAL as ESCAPE_VERTICAL
-from com.sun.star.drawing.EscapeDirection import DOWN as ESCAPE_DOWN
-from com.sun.star.drawing.EscapeDirection import UP as ESCAPE_UP
-from com.sun.star.drawing.EscapeDirection import LEFT as ESCAPE_LEFT
-from com.sun.star.drawing.Alignment import CENTER as ALIGNMENT_CENTER
+from .orgchart_tree_item import STACKED_CHANNEL_FRACTION, OrgChartTreeItem
 
 # A shape starts with four builtin glue points, indices 0 to 3, one on the middle of each
 # edge: 0 top, 1 right, 2 bottom, 3 left. The first user defined point gets index 4.
@@ -67,8 +67,8 @@ def relative_glue_position(x_fraction, y_fraction):
     edges at -5000 and 5000.
     """
     return Point(
-        X=int(round((x_fraction - 0.5) * 10000)),
-        Y=int(round((y_fraction - 0.5) * 10000)),
+        X=round((x_fraction - 0.5) * 10000),
+        Y=round((y_fraction - 0.5) * 10000),
     )
 
 
@@ -302,8 +302,7 @@ class OrgChart(OrganizationChart):
                     i_color %= 5
 
                     i_color_level = datas.get(i).get_level()
-                    if i_color_level > 4:
-                        i_color_level = 4
+                    i_color_level = min(i_color_level, 4)
 
                     self.set_color_prop(self._LO_COLORS_2[i_color][i_color_level])
                     self.set_shape_properties(x_shape, Diagram.DIAGRAM_SHAPE_TYPE)
@@ -317,7 +316,7 @@ class OrgChart(OrganizationChart):
                     else:
                         # Go up levels to find parent
                         lev = dad_item.get_level() + 1 - datas.get(i).get_level()
-                        for j in range(lev):
+                        for _ in range(lev):
                             dad_item = dad_item.get_dad()
 
                     # Create connector shape
@@ -827,11 +826,10 @@ class OrgChart(OrganizationChart):
                                 )
 
                                 # Handle hidden root element
-                                if self.is_hidden_root_element_prop():
-                                    if (
-                                        self.get_diagram_tree()
-                                        .get_root_item()
-                                        .get_rectangle_shape()
-                                        == x_start_shape
-                                    ):
-                                        self.get_diagram_tree().get_root_item().hide_element()
+                                if self.is_hidden_root_element_prop() and (
+                                    self.get_diagram_tree()
+                                    .get_root_item()
+                                    .get_rectangle_shape()
+                                    == x_start_shape
+                                ):
+                                    self.get_diagram_tree().get_root_item().hide_element()

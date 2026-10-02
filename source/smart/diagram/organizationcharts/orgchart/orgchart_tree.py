@@ -227,16 +227,18 @@ class OrgChartTree(OrganizationChartTree):
 
                 if level <= OrgChartTree.LAST_HOR_LEVEL:
                     # Horizontal layout - find next sibling to the right
-                    if sibling_pos.X > base_shape_pos.X:
-                        if x_pos == -1 or sibling_pos.X < x_pos:
-                            x_pos = sibling_pos.X
-                            x_first_sibling_shape = x_sibling_shape
+                    if sibling_pos.X > base_shape_pos.X and (
+                        x_pos == -1 or x_pos > sibling_pos.X
+                    ):
+                        x_pos = sibling_pos.X
+                        x_first_sibling_shape = x_sibling_shape
                 else:
                     # Vertical layout - find next sibling below
-                    if sibling_pos.Y > base_shape_pos.Y:
-                        if y_pos == -1 or sibling_pos.Y < y_pos:
-                            y_pos = sibling_pos.Y
-                            x_first_sibling_shape = x_sibling_shape
+                    if sibling_pos.Y > base_shape_pos.Y and (
+                        y_pos == -1 or y_pos > sibling_pos.Y
+                    ):
+                        y_pos = sibling_pos.Y
+                        x_first_sibling_shape = x_sibling_shape
 
         return x_first_sibling_shape
 
@@ -286,8 +288,7 @@ class OrgChartTree(OrganizationChartTree):
                 heads.append(item)
             elif item.get_level() < OrgChartTree.LAST_HOR_LEVEL:
                 height = item._calculate_size_for_aspect_ratio()[1]
-                if height > row_heights[item.get_level()]:
-                    row_heights[item.get_level()] = height
+                row_heights[item.get_level()] = max(row_heights[item.get_level()], height)
                 pending.append(item.get_first_child())
             pending.append(item.get_first_sibling())
 

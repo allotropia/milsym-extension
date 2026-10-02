@@ -14,20 +14,19 @@ OrgChart Tree Item class
 Python port of OrgChartTreeItem.java
 """
 
-from typing import List
 
+from typing import ClassVar
+
+from com.sun.star.awt import Point, Size
+from perf import count
 from utils import (
     get_default_symbol_height_cm,
     parse_svg_dimensions,
     parse_svg_symbol_geometry,
     read_shape_svg,
 )
-from perf import count
 
 from ..organization_chart_tree_item import OrganizationChartTreeItem
-
-from com.sun.star.awt import Point, Size
-
 
 # Where the connectors to stacked children leave a shape without symbol geometry, as a
 # fraction of the shape's width from its left edge.
@@ -65,14 +64,12 @@ def stacked_column_offsets(channel_x, gap, children):
     for key, width, overhang, channel, grandchildren in children:
         x_offset = octagon_left - overhang
         x_offsets[key] = x_offset
-        if x_offset + width > right_edge:
-            right_edge = x_offset + width
+        right_edge = max(right_edge, x_offset + width)
         below, below_right_edge = stacked_column_offsets(
             x_offset + channel, gap, grandchildren
         )
         x_offsets.update(below)
-        if below_right_edge > right_edge:
-            right_edge = below_right_edge
+        right_edge = max(right_edge, below_right_edge)
     return x_offsets, right_edge
 
 
@@ -80,8 +77,8 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
     """Organization chart tree item implementation"""
 
     # Static class variables
-    _max_positions: List[float] = []
-    _max_branch_positions: List[float] = []
+    _max_positions: ClassVar[list[float]] = []
+    _max_branch_positions: ClassVar[list[float]] = []
     _max_pos = -1.0
 
     # Static measure variables
@@ -150,10 +147,8 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
     def set_pos(self, pos: float):
         """Set position and update max positions"""
         self._pos = pos
-        if self._pos > OrgChartTreeItem._max_positions[self._level]:
-            OrgChartTreeItem._max_positions[self._level] = self._pos
-        if self._pos > OrgChartTreeItem._max_pos:
-            OrgChartTreeItem._max_pos = self._pos
+        OrgChartTreeItem._max_positions[self._level] = max(OrgChartTreeItem._max_positions[self._level], self._pos)
+        OrgChartTreeItem._max_pos = max(OrgChartTreeItem._max_pos, self._pos)
 
     def init_tree_items(self):
         """Initialize tree items recursively"""
@@ -186,12 +181,11 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
                 max_pos_in_level = OrgChartTreeItem._max_branch_positions[
                     self._level + deep - 1
                 ]
-                if self._pos < max_pos_in_level + 0.5:
-                    if self.is_first_child():
-                        self.get_first_child().increase_pos_in_branch(
-                            max_pos_in_level + 0.5 - self._pos
-                        )
-                        self.set_pos(max_pos_in_level + 0.5)
+                if self._pos < max_pos_in_level + 0.5 and self.is_first_child():
+                    self.get_first_child().increase_pos_in_branch(
+                        max_pos_in_level + 0.5 - self._pos
+                    )
+                    self.set_pos(max_pos_in_level + 0.5)
             self.set_max_pos_of_branch()
 
         x_first_sibling_shape = self.get_diagram_tree().get_first_sibling_shape(
@@ -258,12 +252,11 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
                 max_pos_in_level = OrgChartTreeItem._max_branch_positions[
                     self._level + deep - 1
                 ]
-                if self._pos < max_pos_in_level + 0.5:
-                    if self.is_first_child():
-                        self.get_first_child().increase_pos_in_branch(
-                            max_pos_in_level + 0.5 - self._pos
-                        )
-                        self.set_pos(max_pos_in_level + 0.5)
+                if self._pos < max_pos_in_level + 0.5 and self.is_first_child():
+                    self.get_first_child().increase_pos_in_branch(
+                        max_pos_in_level + 0.5 - self._pos
+                    )
+                    self.set_pos(max_pos_in_level + 0.5)
             self.set_max_pos_of_branch()
 
         if self._first_sibling is not None:
@@ -307,10 +300,8 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
         local_max = -1.0
         for i in range(len(OrgChartTreeItem._max_branch_positions)):
             if i > last_hor_level:
-                if OrgChartTreeItem._max_branch_positions[i] > local_max:
-                    local_max = OrgChartTreeItem._max_branch_positions[i]
-                if OrgChartTreeItem._max_branch_positions[i] < local_max:
-                    OrgChartTreeItem._max_branch_positions[i] = local_max
+                local_max = max(local_max, OrgChartTreeItem._max_branch_positions[i])
+                OrgChartTreeItem._max_branch_positions[i] = max(OrgChartTreeItem._max_branch_positions[i], local_max)
 
     def set_measure_props(self):
         """Set measure properties"""
@@ -429,8 +420,7 @@ class OrgChartTreeItem(OrganizationChartTreeItem):
             OrgChartTreeItem.channel_gap(),
             self._stacked_measures(),
         )
-        if right_edge > width:
-            width = right_edge
+        width = max(width, right_edge)
 
         # The level of a stacked item counts the rows above it in its column, so sorting
         # by level walks the column from top to bottom

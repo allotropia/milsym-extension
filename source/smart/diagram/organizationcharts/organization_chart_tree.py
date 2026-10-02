@@ -17,7 +17,6 @@ Python port of OrganizationChartTree.java
 from abc import ABC, abstractmethod
 
 from com.sun.star.awt import Point
-
 from perf import SKIP_NAME_INDEX, count, timed
 
 from ..diagram import Diagram

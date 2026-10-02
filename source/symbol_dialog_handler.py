@@ -7,32 +7,32 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import re
+from collections import defaultdict
+from typing import ClassVar
 
 import uno
 import unohelper
-from com.sun.star.awt import XDialogEventHandler
-from com.sun.star.awt.ImageScaleMode import ISOTROPIC
-from com.sun.star.beans import NamedValue
-from data import symbols_data
-from data import country_data
-from utils import (
-    createMilSymbolScriptInstance,
-    create_graphic_from_svg,
-    get_symbol_generation_size_px,
-    insertGraphicAttributes,
-    insertSvgGraphic,
-)
-from translator import Translator
-from com.sun.star.view.SelectionType import SINGLE
 from com.sun.star.awt import (
+    XDialogEventHandler,
     XFocusListener,
     XKeyHandler,
     XKeyListener,
     XMouseListener,
     XWindowListener,
 )
-from com.sun.star.awt.Key import UP, DOWN, LEFT, RIGHT, RETURN, SPACE, ESCAPE
-from collections import defaultdict
+from com.sun.star.awt.ImageScaleMode import ISOTROPIC
+from com.sun.star.awt.Key import DOWN, ESCAPE, LEFT, RETURN, RIGHT, SPACE, UP
+from com.sun.star.beans import NamedValue
+from com.sun.star.view.SelectionType import SINGLE
+from data import country_data, symbols_data
+from translator import Translator
+from utils import (
+    create_graphic_from_svg,
+    createMilSymbolScriptInstance,
+    get_symbol_generation_size_px,
+    insertGraphicAttributes,
+    insertSvgGraphic,
+)
 
 # The milsymbol text modifier option that each textbox of the symbol dialog holds, keyed
 # by the name of the textbox control.
@@ -62,7 +62,7 @@ TEXTBOX_OPTION_NAMES = {
 
 
 class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
-    TREES_CACHE = {}
+    TREES_CACHE: ClassVar[dict] = {}
 
     def __init__(
         self,
@@ -653,8 +653,8 @@ class SymbolDialogHandler(unohelper.Base, XDialogEventHandler):
             field_name: The field name (without "btHelp" prefix), used to construct
                         translation keys Help.<field_name>.Title and Help.<field_name>.Message
         """
-        from com.sun.star.awt.MessageBoxType import INFOBOX
         from com.sun.star.awt.MessageBoxButtons import BUTTONS_OK
+        from com.sun.star.awt.MessageBoxType import INFOBOX
 
         title_key = f"Help.{field_name}.Title"
         message_key = f"Help.{field_name}.Message"

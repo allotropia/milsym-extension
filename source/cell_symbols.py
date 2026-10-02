@@ -38,7 +38,6 @@ import re
 import unohelper
 from com.sun.star.document import XUndoAction
 from com.sun.star.sheet.CellFlags import FORMULA, STRING, VALUE
-
 from symbol_dialog_handler import TEXTBOX_OPTION_NAMES
 from translator import translate
 from utils import (
@@ -348,7 +347,7 @@ class GenerateSymbolsUndoAction(unohelper.Base, XUndoAction):
                         apply_shape_state(symbol.shape, symbol.before)
                     except Exception as e:
                         print(f"Error putting back a redrawn symbol: {e}")
-                for row_properties, old_height, new_height in self.row_heights:
+                for row_properties, old_height, _new_height in self.row_heights:
                     try:
                         set_row_height_unrecorded(
                             self.undo_manager, row_properties, old_height
@@ -380,7 +379,7 @@ class GenerateSymbolsUndoAction(unohelper.Base, XUndoAction):
                         )
                     except Exception as e:
                         print(f"Error inserting a generated symbol again: {e}")
-                for row_properties, old_height, new_height in self.row_heights:
+                for row_properties, _old_height, new_height in self.row_heights:
                     try:
                         set_row_height_unrecorded(
                             self.undo_manager, row_properties, new_height
