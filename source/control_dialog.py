@@ -118,6 +118,14 @@ class ControlDlgHandler(
         self._syncing_selection = False
         self._syncing_from_tree = False
         self._is_dragging = False
+        # The listeners on the tree control and the dialog window live as long as this
+        # handler. They are created on the first windowOpened and kept across a hide and
+        # reshow of the dialog, so a reopened dialog keeps one listener of each kind.
+        self._tree_mouse_handler = None
+        self._tree_key_handler = None
+        self._drag_handler = None
+        self._drop_handler = None
+        self._resize_listener_added = False
         self._unit_str = translate(x_context, "ControlDialog.Unit")
         self._placeholder_str = translate(x_context, "ControlDialog.Placeholder")
         self._undo_actions = []  # Track all undo actions for cleanup on document close
@@ -735,7 +743,7 @@ class ControlDlgHandler(
 
             self.get_gui().set_visible_control_dialog(False)
 
-        self.cleanup()
+        self.clear_state_on_close()
 
     def windowOpened(self, event):
         """Handle window opened event"""
@@ -756,11 +764,18 @@ class ControlDlgHandler(
             self._resize_controls(event)
 
     def _add_resize_listener(self):
-        """Add window resize listener to handle dialog resizing"""
+        """Add the window resize listener to the dialog.
+
+        This runs on every windowOpened, and the dialog keeps its window listeners across
+        a hide and reshow, so the listener is added only once per handler.
+        """
+        if self._resize_listener_added:
+            return
         try:
             dialog = self.get_gui()._x_control_dialog
             if dialog is not None:
                 dialog.addWindowListener(self)
+                self._resize_listener_added = True
         except Exception as e:
             print(f"Error adding resize listener: {e}")
 
@@ -824,21 +839,39 @@ class ControlDlgHandler(
             print(f"Error resizing controls: {e}")
 
     def _init_tree_control(self):
-        """Initialize the tree control and set up listeners"""
+        """Initialize the tree control and set up listeners.
+
+        This runs on every windowOpened, and hiding the dialog does not detach the
+        listeners from the tree control, so each listener is created and added only once
+        per handler. The reshown dialog then still carries exactly one listener of each
+        kind.
+        """
         try:
             dialog = self.get_gui()._x_control_dialog
             self.tree_control = dialog.getControl("OrbatTree")
 
-            # Add mouse listener for tree click handling
-            tree_mouse_handler = TreeMouseHandler(self)
-            self.tree_control.addMouseListener(tree_mouse_handler)
+            if self._tree_mouse_handler is None:
+                # Add mouse listener for tree click handling
+                self._tree_mouse_handler = TreeMouseHandler(self)
+                self.tree_control.addMouseListener(self._tree_mouse_handler)
 
-            # Add key listener to detect keyboard navigation
-            tree_key_handler = TreeKeyHandler(self)
-            self.tree_control.addKeyListener(tree_key_handler)
+            if self._tree_key_handler is None:
+                # Add key listener to detect keyboard navigation
+                self._tree_key_handler = TreeKeyHandler(self)
+                self.tree_control.addKeyListener(self._tree_key_handler)
+                log_paste_message(
+                    f"key listener {id(self._tree_key_handler):#x} added to tree "
+                    f"{id(self.tree_control):#x}"
+                )
+            else:
+                log_paste_message(
+                    f"key listener {id(self._tree_key_handler):#x} kept on tree "
+                    f"{id(self.tree_control):#x}"
+                )
 
             # Enable drag & drop functionality
-            self._setup_drag_and_drop()
+            if self._drag_handler is None:
+                self._setup_drag_and_drop()
 
             # Configure tree control properties
             tree_model = self.tree_control.getModel()
@@ -1836,20 +1869,17 @@ class ControlDlgHandler(
             print(f"Error finding newly added shape: {e}")
         return None
 
-    def cleanup(self):
-        """Clean up all resources before dialog disposal"""
+    def clear_state_on_close(self):
+        """Clear the state of one dialog session when the dialog window closes.
+
+        Closing only hides the dialog, so the handler and the listeners it put on the
+        tree control and the dialog window stay alive for the next reopening. The node
+        maps, the clipboard and the temporary directory belong to the closed session and
+        are dropped here, and the tree is populated again on the next show.
+        """
         try:
-            if hasattr(self, "_node_to_tree_item_map"):
-                self._clear_node_maps()
-
-            if hasattr(self, "_clipboard"):
-                self._clipboard = None
-
-            if hasattr(self, "_drag_handler"):
-                self._drag_handler = None
-            if hasattr(self, "_drop_handler"):
-                self._drop_handler = None
-
+            self._clear_node_maps()
+            self._clipboard = None
             self.tree_control = None
 
             # Clean up temp directory
@@ -1860,7 +1890,18 @@ class ControlDlgHandler(
             self._populate_tree_on_show = True
 
         except Exception as e:
-            print(f"Error during ControlDlgHandler cleanup: {e}")
+            print(f"Error during ControlDlgHandler close: {e}")
+
+    def cleanup(self):
+        """Clean up all resources before dialog disposal"""
+        self.clear_state_on_close()
+        # The dialog is going away for good, so the listener references go with it. The
+        # controls they were registered on are disposed together with the dialog.
+        self._tree_mouse_handler = None
+        self._tree_key_handler = None
+        self._drag_handler = None
+        self._drop_handler = None
+        self._resize_listener_added = False
 
     def _get_settings_file_path(self):
         """Get the file path for storing dialog settings.
