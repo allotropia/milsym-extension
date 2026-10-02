@@ -37,6 +37,7 @@ echo "Copying files to temporary directory..."
 rsync -av \
     --exclude="README.md" \
     --exclude="build.sh" \
+    --exclude="ruff.toml" \
     --exclude="example_symbols_list.csv" \
     --exclude="pyrightconfig.json" \
     --exclude="milsymbol/combine.sh" \
