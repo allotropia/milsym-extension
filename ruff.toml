@@ -1,0 +1,38 @@
+# Ruff lint configuration. Lock down what is used here, since
+# different ruff builds use subtly different defauls.
+#
+# Also cater to some idiosyncrasies of this code base.
+
+[lint]
+select = [
+    "E4",  # import formatting
+    "E7",  # statement formatting
+    "E9",  # syntax and io errors
+    "F",   # pyflakes: undefined names, unused imports and variables
+    "I",   # import ordering
+    "UP",  # syntax that newer Python versions supersede
+    "B",   # common bug patterns
+    "SIM", # needless complexity
+    "PIE", # misc lints
+    "RUF", # ruff's own lints
+    "RET501", # return None written out where it is the only return value
+    "PLR1730", # min and max instead of an if statement
+    "EXE", # shebang and executable bit consistency
+]
+ignore = [
+    # Office API calls have a ton of exception types, that we catch
+    # and log. For the same reason try-except-pass should stays as-is,
+    # without rewriting it to contextlib.suppress.
+    "BLE001",
+    "SIM105",
+    # The diagram base classes are ports of Java classes whose empty methods are hooks a
+    # subclass may override. An abstractmethod decorator would force every subclass to
+    # define them, so the empty bodies stay as the default behaviour.
+    "B024",
+    "B027",
+]
+
+[lint.per-file-ignores]
+# The entry point inserts its own directory into sys.path before it imports the modules
+# that live next to it, so those imports cannot sit at the top of the file.
+"source/main.py" = ["E402"]
