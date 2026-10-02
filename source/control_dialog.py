@@ -78,6 +78,20 @@ def log_mouse_message(message):
     print(f"[milsym-mouse] {time.monotonic():.3f} {message}", file=sys.stderr)
 
 
+# Set MILSYM_PASTE_LOG=1 to print every step of a paste on the ORBAT tree to stderr, with a
+# timestamp: the registration of the key listener, the Ctrl-V key event, the entry into the paste
+# handler with the clipboard contents, and each pasted item with its result. The object ids in the
+# log tell a listener that fired twice apart from two listeners registered on the same tree.
+PASTE_LOG_ENABLED = os.environ.get("MILSYM_PASTE_LOG") == "1"
+
+
+def log_paste_message(message):
+    """Print a line of the paste log to stderr, if the paste log is switched on."""
+    if not PASTE_LOG_ENABLED:
+        return
+    print(f"[milsym-paste] {time.monotonic():.3f} {message}", file=sys.stderr)
+
+
 class ControlDlgHandler(
     unohelper.Base, XDialogEventHandler, XTopWindowListener, XWindowListener
 ):
@@ -321,6 +335,7 @@ class ControlDlgHandler(
         After paste, all newly pasted items are selected.
         """
         if self._clipboard is None:
+            log_paste_message("paste_to_selected_item: the clipboard is empty")
             return
 
         # Normalize clipboard to list format (for backward compatibility)
@@ -330,6 +345,11 @@ class ControlDlgHandler(
 
         if not clipboard_items:
             return
+
+        log_paste_message(
+            f"paste_to_selected_item: {len(clipboard_items)} clipboard item(s), "
+            f"ids {[hex(id(item)) for item in clipboard_items]}"
+        )
 
         try:
             if self.tree_control is None:
@@ -355,7 +375,10 @@ class ControlDlgHandler(
             node_name = selected_node.getDisplayValue()
             target_tree_item = self._node_to_tree_item_map.get(node_name)
             if target_tree_item is None:
+                log_paste_message(f"no tree item for target node '{node_name}'")
                 return
+
+            log_paste_message(f"pasting under target node '{node_name}'")
 
             controller = self.get_controller()
             diagram = controller.get_diagram()
@@ -377,6 +400,10 @@ class ControlDlgHandler(
                         success = diagram.paste_subtree(
                             target_tree_item, clipboard_item, self.script
                         )
+                        log_paste_message(
+                            f"paste_subtree of item {id(clipboard_item):#x} "
+                            f"returned {success}"
+                        )
                         if success:
                             any_success = True
                             # Find the newly added shape for this paste
@@ -385,6 +412,11 @@ class ControlDlgHandler(
                             )
                             if pasted_shape:
                                 pasted_shapes.append(pasted_shape)
+                                if PASTE_LOG_ENABLED:
+                                    log_paste_message(
+                                        "new shape "
+                                        f"'{pasted_shape.getName()}' after paste"
+                                    )
 
                     if any_success:
                         diagram.refresh_diagram()
@@ -414,6 +446,12 @@ class ControlDlgHandler(
                         self._select_tree_nodes_for_shapes(pasted_shapes)
 
                 controller.add_selection_listener()
+
+                if PASTE_LOG_ENABLED:
+                    log_paste_message(
+                        f"paste finished, {len(pasted_shapes)} shape(s) added: "
+                        f"{[shape.getName() for shape in pasted_shapes]}"
+                    )
 
         except Exception as ex:
             print(f"Error pasting: {ex}")
@@ -2626,6 +2664,10 @@ class TreeKeyHandler(unohelper.Base, XKeyListener):
                 self.dialog_handler.remove_selected_shape()
                 return
             elif event.KeyCode == Key.V and (event.Modifiers & KeyModifier.MOD1):
+                log_paste_message(
+                    f"Ctrl-V released on handler {id(self):#x} "
+                    f"Modifiers={event.Modifiers}"
+                )
                 self.dialog_handler.paste_to_selected_item()
                 return
             elif event.KeyCode == Key.Z and (event.Modifiers & KeyModifier.MOD1):
