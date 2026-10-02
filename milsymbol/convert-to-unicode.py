@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # SPDX-FileCopyrightText: Collabora Productivity and contributors
 #
 # SPDX-License-Identifier: MPL-2.0
@@ -8,9 +10,9 @@
 
 import sys
 
-f = open(sys.argv[1], mode="r", encoding="utf-8")
-for c in f.read():
-    if ord(c) <= 0x7F:
-        print(c, end="")
-    else:
-        print(f"\\u{ord(c):04X}", end="")
+with open(sys.argv[1], encoding="utf-8") as f:
+    for c in f.read():
+        if ord(c) <= 0x7F:
+            print(c, end="")
+        else:
+            print(f"\\u{ord(c):04X}", end="")
