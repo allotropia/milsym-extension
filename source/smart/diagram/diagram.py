@@ -16,7 +16,6 @@ Python port of Diagram.java
 
 import re
 from abc import ABC, abstractmethod
-from typing import ClassVar
 
 import uno
 from com.sun.star.awt import Point, Size
@@ -65,19 +64,6 @@ class Diagram(ABC):
 
     # Color modes
     BASE_COLORS_MODE = 0
-    FIRST_COLORSCHEME_MODE_VALUE = 10
-
-    # Base colors array (simplified)
-    _BASE_COLORS: ClassVar[list[int]] = [
-        0xFF0000,
-        0x00FF00,
-        0x0000FF,
-        0xFFFF00,
-        0xFF00FF,
-        0x00FFFF,
-        0x800000,
-        0x008000,
-    ]
 
     def __init__(self, controller, gui, x_frame, x_context):
         self._controller = controller
@@ -133,23 +119,6 @@ class Diagram(ABC):
             return self._x_group_shape
         return None
 
-    def get_group_shape_pos(self):
-        """Get group shape position"""
-        if self._x_group_shape is not None:
-            return self._x_group_shape.getPosition()
-        return None
-
-    def set_group_shape_size_and_pos(
-        self, width: int, height: int, x_pos: int, y_pos: int
-    ):
-        """Set group shape size and position"""
-        if self._x_group_shape is not None:
-            try:
-                self._x_group_shape.setSize(Size(width, height))
-                self._x_group_shape.setPosition(Point(x_pos, y_pos))
-            except Exception as ex:
-                print(f"Error setting group shape size and position: {ex}")
-
     def create_shape(
         self,
         shape_type: str,
@@ -184,9 +153,6 @@ class Diagram(ABC):
 
     def remove_shape(self):
         """Remove shape - to be overridden in subclasses"""
-
-    def show_edit_dialog(self):
-        """Show edit dialog - to be overridden in subclasses"""
 
     def set_move_protect_of_shape(self, shape):
         """Set move/resize protection on a shape"""
@@ -350,23 +316,8 @@ class Diagram(ABC):
     def is_text_fit_prop(self):
         return False
 
-    def is_modify_colors_prop(self):
-        return False
-
-    def get_rounded_prop(self):
-        return 0
-
     def is_outline_prop(self):
         return True
-
-    def get_shapes_line_width_prop(self):
-        return 100
-
-    def is_shadow_prop(self):
-        return False
-
-    def set_color_settings_of_shape(self, shape):
-        pass
 
     def set_font_properties_of_shape(self, shape):
         pass

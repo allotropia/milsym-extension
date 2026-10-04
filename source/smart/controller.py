@@ -96,25 +96,10 @@ class Controller(unohelper.Base, XSelectionChangeListener):
 
     # Group types
     ORGANIGROUP = 0
-    RELATIONGROUP = 1
-    PROCESSGROUP = 2
-    LISTGROUP = 3
-    MATRIXGROUP = 4
 
     # Diagram types
-    NOTDIAGRAM = -1
-    SIMPLEORGANIGRAM = 0
-    HORIZONTALORGANIGRAM = 1
     TABLEHIERARCHYDIAGRAM = 2
     ORGANIGRAM = 3
-    VENNDIAGRAM = 10
-    CYCLEDIAGRAM = 11
-    PYRAMIDDIAGRAM = 12
-    TARGETDIAGRAM = 13
-    CONTINUOUSBLOCKPROCESS = 20
-    STAGGEREDPROCESS = 21
-    BENDINGPROCESS = 22
-    UPWARDARROWPROCESS = 23
 
     def __init__(self, smart_ph, x_context, x_frame):
         """Initialize Controller"""
@@ -197,62 +182,9 @@ class Controller(unohelper.Base, XSelectionChangeListener):
             current = parent
         return False
 
-    def set_new_size(self):
-        """Set new diagram size"""
-        self.get_diagram().increase_size_prop()
-        width = 0
-        height = 0
-        x_pos = 0
-        y_pos = 0
-
-        if self.get_diagram().get_size_prop() == self.get_diagram().UD_SIZE:
-            width = self.get_diagram().get_ud_width_prop()
-            height = self.get_diagram().get_ud_height_prop()
-            x_pos = self.get_diagram().get_ud_x_pos_prop()
-            y_pos = self.get_diagram().get_ud_y_pos_prop()
-
-        if self.get_diagram().get_size_prop() == self.get_diagram().FULL_SIZE:
-            s = self.get_diagram().get_group_shape_size()
-            self.get_diagram().set_ud_width_prop(s.Width)
-            self.get_diagram().set_ud_height_prop(s.Height)
-            p = self.get_diagram().get_group_shape_pos()
-            self.get_diagram().set_ud_x_pos_prop(p.X)
-            self.get_diagram().set_ud_y_pos_prop(p.Y)
-            width = (
-                self.get_diagram().page_props.Width
-                - self.get_diagram().page_props.BorderLeft
-                - self.get_diagram().page_props.BorderRight
-            )
-            height = (
-                self.get_diagram().page_props.Height
-                - self.get_diagram().page_props.BorderTop
-                - self.get_diagram().page_props.BorderBottom
-            )
-            x_pos = self.get_diagram().page_props.BorderLeft
-            y_pos = self.get_diagram().page_props.BorderTop
-
-        self.get_diagram().set_group_shape_size_and_pos(width, height, x_pos, y_pos)
-        self.get_diagram().refresh_diagram()
-
-    def get_number_of_pages(self):
-        """Get number of pages in document"""
-        o_document = self._x_frame.getController().getModel()
-        pages_supplier = o_document
-        pages = pages_supplier.getDrawPages()
-        return pages.getCount()
-
-    def get_smart_ph(self):
-        """Get SmartProtocolHandler"""
-        return self._smart_ph
-
     def get_diagram(self):
         """Get current diagram"""
         return self._diagram
-
-    def set_null_diagram(self):
-        """Set diagram to None"""
-        if self._diagram is not None:
-            self._diagram = None
 
     def dispose_diagram(self):
         """Dispose diagram and clear all shape references before document closes.
@@ -377,20 +309,6 @@ class Controller(unohelper.Base, XSelectionChangeListener):
         else:
             return self._x_controller.getCurrentPage()  # Impress/Draw
 
-    def get_location(self):
-        """Get current locale"""
-        locale = None
-        try:
-            x_mcf = self._x_context.getServiceManager()
-            o_configuration_provider = x_mcf.createInstanceWithContext(
-                "com.sun.star.configuration.ConfigurationProvider", self._x_context
-            )
-            x_localizable = o_configuration_provider
-            locale = x_localizable.getLocale()
-        except Exception as ex:
-            print(f"Error getting locale: {ex}")
-        return locale
-
     def get_current_diagram_id(self):
         """Get current diagram ID from selected shape"""
         name = self.get_diagram().get_shape_name(self.get_selected_shape())
@@ -460,54 +378,6 @@ class Controller(unohelper.Base, XSelectionChangeListener):
         if self.get_diagram() is not None:
             # Showing the dialog is left outside the lock, because it takes the focus
             self._gui.set_visible_control_dialog(True)
-        self.add_selection_listener()
-
-    def is_shape_service(self, obj):
-        """Check if object is a shape service"""
-        is_shape = False
-        if obj is not None:
-            try:
-                # In Python UNO, check for supported services
-                if hasattr(obj, "supportsService"):
-                    if obj.supportsService("com.sun.star.drawing.Shape"):
-                        is_shape = True
-                    if obj.supportsService("com.sun.star.drawing.GroupShape"):
-                        return False
-            except Exception:
-                pass
-        return is_shape
-
-    def create_diagram_from_list(self):
-        """Create diagram from selected text list"""
-        self.remove_selection_listener()
-
-        if (
-            self.get_selected_shape() is not None
-            and self.get_selected_shapes().getCount() == 1
-            and self.is_shape_service(self.get_selected_shape())
-        ):
-            try:
-                x_text = self.get_selected_shape()
-                text_content = (
-                    x_text.getString() if hasattr(x_text, "getString") else ""
-                )
-
-                if not text_content or text_content.strip() == "":
-                    title = self._gui.get_dialog_property_value(
-                        "GenericStrings", "CouldnotCreateDiagram.Title"
-                    )
-                    message = self._gui.get_dialog_property_value(
-                        "GenericStrings", "CouldnotCreateDiagram.Message"
-                    )
-                    self._gui.show_message_box(title, message)
-                else:
-                    # TODO: Implement DataOfDiagram creation from text
-                    # This would parse the text content and create diagram data
-                    pass
-
-            except Exception as ex:
-                print(f"Error creating diagram from list: {ex}")
-
         self.add_selection_listener()
 
     def instantiate_diagram(self):
@@ -713,25 +583,6 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                 # Focus the dialog if it's visible (don't auto-open)
                 if self._gui is not None and self._gui.is_visible_control_dialog():
                     self._gui.set_focus_control_dialog()
-
-    def disappear_control_dialog(self):
-        """Hide control dialog"""
-        if self._gui is not None:
-            self._gui.set_visible_control_dialog(False)
-
-    def is_only_simple_item_selected(self):
-        """Check if only simple item is selected"""
-        if self.get_selected_shapes().getCount() == 1:
-            selected_shape = self.get_selected_shape()
-            selected_shape_name = selected_shape.getName()
-
-            if (
-                selected_shape_name.startswith("OrbatDiagram")
-                and "RectangleShape" in selected_shape_name
-                and not selected_shape_name.endswith("RectangleShape0")
-            ):
-                return True
-        return False
 
 
 # pythonloader loads a static g_ImplementationHelper variable

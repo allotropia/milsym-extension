@@ -37,40 +37,6 @@ class OrganizationChart(Diagram):
     UNDERLING = 0
     ASSOCIATE = 1
 
-    # Style constants
-    DEFAULT = 0
-    WITHOUT_OUTLINE = 1
-    NOT_ROUNDED = 2
-    WITH_SHADOW = 3
-
-    GREEN_DARK = 4
-    GREEN_BRIGHT = 5
-    BLUE_DARK = 6
-    BLUE_BRIGHT = 7
-    PURPLE_DARK = 8
-    PURPLE_BRIGHT = 9
-    ORANGE_DARK = 10
-    ORANGE_BRIGHT = 11
-    YELLOW_DARK = 12
-    YELLOW_BRIGHT = 13
-
-    BLUE_SCHEME = 14
-    AQUA_SCHEME = 15
-    RED_SCHEME = 16
-    FIRE_SCHEME = 17
-    SUN_SCHEME = 18
-    GREEN_SCHEME = 19
-    OLIVE_SCHEME = 20
-    PURPLE_SCHEME = 21
-    PINK_SCHEME = 22
-    INDIAN_SCHEME = 23
-    MAROON_SCHEME = 24
-    BROWN_SCHEME = 25
-    USER_DEFINE = 26
-
-    FIRST_COLORTHEMEGRADIENT_STYLE_VALUE = 4
-    FIRST_COLORSCHEME_STYLE_VALUE = 14
-
     def __init__(self, controller, gui, x_frame, x_context):
         super().__init__(controller, gui, x_frame, x_context)
 
@@ -120,56 +86,6 @@ class OrganizationChart(Diagram):
         else:
             self._is_hidden_root_element = False
 
-    def is_color_scheme_style(self, style: int) -> bool:
-        """Check if style is a color scheme style"""
-        return style in [
-            self.BLUE_SCHEME,
-            self.AQUA_SCHEME,
-            self.RED_SCHEME,
-            self.FIRE_SCHEME,
-            self.SUN_SCHEME,
-            self.GREEN_SCHEME,
-            self.OLIVE_SCHEME,
-            self.PURPLE_SCHEME,
-            self.PINK_SCHEME,
-            self.INDIAN_SCHEME,
-            self.MAROON_SCHEME,
-            self.BROWN_SCHEME,
-        ]
-
-    def get_color_mode_of_scheme_style(self, style: int) -> int:
-        """Get color mode of scheme style"""
-        return (
-            style
-            - self.FIRST_COLORSCHEME_STYLE_VALUE
-            + Diagram.FIRST_COLORSCHEME_MODE_VALUE
-        )
-
-    def is_color_theme_gradient_style(self, style: int) -> bool:
-        """Check if style is a color theme gradient style"""
-        return style in [
-            self.GREEN_DARK,
-            self.GREEN_BRIGHT,
-            self.BLUE_DARK,
-            self.BLUE_BRIGHT,
-            self.PURPLE_DARK,
-            self.PURPLE_BRIGHT,
-            self.ORANGE_DARK,
-            self.ORANGE_BRIGHT,
-            self.YELLOW_DARK,
-            self.YELLOW_BRIGHT,
-        ]
-
-    def get_color_mode_of_theme_gradient_style(self, style: int) -> int:
-        """Get color mode of theme gradient style"""
-        return (
-            style - self.FIRST_COLORTHEMEGRADIENT_STYLE_VALUE + 1
-        )  # BASE_COLORS_WITH_GRADIENT_MODE
-
-    def get_user_define_style_value(self) -> int:
-        """Get user define style value"""
-        return self.USER_DEFINE
-
     def set_default_props(self):
         """Set default properties"""
         # Stub implementation
@@ -181,10 +97,6 @@ class OrganizationChart(Diagram):
     def get_hor_space(self) -> int:
         """Get horizontal space ratio"""
         return self._hor_space
-
-    def get_shape_height(self) -> int:
-        """Get shape height ratio"""
-        return self._shape_height
 
     def get_ver_space(self) -> int:
         """Get vertical space ratio"""
@@ -198,25 +110,6 @@ class OrganizationChart(Diagram):
             return ""
         except Exception:
             return ""
-
-    def get_hor_level_of_control_shape(self, control_shape) -> int:
-        """Get horizontal level of control shape"""
-        if control_shape is not None:
-            text = control_shape.getString()
-            s_number = ""
-            if ":" not in text:
-                s_number = text
-            else:
-                a_str = text.split(":")
-                for i in range(len(a_str) - 1):
-                    if a_str[i] == "LastHorLevel":
-                        s_number = a_str[i + 1]
-
-            if s_number == "":
-                return -1
-            else:
-                return int(s_number)
-        return -1
 
     def remove_hor_level_props_of_control_shape(self, control_shape):
         """Remove horizontal level properties of control shape"""
@@ -378,100 +271,6 @@ class OrganizationChart(Diagram):
     def init_properties_from_shapes(self, x_control_shape, x_root_shape):
         """Initialize properties from control and root shapes"""
         self.set_default_props()
-        # self.init_color_mode_and_style()
-
-        # try:
-        # Get root shape properties
-        # if self.is_simple_color_mode():
-        #     fill_color = x_root_shape.getPropertyValue("FillColor")
-        #     self.set_color_prop(fill_color)
-
-        # if self.is_gradient_color_mode():
-        #     a_gradient = x_root_shape.getPropertyValue("FillGradient")
-        #     self.set_start_color_prop(a_gradient.StartColor)
-        #     self.set_end_color_prop(a_gradient.EndColor)
-        #     if a_gradient.Angle == 900:
-        #         self.set_gradient_direction_prop(Diagram.HORIZONTAL)
-
-        # if self.is_color_theme_gradient_mode():
-        #     self.set_color_theme_gradient_colors()
-        #     # self.set_shapes_line_width_prop(Diagram.LINE_WIDTH200)
-        #     self.set_rounded_prop(Diagram.NULL_ROUNDED)
-
-        # Handle style property
-        # if self.get_style_prop() == OrganizationChart.DEFAULT:
-        #     pass
-
-        # if self.get_style_prop() == OrganizationChart.WITHOUT_OUTLINE:
-        #     self.set_outline_prop(False)
-
-        # if self.get_style_prop() == OrganizationChart.NOT_ROUNDED:
-        #     self.set_rounded_prop(Diagram.NULL_ROUNDED)
-
-        # if self.get_style_prop() == OrganizationChart.WITH_SHADOW:
-        #     self.set_shadow_prop(True)
-
-        # if self.get_style_prop() == OrganizationChart.USER_DEFINE:
-        #     line_style = x_root_shape.getPropertyValue("LineStyle")
-        #     if line_style == LineStyle.NONE:
-        #         self.set_outline_prop(False)
-
-        #     line_width = x_root_shape.getPropertyValue("LineWidth")
-        #     self.set_shapes_line_width_prop(line_width)
-
-        #     corner_radius = x_root_shape.getPropertyValue("CornerRadius")
-        #     if corner_radius < 200:
-        #         self.set_rounded_prop(Diagram.NULL_ROUNDED)
-        #     elif corner_radius < 600:
-        #         self.set_rounded_prop(Diagram.MEDIUM_ROUNDED)
-        #     else:
-        #         self.set_rounded_prop(Diagram.EXTRA_ROUNDED)
-
-        #     shadow = x_root_shape.getPropertyValue("Shadow")
-        #     if shadow:
-        #         self.set_shadow_prop(True)
-
-        # self.set_font_property_values()
-
-        # Get text color from root shape
-        # x_text = x_root_shape
-        # x_text_cursor = x_text.createTextCursor()
-        # text_color = x_text_cursor.getPropertyValue("CharColor")
-        # self.set_text_color_prop(text_color)
-
-        # """ if self.is_shown_connectors_prop():
-        #     x_conn_shape = self.get_roots_connector()
-
-        #     connectors_line_width = x_conn_shape.getPropertyValue("LineWidth")
-        #     self.set_connectors_line_width_prop(connectors_line_width)
-
-        #     connector_color = x_conn_shape.getPropertyValue("LineColor")
-        #     self.set_connector_color_prop(connector_color)
-
-        #     edge_kind = x_conn_shape.getPropertyValue("EdgeKind")
-        #     if edge_kind.value == CONN_STANDARD_VALUE:
-        #         self.set_connector_type_prop(Diagram.CONN_STANDARD)
-        #     elif edge_kind.value == CONN_LINE_VALUE:
-        #         self.set_connector_type_prop(Diagram.CONN_LINE)
-        #     elif edge_kind.value == CONN_LINES_VALUE:
-        #         self.set_connector_type_prop(Diagram.CONN_STRAIGHT)
-        #     elif edge_kind.value == CONN_CURVE_VALUE:
-        #         self.set_connector_type_prop(Diagram.CONN_CURVED)
-
-        #     line_start_name = x_conn_shape.getPropertyValue("LineStartName")
-        #     if line_start_name == "Arrow":
-        #         self.set_connector_start_arrow_prop(True)
-
-        #     line_end_name = x_conn_shape.getPropertyValue("LineEndName")
-        #     if line_end_name == "Arrow":
-        #         self.set_connector_end_arrow_prop(True) """
-
-        # except Exception as ex:
-        #    print(f"Error initializing properties: {ex}")
-
-    @abstractmethod
-    def init_diagram_tree(self, diagram_tree):
-        """Initialize diagram tree - to be implemented by subclasses"""
 
     @abstractmethod
     def get_diagram_tree(self):
@@ -761,16 +560,6 @@ class OrganizationChart(Diagram):
 
         except Exception as e:
             print(f"Error inserting as child: {e}")
-
-    def show_property_dialog(self):
-        """Show property dialog and apply changes"""
-        self.get_gui().enable_control_dialog_window(False)
-        exec_result = self.get_gui().execute_properties_dialog()
-        if exec_result == 1:
-            # TODO: Update shape
-            pass
-
-        self.get_gui().enable_and_set_focus_control_dialog()
 
     def _update_tree_layout(self):
         """Update the tree layout after structure changes"""

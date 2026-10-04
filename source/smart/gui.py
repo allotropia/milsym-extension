@@ -191,15 +191,6 @@ class Gui:
         if self._x_control_dialog is not None:
             self._x_control_dialog.setFocus()
 
-    def enable_and_set_focus_control_dialog(self):
-        """Enable and set focus to control dialog"""
-        self.enable_control_dialog_window(True)
-        self.set_focus_control_dialog()
-
-    def get_control_dialog_window(self):
-        """Get control dialog window"""
-        return self._x_control_dialog
-
     def show_message_box(self, s_title: str, s_message: str):
         """Show message box dialog"""
         try:

@@ -13,7 +13,7 @@ from contextlib import contextmanager
 
 import uno
 import unohelper
-from com.sun.star.awt import Point, Rectangle, Size, XCallback
+from com.sun.star.awt import Point, Size, XCallback
 from com.sun.star.beans import NamedValue, PropertyValue
 from com.sun.star.xml import AttributeData
 from perf import count
@@ -364,23 +364,8 @@ class SymbolGeometry:
     def octagon_left(self):
         return self.octagon[0]
 
-    def octagon_top(self):
-        return self.octagon[1]
-
-    def octagon_bottom(self):
-        return self.octagon[1] + self.octagon[3]
-
-    def octagon_centre_x(self):
-        return self.octagon[0] + self.octagon[2] / 2
-
-    def octagon_centre_y(self):
-        return self.octagon[1] + self.octagon[3] / 2
-
     def frame_left(self):
         return self.frame[0]
-
-    def frame_top(self):
-        return self.frame[1]
 
     def frame_bottom(self):
         return self.frame[1] + self.frame[3]
@@ -445,43 +430,6 @@ def read_shape_svg(ctx, shape):
     except Exception as e:
         print(f"Warning: Could not read the SVG of a shape: {e}")
         return None
-
-
-def octagon_rect_in_shape(shape, svg_data):
-    """The frame octagon of a symbol shape, in the shape's coordinate system.
-
-    The shape shows svg_data at some size that keeps the drawing's aspect ratio, so the
-    octagon fractions of the drawing map straight onto the shape's position and size.
-
-    Returns a Rectangle in 1/100 mm, or None when the SVG carries no octagon information.
-    """
-    octagon = parse_svg_octagon(svg_data)
-    if octagon is None:
-        return None
-    position = shape.getPosition()
-    size = shape.getSize()
-    rect = Rectangle()
-    rect.X = round(position.X + octagon[0] * size.Width)
-    rect.Y = round(position.Y + octagon[1] * size.Height)
-    rect.Width = round(octagon[2] * size.Width)
-    rect.Height = round(octagon[3] * size.Height)
-    return rect
-
-
-def anchor_point_in_shape(shape, svg_data):
-    """The anchor point of a symbol shape, in the shape's coordinate system.
-
-    Returns a Point in 1/100 mm, or None when the SVG carries no anchor information.
-    """
-    anchor = parse_svg_anchor(svg_data)
-    if anchor is None:
-        return None
-    position = shape.getPosition()
-    size = shape.getSize()
-    point = Point()
-    point.X = round(position.X + anchor[0] * size.Width)
-    point.Y = round(position.Y + anchor[1] * size.Height)
-    return point
 
 
 def fit_size_to_aspect_ratio(bounding_size, intrinsic_size):
@@ -850,11 +798,6 @@ def get_package_location(ctx, extensionName="com.collabora.milsymbol"):
         "/singletons/com.sun.star.deployment.PackageInformationProvider"
     )
     return srv.getPackageLocation(extensionName)
-
-
-def getExtensionBasePath(ctx, extensionName="com.collabora.milsymbol"):
-    """Get the base path of the extension installation directory"""
-    return os.path.basename(get_package_location(ctx, extensionName))
 
 
 def createMilSymbolScriptInstance(ctx, model):

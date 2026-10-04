@@ -29,9 +29,6 @@ class DataOfDiagram:
         def get_level(self) -> int:
             return self.level
 
-        def get_value(self) -> str:
-            return self.value
-
         def increase(self):
             """Increment the level"""
             self.level += 1
@@ -69,14 +66,6 @@ class DataOfDiagram:
     def is_empty(self) -> bool:
         """Check if container is empty"""
         return len(self._datas) == 0
-
-    def print_data(self):
-        """Print all data points for debugging"""
-        if not self.is_empty():
-            for data in self._datas:
-                print(f"{data.get_level()} {data.get_value()}")
-        else:
-            print("Datas of diagram is empty")
 
     def clear(self):
         """Clear all data"""

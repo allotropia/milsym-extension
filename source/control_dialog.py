@@ -177,9 +177,6 @@ class ControlDlgHandler(
     def disposing(self, event):
         pass
 
-    def buttonStateHandler(self, methodName):
-        pass
-
     def _update_button_states(self):
         """Update button enabled states based on current selection.
 
@@ -495,19 +492,6 @@ class ControlDlgHandler(
 
         except Exception as ex:
             print(f"Error copying item(s): {ex}")
-
-    def _get_selected_tree_item(self):
-        """Get the tree item for the currently selected shape"""
-        try:
-            controller = self.get_controller()
-            selection = controller._x_controller.getSelection()
-            if selection and selection.getCount() > 0:
-                selected_shape = selection.getByIndex(0)
-                # Find the tree item for this shape
-                return self._find_tree_item_for_shape(selected_shape)
-        except Exception as e:
-            print(f"Error getting selected tree item: {e}")
-        return None
 
     def _get_selected_tree_items(self):
         """Get all tree items for currently selected nodes (supports multi-selection)"""
@@ -1597,29 +1581,6 @@ class ControlDlgHandler(
         """Find the tree item carrying a shape, or None when the tree has no such item."""
         display_name = self._display_name_for_shape(shape)
         return self._node_to_tree_item_map.get(display_name) if display_name else None
-
-    def _find_node_in_tree(self, node_name):
-        """Find a tree node by name in the current tree model
-
-        Args:
-            node_name: Display name of the node to find
-
-        Returns:
-            Tree node or None if not found
-        """
-        node = self._node_by_node_name.get(node_name)
-        if node is not None:
-            return node
-
-        try:
-            tree_model = self.tree_control.getModel()
-            data_model = tree_model.getPropertyValue("DataModel")
-            if data_model:
-                root_node = data_model.getRoot()
-                return self._find_node_by_name(root_node, node_name)
-        except Exception:
-            pass
-        return None
 
     def _select_tree_node_by_name(self, node_name):
         """Select a tree node by its display name"""

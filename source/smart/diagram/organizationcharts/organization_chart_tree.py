@@ -301,10 +301,6 @@ class OrganizationChartTree(ABC):
         except Exception:
             return False
 
-    def get_tree_item_by_name(self, rect_name):
-        """Return the tree item carrying the named rectangle, without touching the office."""
-        return self._item_by_rect_name.get(rect_name)
-
     def register_item(self, item):
         """Record a tree item so that its rectangle can be looked up by name."""
         name = item.get_rectangle_name() if item is not None else ""

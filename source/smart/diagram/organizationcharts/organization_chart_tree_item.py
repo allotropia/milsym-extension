@@ -71,21 +71,6 @@ class OrganizationChartTreeItem(ABC):
             self._x_rectangle_shape = None
             self._rectangle_name = ""
 
-    def __init_with_shape(self, diagram_tree, x_shape, dad):
-        """Constructor with shape"""
-        self._diagram_tree = diagram_tree
-        self._x_rectangle_shape = x_shape
-        self._rectangle_name = (
-            self._diagram_tree.get_org_chart().get_shape_name(x_shape)
-            if x_shape
-            else ""
-        )
-        self._dad = dad
-        self._first_child = None
-        self._first_sibling = None
-        self._level = -1
-        self._pos = -1.0
-
     def hide_element(self):
         """Hide the element by setting fill and line style to none"""
         try:
@@ -151,23 +136,8 @@ class OrganizationChartTreeItem(ABC):
         except Exception as ex:
             print(f"Error hiding element: {ex}")
 
-    def is_hidden_element(self) -> bool:
-        """Check if element is hidden"""
-        try:
-            if self._x_rectangle_shape is not None:
-                fill_style = self._x_rectangle_shape.getPropertyValue("FillStyle")
-                if fill_style == FILL_STYLE_NONE:
-                    return True
-        except Exception as ex:
-            print(f"Error checking if element is hidden: {ex}")
-        return False
-
     def convert_tree_items(self, tree_item):
         """Convert tree items - to be overridden in subclasses"""
-
-    def set_diagram_tree(self, diagram_tree):
-        """Set diagram tree reference"""
-        self._diagram_tree = diagram_tree
 
     def init_tree_items(self):
         """Initialize tree items - to be overridden in subclasses"""
@@ -417,10 +387,6 @@ class OrganizationChartTreeItem(ABC):
 
         if self.is_first_sibling():
             self._first_sibling.remove_items()
-
-    def increase_descendants_pos_num(self, diff: int):
-        """Increase descendants position number"""
-        self._first_child.increase_pos_in_branch(diff)
 
     def print_tree(self):
         """Print tree structure for debugging"""

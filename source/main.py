@@ -710,26 +710,6 @@ class MainJob(unohelper.Base, XJobExecutor):
         controller.create_diagram(data)
         controller._gui.set_visible_control_dialog(True)
 
-    def initialize_controllers_for_open_documents(self):
-        """Initialize controllers for all currently open documents that contain smart diagrams"""
-        try:
-            # Get all open frames
-            frames = self.desktop.getFrames()
-            for i in range(frames.getCount()):
-                frame = frames.getByIndex(i)
-                try:
-                    model = frame.getController().getModel()
-                    if model and self.controller_manager.document_has_smart_diagrams(
-                        model
-                    ):
-                        self.controller_manager.get_or_create_controller(
-                            self.ctx, frame
-                        )
-                except Exception as e:
-                    print(f"Error initializing controller for frame {i}: {e}")
-        except Exception as e:
-            print(f"Error initializing controllers for open documents: {e}")
-
 
 class Dispatcher(unohelper.Base, XDispatch):
     """Dispatch handler for com.collabora.milsymbol protocol URLs.
