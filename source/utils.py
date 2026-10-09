@@ -15,6 +15,7 @@ import uno
 import unohelper
 from com.sun.star.awt import Point, Size, XCallback
 from com.sun.star.beans import NamedValue, PropertyValue
+from com.sun.star.document import XUndoAction
 from com.sun.star.xml import AttributeData
 from perf import count
 
@@ -517,6 +518,54 @@ def build_symbol_shape(ctx, model, svg_data, params, selected_shape=None):
     return shape
 
 
+class InsertSymbolUndoAction(unohelper.Base, XUndoAction):
+    """The undo step of putting one new symbol shape onto a draw page.
+
+    Undo takes the shape off its page and releases it, and redo
+    creates it afresh from what the insertion recorded, so the action
+    holds only a shape that is on a page (an off-page shape would
+    otherwise lead to crashes on office shutdown).
+
+    """
+
+    def __init__(
+        self, ctx, model, title, undo_manager, draw_page, svg_data, params, name, shape
+    ):
+        self.ctx = ctx
+        self.model = model
+        self.Title = title
+        self.undo_manager = undo_manager
+        self.draw_page = draw_page
+        self.svg_data = svg_data
+        self.params = params
+        self.name = name
+        self.shape = shape
+        self.position = shape.getPosition()
+
+    def undo(self):
+        """Take the symbol off its page and let go of it."""
+        if self.shape is None:
+            return
+        try:
+            with locked_undo_manager(self.undo_manager):
+                self.draw_page.remove(self.shape)
+        except Exception as e:
+            print(f"Error removing the inserted symbol: {e}")
+        self.shape = None
+
+    def redo(self):
+        """Draw the symbol again from what the insertion recorded."""
+        try:
+            with locked_undo_manager(self.undo_manager):
+                shape = build_symbol_shape(self.ctx, self.model, self.svg_data, self.params)
+                shape.setPropertyValue("Name", self.name)
+                self.draw_page.add(shape)
+                shape.setPosition(self.position)
+                self.shape = shape
+        except Exception as e:
+            print(f"Error inserting the symbol again: {e}")
+
+
 def insertSvgGraphic(
     ctx, model, svg_data, params, selected_shape, smybol_name
 ):
@@ -528,6 +577,14 @@ def insertSvgGraphic(
 
     try:
         shape = build_symbol_shape(ctx, model, svg_data, params, selected_shape)
+
+        # Writer records the insertion of a text content as an undo step by itself, and
+        # keeps it on top of the stack. The other applications record nothing for a
+        # shape added to a draw page, and record naming the shape as a step of its own,
+        # so there the whole insertion runs under the lock of the undo manager and one
+        # action describing it is registered afterwards.
+        undo_manager = model.getUndoManager() if selected_shape is None else None
+        inserted_page = None
 
         # Writer
         if is_writer:
@@ -542,33 +599,56 @@ def insertSvgGraphic(
             controller = model.getCurrentController()
             active_sheet = controller.getActiveSheet()
             draw_page = active_sheet.getDrawPage()
-            shape.setPropertyValue("Name", smybol_name)
-            pos = shape.getPosition()
-            draw_page.add(shape)
-            shape.setPosition(pos)
+            with locked_undo_manager(undo_manager):
+                shape.setPropertyValue("Name", smybol_name)
+                pos = shape.getPosition()
+                draw_page.add(shape)
+                shape.setPosition(pos)
 
-            if selected_shape is None:
-                try:
-                    # Try to position at current selection
-                    current_selection = model.getCurrentSelection()
-                    cell_position = current_selection.getPropertyValue("Position")
-                    shape.setPosition(cell_position)
-                except Exception:
-                    # Default position if we can't get cell position
-                    default_pos = Point()
-                    default_pos.X = 1000
-                    default_pos.Y = 1000
-                    shape.setPosition(default_pos)
+                if selected_shape is None:
+                    try:
+                        # Try to position at current selection
+                        current_selection = model.getCurrentSelection()
+                        cell_position = current_selection.getPropertyValue("Position")
+                        shape.setPosition(cell_position)
+                    except Exception:
+                        # Default position if we can't get cell position
+                        default_pos = Point()
+                        default_pos.X = 1000
+                        default_pos.Y = 1000
+                        shape.setPosition(default_pos)
+            inserted_page = draw_page
         # Impress/Draw - for presentations and drawings, we'll use the shape directly
         elif is_draw_impress:
             controller = model.getCurrentController()
             current_page = controller.getCurrentPage()
-            shape.setPropertyValue("Name", smybol_name)
-            pos = shape.getPosition()
-            current_page.add(shape)
-            shape.setPosition(pos)
+            with locked_undo_manager(undo_manager):
+                shape.setPropertyValue("Name", smybol_name)
+                pos = shape.getPosition()
+                current_page.add(shape)
+                shape.setPosition(pos)
+            inserted_page = current_page
         else:
             print("Unsupported document type for graphic insertion")
+
+        if undo_manager is not None and inserted_page is not None:
+            # The translator imports this module, so it is imported here rather than at
+            # the top of the module.
+            from translator import translate
+
+            undo_manager.addUndoAction(
+                InsertSymbolUndoAction(
+                    ctx,
+                    model,
+                    translate(ctx, "Undo.InsertSymbol"),
+                    undo_manager,
+                    inserted_page,
+                    svg_data,
+                    params,
+                    smybol_name,
+                    shape,
+                )
+            )
 
         mark_document_modified(model)
     except Exception as e:

@@ -119,6 +119,10 @@ class Diagram(ABC):
             return self._x_group_shape
         return None
 
+    def get_draw_page(self):
+        """Get the draw page the diagram lives on"""
+        return self._x_draw_page
+
     def create_shape(
         self,
         shape_type: str,
@@ -549,8 +553,17 @@ class Diagram(ABC):
 
     def add_group_shape_to_draw_page(self):
         if self._x_model.supportsService("com.sun.star.text.TextDocument"):  # Writer
+            # Writer records the insertion of a text content as an undo step of its
+            # own. The caller builds the diagram while holding exactly one lock on the
+            # undo manager, so the lock is released for just this insertion and taken
+            # again afterwards, leaving that one step on the stack.
+            undo_manager = self._x_model.getUndoManager()
             cursor = self._x_controller.getViewCursor()
-            cursor.getText().insertTextContent(cursor, self._x_group_shape, True)
+            undo_manager.unlock()
+            try:
+                cursor.getText().insertTextContent(cursor, self._x_group_shape, True)
+            finally:
+                undo_manager.lock()
         elif self._x_model.supportsService(
             "com.sun.star.sheet.SpreadsheetDocument"
         ):  # Calc

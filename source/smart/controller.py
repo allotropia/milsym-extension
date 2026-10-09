@@ -14,10 +14,11 @@ Controller class for LibreOffice extension
 """
 
 import unohelper
-from com.sun.star.document import XUndoManagerListener
+from com.sun.star.document import XUndoAction, XUndoManagerListener
 from com.sun.star.view import XSelectionChangeListener
 from perf import timed
-from utils import containing_orbat_group, locked_controllers
+from translator import translate
+from utils import containing_orbat_group, locked_controllers, locked_undo_manager
 
 from smart.diagram.organizationcharts.orgchart.orgchart import OrgChart
 
@@ -89,6 +90,40 @@ class DocumentUndoWatch(unohelper.Base, XUndoManagerListener):
 
     def disposing(self, event):
         pass
+
+
+class InsertDiagramUndoAction(unohelper.Base, XUndoAction):
+    """The undo step of creating a diagram: the group shape with every shape inside it.
+
+    Undo removes the group from its page and keeps it, and redo puts
+    the same group back, with the shapes in it and its positions
+    preserved. The group is held while off its page, so the action has
+    to be released before the document is gone; clearing the undo
+    stacks when the document closes (in dispose_diagram) handles that.
+
+    """
+
+    def __init__(self, title, undo_manager, draw_page, group_shape):
+        self.Title = title
+        self.undo_manager = undo_manager
+        self.draw_page = draw_page
+        self.group_shape = group_shape
+
+    def undo(self):
+        """Take the diagram group off its page."""
+        try:
+            with locked_undo_manager(self.undo_manager):
+                self.draw_page.remove(self.group_shape)
+        except Exception as e:
+            print(f"Error removing the inserted diagram: {e}")
+
+    def redo(self):
+        """Put the diagram group back onto its page."""
+        try:
+            with locked_undo_manager(self.undo_manager):
+                self.draw_page.add(self.group_shape)
+        except Exception as e:
+            print(f"Error inserting the diagram again: {e}")
 
 
 class Controller(unohelper.Base, XSelectionChangeListener):
@@ -362,7 +397,16 @@ class Controller(unohelper.Base, XSelectionChangeListener):
         self.instantiate_diagram()
 
         model = self._x_frame.getController().getModel()
-        with locked_controllers(model):
+        # Creating the diagram becomes one undo step. Building it names every shape it
+        # makes, and the office records each name change as an undo step of its own, so
+        # the whole build runs under the lock of the undo manager. In Writer the office
+        # itself records inserting the group as a text content, with the lock released
+        # for just that call. The other applications record nothing for a group added
+        # to a draw page, so one action that removes and re-adds the finished group is
+        # registered afterwards.
+        is_writer = model.supportsService("com.sun.star.text.TextDocument")
+        undo_manager = model.getUndoManager()
+        with locked_controllers(model), locked_undo_manager(undo_manager):
             if self.get_diagram() is not None:
                 if data is not None:
                     self.get_diagram().create_diagram(data)
@@ -374,6 +418,22 @@ class Controller(unohelper.Base, XSelectionChangeListener):
                 # from a menu command.
                 if self.get_group_type() == self.ORGANIGROUP:
                     self.get_diagram().init_diagram(read_geometry=False)
+
+        if not is_writer and self.get_diagram() is not None:
+            group_shape = self.get_diagram().get_group_shape()
+            draw_page = self.get_diagram().get_draw_page()
+            if group_shape is not None and draw_page is not None:
+                try:
+                    undo_manager.addUndoAction(
+                        InsertDiagramUndoAction(
+                            translate(self._x_context, "Undo.InsertOrbat"),
+                            undo_manager,
+                            draw_page,
+                            group_shape,
+                        )
+                    )
+                except Exception as e:
+                    print(f"Failed to register the diagram insert for undo: {e}")
 
         if self.get_diagram() is not None:
             # Showing the dialog is left outside the lock, because it takes the focus
