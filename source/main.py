@@ -438,8 +438,7 @@ class StartupJob(unohelper.Base, XJob, XSelectionChangeListener):
                         ListenerRegistry.instance().update_selected_shape(shape)
                 except Exception:
                     pass
-            elif selection.supportsService("com.sun.star.drawing.Shapes"):
-                if selection.getCount() > 0:
+            elif selection.supportsService("com.sun.star.drawing.Shapes") and selection.getCount() > 0:
                     shape = selection.getByIndex(0)
                     try:
                         if (

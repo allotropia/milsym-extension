@@ -1323,12 +1323,11 @@ class ControlDlgHandler(
                         tree_item.set_dad(parent_item)
                         tree_item.set_first_sibling(insert_before_item)
                         parent_item.set_first_child(tree_item)
-            elif event.KeyCode == Key.DOWN:
-                # move one sibling position down - stop at index n-1
-                if tree_item.get_last_sibling() != tree_item:
-                    insert_after_item = tree_item.get_first_sibling()
-                    diagram._remove_item_from_tree(tree_item)
-                    diagram._insert_as_sibling_after(tree_item, insert_after_item)
+            # move one sibling position down - stop at index n-1
+            elif event.KeyCode == Key.DOWN and tree_item.get_last_sibling() != tree_item:
+                insert_after_item = tree_item.get_first_sibling()
+                diagram._remove_item_from_tree(tree_item)
+                diagram._insert_as_sibling_after(tree_item, insert_after_item)
 
             # refresh diagram and tree list
             diagram.refresh_diagram()
