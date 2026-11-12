@@ -13,7 +13,10 @@ from utils import size_with_height_and_aspect_ratio
 
 
 def size(width, height):
-    return Size(Width=width, Height=height)
+    value = Size()
+    value.Width = width
+    value.Height = height
+    return value
 
 
 def test_size_stays_the_same_over_repeated_edits():

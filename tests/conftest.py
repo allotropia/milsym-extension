@@ -6,11 +6,14 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-"""Stand-ins for the modules the office provides at runtime.
+"""Make the modules under source/ importable for the tests.
 
-The modules under source/ import uno, unohelper and com.sun.star types, which exist only
-inside a running office. The stand-ins here carry just enough shape for those modules to
-import under plain Python, so their pure functions can be tested without an office.
+A Python with pyuno, such as the one a LibreOffice installation ships, provides the uno,
+unohelper and com.sun.star modules on its own, outside a running office. On a Python
+without pyuno, stand-ins are installed instead that carry just enough shape for the
+source modules to import, so their pure functions can still be tested. UNO_IS_REAL says
+which of the two this test run has; the tests that talk to a running office need the
+real one.
 """
 
 import sys
@@ -18,6 +21,13 @@ import types
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "source"))
+
+try:
+    import uno  # noqa: F401  (probes whether pyuno is available)
+
+    UNO_IS_REAL = True
+except ImportError:
+    UNO_IS_REAL = False
 
 
 class Size:
@@ -54,22 +64,27 @@ def _install_module(name, **attributes):
     return module
 
 
-_install_module("uno", systemPathToFileUrl=lambda path: "file://" + path)
-_install_module("unohelper", Base=type("Base", (), {}))
-_install_module("perf", count=lambda *args: None, timed=lambda function: function)
+def _install_stand_ins():
+    _install_module("uno", systemPathToFileUrl=lambda path: "file://" + path)
+    _install_module("unohelper", Base=type("Base", (), {}))
+    _install_module("perf", count=lambda *args: None, timed=lambda function: function)
 
-_com = _install_module("com")
-_com.sun = _install_module("com.sun")
-_com.sun.star = _install_module("com.sun.star")
-_com.sun.star.awt = _install_module(
-    "com.sun.star.awt", Size=Size, Point=Point, XCallback=type("XCallback", (), {})
-)
-_com.sun.star.beans = _install_module(
-    "com.sun.star.beans", NamedValue=NamedValue, PropertyValue=PropertyValue
-)
-_com.sun.star.document = _install_module(
-    "com.sun.star.document", XUndoAction=type("XUndoAction", (), {})
-)
-_com.sun.star.xml = _install_module(
-    "com.sun.star.xml", AttributeData=type("AttributeData", (), {})
-)
+    com = _install_module("com")
+    com.sun = _install_module("com.sun")
+    com.sun.star = _install_module("com.sun.star")
+    com.sun.star.awt = _install_module(
+        "com.sun.star.awt", Size=Size, Point=Point, XCallback=type("XCallback", (), {})
+    )
+    com.sun.star.beans = _install_module(
+        "com.sun.star.beans", NamedValue=NamedValue, PropertyValue=PropertyValue
+    )
+    com.sun.star.document = _install_module(
+        "com.sun.star.document", XUndoAction=type("XUndoAction", (), {})
+    )
+    com.sun.star.xml = _install_module(
+        "com.sun.star.xml", AttributeData=type("AttributeData", (), {})
+    )
+
+
+if not UNO_IS_REAL:
+    _install_stand_ins()
