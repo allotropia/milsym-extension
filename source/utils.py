@@ -433,39 +433,29 @@ def read_shape_svg(ctx, shape):
         return None
 
 
-def fit_size_to_aspect_ratio(bounding_size, intrinsic_size):
-    """Fit a size to the aspect ratio of another size by shrinking one dimension.
+def size_with_height_and_aspect_ratio(existing_size, intrinsic_size):
+    """A size with the height of one size and the aspect ratio of another.
 
-    Returns a Size with the aspect ratio of intrinsic_size that fits inside
-    bounding_size. One dimension of bounding_size is kept, the other is reduced.
-    If either size has a non-positive dimension, bounding_size is returned
+    Returns a Size whose height is that of existing_size and whose width is computed
+    from that height with the aspect ratio of intrinsic_size. The width comes out
+    larger or smaller than the width of existing_size, whichever the aspect ratio
+    gives. If either size has a non-positive dimension, existing_size is returned
     unchanged.
     """
     if (
-        bounding_size.Width <= 0
-        or bounding_size.Height <= 0
+        existing_size.Width <= 0
+        or existing_size.Height <= 0
         or intrinsic_size.Width <= 0
         or intrinsic_size.Height <= 0
     ):
-        return bounding_size
+        return existing_size
 
-    fitted = Size()
-    fitted.Width = bounding_size.Width
-    fitted.Height = bounding_size.Height
-    if (
-        bounding_size.Width * intrinsic_size.Height
-        > bounding_size.Height * intrinsic_size.Width
-    ):
-        # The box is proportionally wider than the content, so the width shrinks
-        fitted.Width = int(
-            bounding_size.Height * intrinsic_size.Width / intrinsic_size.Height
-        )
-    else:
-        # The box is proportionally taller than the content, so the height shrinks
-        fitted.Height = int(
-            bounding_size.Width * intrinsic_size.Height / intrinsic_size.Width
-        )
-    return fitted
+    matched = Size()
+    matched.Height = existing_size.Height
+    matched.Width = int(
+        existing_size.Height * intrinsic_size.Width / intrinsic_size.Height
+    )
+    return matched
 
 
 def extractGraphicAttributes(shape):
@@ -490,11 +480,12 @@ def extractGraphicAttributes(shape):
 def build_symbol_shape(ctx, model, svg_data, params, selected_shape=None):
     """Put the drawing of a symbol and its MilSym attributes onto a shape.
 
-    With selected_shape given, its picture is replaced and its size is kept, adjusted to
-    the aspect ratio of the new drawing so the content is not distorted. Otherwise a new
-    graphic shape is created, sized to the drawing: the SVG is generated so that its
-    intrinsic size gives the frame octagon the configured height, and decorations enlarge
-    the shape beyond that. The returned shape still has to be put onto a page.
+    With selected_shape given, its picture is replaced and its height is kept. The width
+    is computed from that height with the aspect ratio of the new drawing, so the content
+    is not distorted and the width can grow as well as shrink. Otherwise a new graphic
+    shape is created, sized to the drawing: the SVG is generated so that its intrinsic
+    size gives the frame octagon the configured height, and decorations enlarge the shape
+    beyond that. The returned shape still has to be put onto a page.
     """
     graphic = create_graphic_from_svg(ctx, svg_data)
 
@@ -508,8 +499,15 @@ def build_symbol_shape(ctx, model, svg_data, params, selected_shape=None):
     shape.setPropertyValue("Graphic", graphic)
 
     if existing_size is not None and existing_size.Width > 0 and existing_size.Height > 0:
+        # The height is kept constant here, as this is the domiant
+        # aspect of a symbol shape (the width tends to vary widely
+        # when e.g. text is added). The width is derived from that
+        # height anew for each drawing, so the height stays the same
+        # after edits, regardless of the aspect ratio.
         shape.setSize(
-            fit_size_to_aspect_ratio(existing_size, parse_svg_dimensions(svg_data))
+            size_with_height_and_aspect_ratio(
+                existing_size, parse_svg_dimensions(svg_data)
+            )
         )
     else:
         shape.setSize(parse_svg_dimensions(svg_data))
