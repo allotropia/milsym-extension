@@ -19,84 +19,18 @@ The drawing is handed in as ready-made SVG, so no extension package has to be in
 in the office: only the GraphicProvider service and the undo manager take part.
 """
 
-import shutil
-import socket
-import subprocess
-import time
-from types import SimpleNamespace
-
 import conftest
-import pytest
 
 if conftest.UNO_IS_REAL:
-    import uno
     from com.sun.star.beans import NamedValue
 
-pytestmark = pytest.mark.skipif(
-    not conftest.UNO_IS_REAL or shutil.which("soffice") is None,
-    reason="needs pyuno and a soffice binary",
-)
+import pytest
 
 SVG = (
     '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40">'
     '<rect width="40" height="40" fill="#8cc"/></svg>'
 )
 SIDC = "30031000001211000000"
-
-
-def _free_port():
-    with socket.socket() as probe:
-        probe.bind(("localhost", 0))
-        return probe.getsockname()[1]
-
-
-def _connect(port, deadline_seconds=60):
-    local_context = uno.getComponentContext()
-    resolver = local_context.ServiceManager.createInstanceWithContext(
-        "com.sun.star.bridge.UnoUrlResolver", local_context
-    )
-    url = (
-        f"uno:socket,host=localhost,port={port};urp;StarOffice.ComponentContext"
-    )
-    deadline = time.monotonic() + deadline_seconds
-    while True:
-        try:
-            return resolver.resolve(url)
-        except Exception:
-            if time.monotonic() > deadline:
-                raise
-            time.sleep(0.5)
-
-
-@pytest.fixture(scope="module")
-def office(tmp_path_factory):
-    """A headless office with a scratch profile, reachable over a UNO socket."""
-    profile = tmp_path_factory.mktemp("office-profile")
-    port = _free_port()
-    process = subprocess.Popen(
-        [
-            "soffice",
-            "--headless",
-            "--invisible",
-            "--norestore",
-            f"-env:UserInstallation=file://{profile}",
-            f"--accept=socket,host=localhost,port={port};urp;",
-        ]
-    )
-    try:
-        context = _connect(port)
-    except Exception:
-        process.kill()
-        raise
-    desktop = context.ServiceManager.createInstanceWithContext(
-        "com.sun.star.frame.Desktop", context
-    )
-    yield SimpleNamespace(context=context, desktop=desktop)
-    try:
-        desktop.terminate()
-        process.wait(timeout=10)
-    except Exception:
-        process.kill()
 
 
 def _insert_page_of(document):
