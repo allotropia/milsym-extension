@@ -19,12 +19,8 @@ The drawing is handed in as ready-made SVG, so no extension package has to be in
 in the office: only the GraphicProvider service and the undo manager take part.
 """
 
-import conftest
-
-if conftest.UNO_IS_REAL:
-    from com.sun.star.beans import NamedValue
-
 import pytest
+from com.sun.star.beans import NamedValue
 
 SVG = (
     '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40">'

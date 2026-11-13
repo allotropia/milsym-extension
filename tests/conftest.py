@@ -6,14 +6,11 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-"""Make the modules under source/ importable for the tests.
+"""Make the modules under source/ importable, and provide the office the tests drive.
 
-A Python with pyuno, such as the one a LibreOffice installation ships, provides the uno,
-unohelper and com.sun.star modules on its own, outside a running office. On a Python
-without pyuno, stand-ins are installed instead that carry just enough shape for the
-source modules to import, so their pure functions can still be tested. UNO_IS_REAL says
-which of the two this test run has; the tests that talk to a running office need the
-real one.
+The tests require an installed office: the pyuno Python bindings for the uno and
+com.sun.star modules, and the soffice and unopkg programs. The office fixture starts a
+headless office with a scratch profile and connects to it over a UNO socket.
 """
 
 import shutil
@@ -21,7 +18,6 @@ import socket
 import subprocess
 import sys
 import time
-import types
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -31,10 +27,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "source"))
 
 try:
     import uno
-
-    UNO_IS_REAL = True
 except ImportError:
-    UNO_IS_REAL = False
+    raise ImportError(
+        "These tests need the pyuno bindings of an installed office. Run them with the"
+        " Python that has the uno module, the system Python on this machine; a tox or"
+        " virtualenv Python sees it only with access to the system site-packages."
+    ) from None
 
 
 def _free_port():
@@ -67,8 +65,8 @@ def office(tmp_path_factory):
     singletons in the test process, such as the translator, that hold on to the first
     component context they are given.
     """
-    if not UNO_IS_REAL or shutil.which("soffice") is None:
-        pytest.skip("needs pyuno and a soffice binary")
+    if shutil.which("soffice") is None:
+        pytest.fail("These tests need an installed office; soffice is not on the PATH.")
     profile = tmp_path_factory.mktemp("office-profile")
     oxt = Path(__file__).resolve().parent.parent / "milsymbol-extension.oxt"
     if oxt.exists():
@@ -112,63 +110,3 @@ def office(tmp_path_factory):
         process.wait(timeout=10)
     except Exception:
         process.kill()
-
-
-class Size:
-    def __init__(self, Width=0, Height=0):
-        self.Width = Width
-        self.Height = Height
-
-
-class Point:
-    def __init__(self, X=0, Y=0):
-        self.X = X
-        self.Y = Y
-
-
-class NamedValue:
-    def __init__(self, Name=None, Value=None):
-        self.Name = Name
-        self.Value = Value
-
-
-class PropertyValue:
-    def __init__(self, Name=None, Handle=0, Value=None, State=0):
-        self.Name = Name
-        self.Handle = Handle
-        self.Value = Value
-        self.State = State
-
-
-def _install_module(name, **attributes):
-    module = types.ModuleType(name)
-    for key, value in attributes.items():
-        setattr(module, key, value)
-    sys.modules[name] = module
-    return module
-
-
-def _install_stand_ins():
-    _install_module("uno", systemPathToFileUrl=lambda path: "file://" + path)
-    _install_module("unohelper", Base=type("Base", (), {}))
-    _install_module("perf", count=lambda *args: None, timed=lambda function: function)
-
-    com = _install_module("com")
-    com.sun = _install_module("com.sun")
-    com.sun.star = _install_module("com.sun.star")
-    com.sun.star.awt = _install_module(
-        "com.sun.star.awt", Size=Size, Point=Point, XCallback=type("XCallback", (), {})
-    )
-    com.sun.star.beans = _install_module(
-        "com.sun.star.beans", NamedValue=NamedValue, PropertyValue=PropertyValue
-    )
-    com.sun.star.document = _install_module(
-        "com.sun.star.document", XUndoAction=type("XUndoAction", (), {})
-    )
-    com.sun.star.xml = _install_module(
-        "com.sun.star.xml", AttributeData=type("AttributeData", (), {})
-    )
-
-
-if not UNO_IS_REAL:
-    _install_stand_ins()
