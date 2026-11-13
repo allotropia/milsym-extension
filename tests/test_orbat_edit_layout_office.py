@@ -22,34 +22,7 @@ diagram out from a fresh read of the settled document. A consistent edit leaves 
 for the manual refresh to move.
 """
 
-import threading
-
-
-def _run_as_office_event(context, action):
-    """Run an action as a user event on the office's main thread, and wait for it.
-
-    The control dialog's buttons reach the extension the same way: the handler posts the
-    action with post_office_action, so it runs with the solar mutex held once the office
-    has settled. Calling document-writing extension code straight from the connection's
-    own thread runs it concurrently with the office's pending layout work instead.
-    """
-    from utils import post_office_action
-
-    done = threading.Event()
-    failures = []
-
-    def runner():
-        try:
-            action()
-        except Exception as exception:
-            failures.append(exception)
-        finally:
-            done.set()
-
-    post_office_action(context, runner)
-    assert done.wait(120), "the office did not run the posted action"
-    if failures:
-        raise failures[0]
+from conftest import run_as_office_event
 
 
 def _shape_position(shape):
@@ -119,7 +92,7 @@ def test_members_stay_put_when_the_diagram_is_refreshed_after_an_edit(office):
         data.add(1, "")
         data.add(1, "")
         Gui._user_closed_dialog = False
-        _run_as_office_event(
+        run_as_office_event(
             office.context, lambda: controller.create_diagram(data)
         )
 
@@ -149,7 +122,7 @@ def test_members_stay_put_when_the_diagram_is_refreshed_after_an_edit(office):
             )
             closing_refresh()
 
-        _run_as_office_event(office.context, add_child_below_root_while_the_group_moves)
+        run_as_office_event(office.context, add_child_below_root_while_the_group_moves)
 
         after_edit = _settled_member_positions(group)
         assert len(after_edit) == 5, "the edit added a fifth symbol to the group"
@@ -161,7 +134,7 @@ def test_members_stay_put_when_the_diagram_is_refreshed_after_an_edit(office):
             diagram.init_properties()
             diagram.refresh_diagram()
 
-        _run_as_office_event(office.context, refresh_manually)
+        run_as_office_event(office.context, refresh_manually)
 
         after_manual_refresh = _settled_member_positions(group)
 

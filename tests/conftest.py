@@ -17,6 +17,7 @@ import shutil
 import socket
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 from types import SimpleNamespace
@@ -55,6 +56,33 @@ def _connect(port, deadline_seconds=60):
             if time.monotonic() > deadline:
                 raise
             time.sleep(0.5)
+
+
+def run_as_office_event(context, action):
+    """Run an action as a user event on the office's main thread, and wait for it.
+
+    The control dialog's buttons reach the extension the same way: the handler posts the
+    action with post_office_action, so it runs with the solar mutex held once the office
+    has settled. Calling document-writing extension code straight from the connection's
+    own thread runs it concurrently with the office's pending layout work instead.
+    """
+    from utils import post_office_action
+
+    done = threading.Event()
+    failures = []
+
+    def runner():
+        try:
+            action()
+        except Exception as exception:
+            failures.append(exception)
+        finally:
+            done.set()
+
+    post_office_action(context, runner)
+    assert done.wait(120), "the office did not run the posted action"
+    if failures:
+        raise failures[0]
 
 
 @pytest.fixture(scope="session")
