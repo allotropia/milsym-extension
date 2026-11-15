@@ -105,7 +105,6 @@ class ListenerRegistry:
             xcontroller, listener = self._map[model]
             try:
                 xcontroller.removeSelectionChangeListener(listener)
-                print("Removed selection listener from controller")
             except Exception as e:
                 print("Failed removing listener:", e)
 
@@ -490,7 +489,7 @@ class StartupJob(unohelper.Base, XJob, XSelectionChangeListener):
                     except Exception as e:
                         print(f"Error initializing controller for frame {i}: {e}")
             else:
-                print("StartupJob: No open documents found")
+                print("Error: internal error for StartupJob: No open documents found")
         except Exception as e:
             print(f"Error in StartupJob initialization: {e}")
 

@@ -464,7 +464,7 @@ def generate_symbols_for_range(ctx, model, script, size, cell_range, undo_action
             curr_size = attributes['MilSymSize']
         svg_data = generate_icon_svg(script, attributes, curr_size)
         if not svg_data:
-            print(f"No symbol drawing for row {row + 1}: {attributes['MilSymCode']}")
+            print(f"Error: symbol rendered for row {row + 1}: {attributes['MilSymCode']}")
             continue
 
         existing = existing_symbols.get((target_column, row), [])

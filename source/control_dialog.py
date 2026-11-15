@@ -319,9 +319,6 @@ class ControlDlgHandler(
 
         sidebar_panel = SidebarFactory.get_sidebar_panel()
         if sidebar_panel is None:
-            print(
-                "Milsymbol: the sidebar panel is not open, nothing added to favorites"
-            )
             return
 
         model = controller._x_controller.getModel()
@@ -874,7 +871,7 @@ class ControlDlgHandler(
             if SKIP_TREE_REBUILD:
                 return
             if self.tree_control is None:
-                print("Tree control not available")
+                print("Error: tree control not available, wrong/broken Office version?")
                 return
 
             # Get the current diagram
@@ -882,7 +879,7 @@ class ControlDlgHandler(
             diagram = controller.get_diagram()
 
             if diagram is None:
-                print("No diagram available")
+                print("Error: internal error no diagram available")
                 return
 
             service_manager = self.x_context.getServiceManager()
@@ -891,7 +888,7 @@ class ControlDlgHandler(
             )
 
             if data_model is None:
-                print("Could not create tree data model")
+                print("Error: internal error could not create tree data model")
                 return
 
             # Create root node with proper name
@@ -903,7 +900,7 @@ class ControlDlgHandler(
                 diagram = controller.get_diagram()
 
                 if diagram is None:
-                    print("No diagram available")
+                    print("Error: internal error no diagram available")
                     return
                 temp_diagram_tree = diagram.get_diagram_tree()
                 if temp_diagram_tree:
@@ -937,9 +934,9 @@ class ControlDlgHandler(
                     # Populate children of root item
                     self._populate_tree_children(data_model, root_node, root_item)
                 else:
-                    print("No root item found in diagram tree")
+                    print("Error: internal error no root item found in diagram tree")
             else:
-                print("No diagram tree available or invalid structure")
+                print("Error: internal error no diagram tree available or invalid structure")
 
             # The control is given the finished model, so that it lays the tree out once
             # instead of once for every node that is added to it
@@ -1651,7 +1648,7 @@ class ControlDlgHandler(
 
             target_tree_item = self._node_to_tree_item_map.get(target_node_name)
             if not target_tree_item:
-                print("Could not find target tree item")
+                print("Error: internal error could not find target tree item")
                 return False
 
             # Get all source tree items
@@ -1662,7 +1659,7 @@ class ControlDlgHandler(
                     source_items.append(item)
 
             if not source_items:
-                print("Could not find source tree items")
+                print("Error: internal error could not find source tree items")
                 return False
 
             # if parent selected, don't process child separately
@@ -1670,17 +1667,17 @@ class ControlDlgHandler(
 
             for source_item in source_items:
                 if source_item == target_tree_item:
-                    print("Cannot move item to itself")
+                    # no point moving item to itself - ignoring
                     return False
                 if self._is_descendant_of(target_tree_item, source_item):
-                    print("Cannot move item to its descendant")
+                    # cannot move item to its own descendant - ignoring
                     return False
 
             controller = self.get_controller()
             diagram = controller.get_diagram()
 
             if not diagram or not hasattr(diagram, "move_tree_item"):
-                print("Diagram does not support move operations")
+                print("Error: internal error invalid / foreign Diagram object")
                 return False
 
             # Capture original positions for undo before moving
@@ -1718,7 +1715,7 @@ class ControlDlgHandler(
 
                 return True
             else:
-                print("Some move operations failed")
+                print("Error: internal error - somehow the move operations failed")
                 return False
 
         except Exception as e:

@@ -627,7 +627,7 @@ def insertSvgGraphic(
                 shape.setPosition(pos)
             inserted_page = current_page
         else:
-            print("Unsupported document type for graphic insertion")
+            print("Error: Unsupported document type for graphic insertion")
 
         if undo_manager is not None and inserted_page is not None:
             # The translator imports this module, so it is imported here rather than at
@@ -823,7 +823,7 @@ def extract_symbol_params_from_shape(ctx, model, shape):
         attributes = extractGraphicAttributes(shape)
         
         if not attributes or "MilSymCode" not in attributes:
-            print("Shape has no MilSym attributes")
+            print("Error: Shape has no MilSym attributes")
             return None, None, None, None
         
         # Get script instance
@@ -842,7 +842,7 @@ def extract_symbol_params_from_shape(ctx, model, shape):
             return None, None, None, None
         
         if not svg_data:
-            print("Generated SVG is empty")
+            print("Error: Generated SVG is empty")
             return None, None, None, None
         
         # Determine category name from SIDC code (symbol set)

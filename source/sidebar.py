@@ -942,7 +942,7 @@ class SymbolTransferable(unohelper.Base, XTransferable):
                 with open(svg_file_path, encoding="utf-8") as f:
                     return f.read()
             else:
-                print(f"SVG file not found: {svg_file_path}")
+                print(f"Error: SVG file not found: {svg_file_path}")
                 return ""
 
         except Exception as e:
