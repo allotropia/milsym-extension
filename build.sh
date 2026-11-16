@@ -38,6 +38,8 @@ rsync -av \
     --exclude="README.md" \
     --exclude="build.sh" \
     --exclude="ruff.toml" \
+    --exclude="tox.ini" \
+    --exclude="pytest.ini" \
     --exclude="example_symbols_list.csv" \
     --exclude="pyrightconfig.json" \
     --exclude="milsymbol/combine.sh" \
@@ -54,6 +56,7 @@ rsync -av \
     --exclude=".git/" \
     --exclude=".gitignore" \
     --exclude="$TEMP_DIR/" \
+    --exclude="tests/" \
     --exclude="*.oxt" \
     . "$TEMP_DIR/"
 
