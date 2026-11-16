@@ -193,6 +193,13 @@ class Gui:
 
     def show_message_box(self, s_title: str, s_message: str):
         """Show message box dialog"""
+        if s_title is None or s_message is None:
+            print(
+                "Error: internal error showing message box: a dialog string is missing, "
+                f"title {s_title!r}, message {s_message!r}"
+            )
+            s_title = s_title or ""
+            s_message = s_message or ""
         try:
             o_toolkit = self._x_context.getServiceManager().createInstanceWithContext(
                 "com.sun.star.awt.Toolkit", self._x_context
