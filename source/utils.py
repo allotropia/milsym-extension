@@ -567,6 +567,18 @@ class InsertSymbolUndoAction(unohelper.Base, XUndoAction):
 def insertSvgGraphic(
     ctx, model, svg_data, params, selected_shape, smybol_name
 ):
+    """Insert symbol into the document.
+
+    When selected_shape is given, the drawing, the attributes and the
+    name of that shape are replaced, instead of inserted. Otherwise a
+    new shape is created and inserted at the cursor or current
+    selection.
+
+    """
+    if selected_shape is not None:
+        edit_symbol_shape(ctx, model, svg_data, params, selected_shape, smybol_name)
+        return
+
     is_writer = model.supportsService("com.sun.star.text.TextDocument")
     is_calc = model.supportsService("com.sun.star.sheet.SpreadsheetDocument")
     is_draw_impress = model.supportsService(
@@ -574,14 +586,14 @@ def insertSvgGraphic(
     ) or model.supportsService("com.sun.star.drawing.DrawingDocument")
 
     try:
-        shape = build_symbol_shape(ctx, model, svg_data, params, selected_shape)
+        shape = build_symbol_shape(ctx, model, svg_data, params)
 
         # Writer records the insertion of a text content as an undo step by itself, and
         # keeps it on top of the stack. The other applications record nothing for a
         # shape added to a draw page, and record naming the shape as a step of its own,
         # so there the whole insertion runs under the lock of the undo manager and one
         # action describing it is registered afterwards.
-        undo_manager = model.getUndoManager() if selected_shape is None else None
+        undo_manager = model.getUndoManager()
         inserted_page = None
 
         # Writer
@@ -603,18 +615,17 @@ def insertSvgGraphic(
                 draw_page.add(shape)
                 shape.setPosition(pos)
 
-                if selected_shape is None:
-                    try:
-                        # Try to position at current selection
-                        current_selection = model.getCurrentSelection()
-                        cell_position = current_selection.getPropertyValue("Position")
-                        shape.setPosition(cell_position)
-                    except Exception:
-                        # Default position if we can't get cell position
-                        default_pos = Point()
-                        default_pos.X = 1000
-                        default_pos.Y = 1000
-                        shape.setPosition(default_pos)
+                try:
+                    # Try to position at current selection
+                    current_selection = model.getCurrentSelection()
+                    cell_position = current_selection.getPropertyValue("Position")
+                    shape.setPosition(cell_position)
+                except Exception:
+                    # Bodge: use default position if we can't get cell position
+                    default_pos = Point()
+                    default_pos.X = 1000
+                    default_pos.Y = 1000
+                    shape.setPosition(default_pos)
             inserted_page = draw_page
         # Impress/Draw - for presentations and drawings, we'll use the shape directly
         elif is_draw_impress:
@@ -630,8 +641,9 @@ def insertSvgGraphic(
             print("Error: Unsupported document type for graphic insertion")
 
         if undo_manager is not None and inserted_page is not None:
-            # The translator imports this module, so it is imported here rather than at
-            # the top of the module.
+            # The translator imports this module, too - work-around
+            # dependency loop by importing here rather than at module
+            # scope.
             from translator import translate
 
             undo_manager.addUndoAction(
@@ -651,6 +663,94 @@ def insertSvgGraphic(
         mark_document_modified(model)
     except Exception as e:
         print(f"Error inserting SVG graphic: {e}")
+
+
+def edit_symbol_shape(ctx, model, svg_data, params, shape, symbol_name):
+    """Replace the drawing, the MilSym attributes and the name of a symbol shape in place.
+
+    Sadly there's no consistent recording across all applications, for
+    property changes, so we run under the lock of the undo manager:
+    one action holding the state before and after is registered: a
+    single undo applies the previous drawing, attributes, name and size
+    settings.
+
+    """
+    try:
+        undo_manager = model.getUndoManager()
+        old_state = (
+            read_shape_svg(ctx, shape),
+            attributes_to_params(extractGraphicAttributes(shape)),
+            shape.getName(),
+            shape.getSize(),
+        )
+
+        with locked_undo_manager(undo_manager):
+            build_symbol_shape(ctx, model, svg_data, params, shape)
+            shape.setPropertyValue("Name", symbol_name)
+
+        new_state = (svg_data, list(params), symbol_name, shape.getSize())
+
+        # The translator imports this module, so it is imported here rather than at
+        # the top of the module.
+        from translator import translate
+
+        undo_manager.addUndoAction(
+            EditSymbolUndoAction(
+                ctx,
+                translate(ctx, "Undo.EditSymbol"),
+                undo_manager,
+                shape,
+                old_state,
+                new_state,
+            )
+        )
+        mark_document_modified(model)
+    except Exception as e:
+        print(f"Error editing a symbol shape: {e}")
+
+
+class EditSymbolUndoAction(unohelper.Base, XUndoAction):
+    """The undo step of changing a symbol shape in-place.
+
+    Each recorded state is the SVG source of a drawing, the params
+    carrying its MilSym attributes, the shape's name and its exact
+    size. The shape stays on its page the whole time, and the undo
+    stacks are cleared before the document closes.
+
+    """
+
+    def __init__(self, ctx, title, undo_manager, shape, old_state, new_state):
+        self.ctx = ctx
+        self.Title = title
+        self.undo_manager = undo_manager
+        self.shape = shape
+        self.old_state = old_state
+        self.new_state = new_state
+
+    def undo(self):
+        self._apply(self.old_state)
+
+    def redo(self):
+        self._apply(self.new_state)
+
+    def _apply(self, state):
+        """Apply a recorded state for given shape.
+
+        A state whose SVG source is None, recorded from a picture that could not be
+        read back, leaves the picture as it is and still restores the size, the
+        attributes and the name.
+        """
+        svg_data, params, name, size = state
+        try:
+            with locked_undo_manager(self.undo_manager):
+                graphic = create_graphic_from_svg(self.ctx, svg_data) if svg_data else None
+                if graphic is not None:
+                    self.shape.setPropertyValue("Graphic", graphic)
+                self.shape.setSize(size)
+                insertGraphicAttributes(self.shape, params)
+                self.shape.setPropertyValue("Name", name)
+        except Exception as e:
+            print(f"Error applying a recorded symbol state: {e}")
 
 
 def mark_document_modified(model):
@@ -686,6 +786,22 @@ def insertGraphicAttributes(shape, params):
 
     # seems we're getting a copy above; set it explicitely
     shape.setPropertyValue("UserDefinedAttributes", attributeHash)
+
+
+def attributes_to_params(attributes):
+    """Build the params list insertGraphicAttributes takes from a MilSym attribute dict.
+
+    The first entry is the SIDC code. Every other attribute whose name starts with
+    MilSym becomes a NamedValue: the prefix is stripped and the first letter of the
+    rest is lowered, so MilSymStack turns into the option stack.
+    """
+    params = [attributes.get("MilSymCode", "")]
+    for name, value in attributes.items():
+        if name == "MilSymCode" or not name.startswith("MilSym"):
+            continue
+        option = name[6:]
+        params.append(NamedValue(option[0].lower() + option[1:], value))
+    return params
 
 
 def symbol_script_args(attributes, size):

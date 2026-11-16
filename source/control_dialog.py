@@ -27,7 +27,6 @@ from com.sun.star.awt import (
     XTopWindowListener,
     XWindowListener,
 )
-from com.sun.star.beans import NamedValue
 from com.sun.star.datatransfer import DataFlavor, XTransferable
 from com.sun.star.datatransfer.dnd import (
     XDragGestureListener,
@@ -47,6 +46,7 @@ from sidebar import SidebarFactory
 from translator import translate
 from unohelper import systemPathToFileUrl
 from utils import (
+    attributes_to_params,
     createMilSymbolScriptInstance,
     extract_symbol_params_from_shape,
     extractGraphicAttributes,
@@ -2030,7 +2030,7 @@ class EditShapeUndoAction(unohelper.Base, XUndoAction):
             diagram.set_shape_properties(self.shape, diagram.DIAGRAM_SHAPE_TYPE)
             diagram.refresh_diagram()
         else:
-            params = self._attributes_to_params(attributes)
+            params = attributes_to_params(attributes)
             insertGraphicAttributes(self.shape, params)
 
             # Regenerate SVG and update graphic. The drawing is made at the frame size
@@ -2048,32 +2048,6 @@ class EditShapeUndoAction(unohelper.Base, XUndoAction):
 
         self.dialog_handler.refresh_tree()
         controller.add_selection_listener()
-
-    def _attributes_to_params(self, attributes):
-        """Convert attributes dict to params list format for insertGraphicAttributes
-
-        Input format (from extractGraphicAttributes):
-            {"MilSymCode": "...", "MilSymStack": "...", "MilSymReinforced": "...", ...}
-
-        Output format (for insertGraphicAttributes):
-            [sidc_code, NamedValue("stack", "..."), NamedValue("reinforced", "..."), ...]
-        """
-        params = []
-
-        sidc_code = attributes.get("MilSymCode", "")
-        params.append(sidc_code)
-
-        # Convert remaining MilSym* attributes to NamedValue objects
-        for key, value in attributes.items():
-            if key == "MilSymCode":
-                continue  # Already handled
-            if key.startswith("MilSym"):
-                # Convert "MilSymStack" -> "stack", "MilSymReinforced" -> "reinforced"
-                attr_name = key[6:]  # Remove prefix
-                attr_name = attr_name[0].lower() + attr_name[1:]  # lowercase first char
-                params.append(NamedValue(attr_name, value))
-
-        return params
 
     def clear_references(self):
         """Clear all shape references to prevent memory leaks during document close.
